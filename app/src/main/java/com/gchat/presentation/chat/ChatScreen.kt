@@ -29,6 +29,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val messageText by viewModel.messageText.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+    val otherUserName by viewModel.otherUserName.collectAsState()
     val listState = rememberLazyListState()
     
     // Auto-scroll to bottom when new messages arrive
@@ -41,7 +42,7 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat") },
+                title = { Text(otherUserName) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, "Back")

@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gchat.domain.model.Message
 import com.gchat.domain.repository.AuthRepository
+import com.gchat.domain.repository.ConversationRepository
+import com.gchat.domain.repository.UserRepository
 import com.gchat.domain.usecase.GetMessagesUseCase
 import com.gchat.domain.usecase.MarkMessageAsReadUseCase
 import com.gchat.domain.usecase.SendMessageUseCase
@@ -22,6 +24,8 @@ class ChatViewModel @Inject constructor(
     private val getMessagesUseCase: GetMessagesUseCase,
     private val markMessageAsReadUseCase: MarkMessageAsReadUseCase,
     private val authRepository: AuthRepository,
+    private val conversationRepository: ConversationRepository,
+    private val userRepository: UserRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -43,6 +47,25 @@ class ChatViewModel @Inject constructor(
     val currentUserId: StateFlow<String?> = flow {
         emit(authRepository.getCurrentUserId())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    
+    // Get other user's display name for the TopBar
+    val otherUserName: StateFlow<String> = flow {
+        val currentUserId = authRepository.getCurrentUserId() ?: ""
+        val conversation = conversationRepository.getConversation(conversationId).getOrNull()
+        
+        if (conversation != null) {
+            val otherUserId = conversation.getOtherParticipantId(currentUserId)
+            if (otherUserId != null) {
+                val otherUser = userRepository.getUser(otherUserId).getOrNull()
+                emit(otherUser?.displayName ?: "Chat")
+            } else {
+                // Group chat - use conversation name
+                emit(conversation.name ?: "Group Chat")
+            }
+        } else {
+            emit("Chat")
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, "Chat")
     
     fun updateMessageText(text: String) {
         _messageText.value = text
