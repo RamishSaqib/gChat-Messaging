@@ -261,14 +261,15 @@ gChat supports multiple build configurations:
 
 | Variant | Description | Package Name |
 |---------|-------------|--------------|
-| **devDebug** | Development with debug logging | `com.gchat.dev.debug` |
-| **stagingDebug** | Staging environment testing | `com.gchat.staging.debug` |
+| **prodDebug** | Debug build (development) | `com.gchat.debug` |
 | **prodRelease** | Production release build | `com.gchat` |
+| **devDebug** | Dev flavor debug (if needed) | `com.gchat.dev.debug` |
+| **stagingDebug** | Staging environment testing | `com.gchat.staging.debug` |
 
 **Build specific variant:**
 ```bash
-./gradlew assembleDevDebug
-./gradlew assembleProdRelease
+./gradlew assembleProdDebug     # For development/testing
+./gradlew assembleProdRelease   # For production
 ```
 
 ### Firebase Environments
