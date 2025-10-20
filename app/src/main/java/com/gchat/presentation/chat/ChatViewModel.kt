@@ -40,7 +40,7 @@ class ChatViewModel @Inject constructor(
     val messages: StateFlow<List<Message>> = getMessagesUseCase(conversationId)
         .stateIn(
             scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0), // Stop immediately when UI unsubscribes
+            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000), // Keep alive for 5s during recompositions
             initialValue = emptyList()
         )
     
