@@ -14,7 +14,9 @@ import com.gchat.presentation.auth.LoginScreen
 import com.gchat.presentation.auth.RegisterScreen
 import com.gchat.presentation.chat.ChatScreen
 import com.gchat.presentation.chat.ConversationListScreen
+import com.gchat.presentation.imageviewer.ImageViewerScreen
 import com.gchat.presentation.newconversation.NewConversationScreen
+import java.net.URLDecoder
 
 @Composable
 fun NavGraph(
@@ -97,6 +99,22 @@ fun NavGraph(
             ChatScreen(
                 conversationId = it.arguments?.getString("conversationId") ?: "",
                 onNavigateBack = {
+                    navController.popBackStack()
+                }
+            )
+        }
+        
+        composable(
+            route = Screen.ImageViewer.route,
+            arguments = listOf(
+                navArgument("imageUrl") { type = NavType.StringType }
+            )
+        ) {
+            val encodedUrl = it.arguments?.getString("imageUrl") ?: ""
+            val imageUrl = URLDecoder.decode(encodedUrl, "UTF-8")
+            ImageViewerScreen(
+                imageUrl = imageUrl,
+                onDismiss = {
                     navController.popBackStack()
                 }
             )

@@ -1,18 +1,80 @@
 # gChat - Development Tasks
 
-> **Current PR:** PR #3 Testing & Merge | **Last Merged:** PR #2 - Logout Functionality
+> **Current PR:** PR #4 - Media Sharing | **Last Merged:** PR #3 - New Conversation Flow
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 3 (PR #3 ready for merge)  
-**Current Sprint:** Feature Expansion  
-**Next Up:** Media Sharing (PR #4) or Group Chat (PR #5)
+**Completed PRs:** 3  
+**Current Sprint:** Media Sharing & Images  
+**Next Up:** Group Chat (PR #5) or Push Notifications (PR #6)
 
 ---
 
-## ✅ PR #3: New Conversation Flow (COMPLETED)
+## 🔄 PR #4: Media Sharing - Images & Profile Pictures (IN PROGRESS)
+
+**Goal:** Enable image sharing in messages and profile picture uploads
+
+**Status:** 🔄 In Progress
+
+### Backend Tasks
+- [ ] Add `mediaUrl` and `mediaType` fields to Message model
+- [ ] Update Message entity and mapper for media support
+- [ ] Create `MediaRepository` interface
+- [ ] Implement `MediaRepositoryImpl` with Firebase Storage
+- [ ] Add Firebase Storage upload/download functions
+- [ ] Update Firestore security rules for Storage access
+- [ ] Add image compression utility
+- [ ] Update User model mapper for profile picture URLs
+
+### UI Tasks - Image Picker & Upload
+- [ ] Add image picker dependency (Coil, Accompanist Permissions)
+- [ ] Create `ImagePickerManager` for camera/gallery selection
+- [ ] Request runtime permissions (CAMERA, READ_MEDIA_IMAGES)
+- [ ] Create image picker bottom sheet UI
+- [ ] Add image compression before upload
+- [ ] Show upload progress indicator
+- [ ] Handle upload errors gracefully
+
+### UI Tasks - Profile Pictures
+- [ ] Add profile picture upload to settings/profile screen
+- [ ] Create profile picture picker UI
+- [ ] Display profile pictures in conversation list
+- [ ] Display profile pictures in chat screen
+- [ ] Add placeholder/initial letter fallback for missing pictures
+- [ ] Implement image caching with Coil
+
+### UI Tasks - Message Images
+- [ ] Update Message model UI to support image messages
+- [ ] Create image message bubble component
+- [ ] Add image attachment button to chat input
+- [ ] Display image thumbnails in message list
+- [ ] Create fullscreen image viewer on tap
+- [ ] Add pinch-to-zoom for images
+- [ ] Show loading skeleton while image loads
+
+### Navigation & Flow
+- [ ] Add image viewer screen to navigation
+- [ ] Handle image selection → compression → upload → send flow
+- [ ] Update ChatViewModel with image sending logic
+- [ ] Add image upload state management
+
+### Testing
+- [ ] Test camera image capture
+- [ ] Test gallery image selection
+- [ ] Test image compression
+- [ ] Test Firebase Storage upload
+- [ ] Test profile picture display
+- [ ] Test image messages in chat
+- [ ] Test fullscreen image viewer
+- [ ] Test offline image caching
+
+**Estimated Time:** 4-5 hours
+
+---
+
+## ✅ PR #3: New Conversation Flow (MERGED)
 
 **Goal:** Enable users to start new conversations with other users
 

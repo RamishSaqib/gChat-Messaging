@@ -14,11 +14,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Conversation
+import com.gchat.presentation.components.ProfilePicture
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -112,21 +112,13 @@ fun ConversationItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Placeholder for profile picture
-        Surface(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = conversation.name?.firstOrNull()?.uppercase() ?: "C",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
+        // Profile picture with fallback to initials
+        ProfilePicture(
+            url = conversation.iconUrl,
+            displayName = conversation.name ?: "Conversation",
+            size = 56.dp,
+            showOnlineIndicator = false
+        )
         
         Spacer(modifier = Modifier.width(16.dp))
         
