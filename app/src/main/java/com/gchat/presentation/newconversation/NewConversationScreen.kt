@@ -28,7 +28,7 @@ fun NewConversationScreen(
     val isSearching by viewModel.isSearching.collectAsState()
     val error by viewModel.error.collectAsState()
     
-    // Show error snackbar
+    // Show error snack bar
     error?.let { errorMessage ->
         LaunchedEffect(errorMessage) {
             // Error will be cleared after showing
@@ -158,7 +158,7 @@ fun UserListItem(
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    text = user.email,
+                    text = user.email ?: "",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
