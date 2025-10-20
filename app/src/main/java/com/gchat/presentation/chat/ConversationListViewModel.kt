@@ -22,12 +22,12 @@ class ConversationListViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
     
-    private val currentUserId = authRepository.getCurrentUserId() ?: ""
-    
     // Combine conversations with user data
-    val conversationsWithUsers: StateFlow<List<ConversationWithUser>> = getConversationsUseCase()
-        .map { conversations ->
-            conversations.map { conversation ->
+    val conversationsWithUsers: StateFlow<List<ConversationWithUser>> = flow {
+        val currentUserId = authRepository.getCurrentUserId() ?: ""
+        
+        getConversationsUseCase().collect { conversations ->
+            val conversationsWithUsers = conversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
                 val otherUser = if (otherUserId != null) {
                     userRepository.getUser(otherUserId).getOrNull()
@@ -38,12 +38,13 @@ class ConversationListViewModel @Inject constructor(
                     otherUser = otherUser
                 )
             }
+            emit(conversationsWithUsers)
         }
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0),
-            initialValue = emptyList()
-        )
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 0),
+        initialValue = emptyList()
+    )
     
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {
