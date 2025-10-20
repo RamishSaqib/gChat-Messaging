@@ -14,6 +14,7 @@ import com.gchat.presentation.auth.LoginScreen
 import com.gchat.presentation.auth.RegisterScreen
 import com.gchat.presentation.chat.ChatScreen
 import com.gchat.presentation.chat.ConversationListScreen
+import com.gchat.presentation.newconversation.NewConversationScreen
 
 @Composable
 fun NavGraph(
@@ -59,7 +60,7 @@ fun NavGraph(
                     navController.navigate(Screen.Chat.createRoute(conversationId))
                 },
                 onNewConversationClick = {
-                    // TODO: Implement new conversation flow
+                    navController.navigate(Screen.NewConversation.route)
                 },
                 onLogout = {
                     // Clear back stack and navigate to login
@@ -68,6 +69,20 @@ fun NavGraph(
                             inclusive = true
                         }
                         launchSingleTop = true
+                    }
+                }
+            )
+        }
+        
+        composable(Screen.NewConversation.route) {
+            NewConversationScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onConversationCreated = { conversationId ->
+                    // Navigate to the chat screen and remove new conversation from back stack
+                    navController.navigate(Screen.Chat.createRoute(conversationId)) {
+                        popUpTo(Screen.ConversationList.route)
                     }
                 }
             )

@@ -10,6 +10,7 @@ interface UserRepository {
     fun getUserFlow(userId: String): Flow<User?>
     suspend fun getUser(userId: String): Result<User>
     suspend fun getUsersByIds(userIds: List<String>): Result<List<User>>
+    suspend fun searchUsers(query: String, currentUserId: String): Result<List<User>>
     suspend fun updateOnlineStatus(userId: String, isOnline: Boolean): Result<Unit>
     suspend fun updateFcmToken(userId: String, token: String): Result<Unit>
 }

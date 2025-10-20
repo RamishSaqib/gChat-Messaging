@@ -41,8 +41,11 @@ service cloud.firestore {
     // ===== Users Collection =====
     
     match /users/{userId} {
-      // Anyone authenticated can read any user profile
+      // Anyone authenticated can read any user profile (for display and search)
       allow read: if isAuthenticated();
+      
+      // Anyone authenticated can list/query users (for search functionality)
+      allow list: if isAuthenticated();
       
       // Users can create their own profile
       allow create: if isOwner(userId) && isValidUser();

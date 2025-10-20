@@ -92,6 +92,15 @@ class UserRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun searchUsers(query: String, currentUserId: String): Result<List<User>> {
+        return try {
+            // Search from Firestore (no local caching for search results)
+            firestoreUserDataSource.searchUsers(query, currentUserId)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override suspend fun updateFcmToken(userId: String, token: String): Result<Unit> {
         return firestoreUserDataSource.updateFcmToken(userId, token)
     }

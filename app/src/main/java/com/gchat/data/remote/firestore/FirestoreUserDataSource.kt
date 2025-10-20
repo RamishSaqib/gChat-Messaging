@@ -117,5 +117,32 @@ class FirestoreUserDataSource @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    suspend fun searchUsers(query: String, currentUserId: String): Result<List<User>> {
+        return try {
+            if (query.isBlank()) {
+                return Result.success(emptyList())
+            }
+            
+            val normalizedQuery = query.trim().lowercase()
+            
+            // Search by email (exact match or starts with)
+            val emailResults = usersCollection
+                .whereGreaterThanOrEqualTo("email", normalizedQuery)
+                .whereLessThanOrEqualTo("email", normalizedQuery + "\uf8ff")
+                .limit(20)
+                .get()
+                .await()
+            
+            val users = emailResults.documents
+                .mapNotNull { UserMapper.fromFirestore(it) }
+                .filter { it.id != currentUserId } // Exclude current user
+                .distinctBy { it.id }
+            
+            Result.success(users)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 
