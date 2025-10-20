@@ -6,6 +6,25 @@
 
 ## 📋 Pull Request History
 
+### PR #3: New Conversation Flow
+**Status:** ✅ Ready for Merge  
+**Date:** October 20, 2025
+
+**Features Added:**
+- User search functionality (search by email)
+- New conversation screen with real-time search
+- User selection to start conversations
+- Online status indicators in search results
+
+**Technical Implementation:**
+- Added `searchUsers()` to UserRepository with Firestore integration
+- Created NewConversationScreen and NewConversationViewModel
+- Updated Firestore security rules for user list queries
+- Proper navigation flow (conversation list → search → chat)
+- Search limits: 2+ characters, 20 results max, excludes current user
+
+---
+
 ### PR #2: Logout Functionality & Firestore Listener Fixes
 **Status:** ✅ Merged  
 **Date:** October 20, 2025
