@@ -174,7 +174,10 @@ fun RegisterScreen(
                     .requestEmail()
                     .build()
                 val googleSignInClient = GoogleSignIn.getClient(context, gso)
-                googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                // Sign out first to show account picker
+                googleSignInClient.signOut().addOnCompleteListener {
+                    googleSignInLauncher.launch(googleSignInClient.signInIntent)
+                }
             },
             modifier = Modifier.fillMaxWidth(),
             enabled = authState !is AuthResult.Loading,

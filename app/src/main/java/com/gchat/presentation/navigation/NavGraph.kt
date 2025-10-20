@@ -20,17 +20,10 @@ fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
-    
-    val startDestination = if (isAuthenticated) {
-        Screen.ConversationList.route
-    } else {
-        Screen.Login.route
-    }
-    
+    // Use a fixed start destination to avoid crashes on auth state changes
     NavHost(
         navController = navController,
-        startDestination = startDestination
+        startDestination = Screen.Login.route
     ) {
         // Authentication screens
         composable(Screen.Login.route) {
@@ -67,6 +60,15 @@ fun NavGraph(
                 },
                 onNewConversationClick = {
                     // TODO: Implement new conversation flow
+                },
+                onLogout = {
+                    // Clear back stack and navigate to login
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(navController.graph.startDestinationId) {
+                            inclusive = true
+                        }
+                        launchSingleTop = true
+                    }
                 }
             )
         }

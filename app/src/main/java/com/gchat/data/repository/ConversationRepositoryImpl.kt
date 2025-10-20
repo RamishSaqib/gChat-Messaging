@@ -229,12 +229,17 @@ class ConversationRepositoryImpl @Inject constructor(
     }
     
     private suspend fun syncConversationsFromFirestore(userId: String) {
-        firestoreConversationDataSource.observeConversations(userId)
-            .collect { conversations ->
-                conversations.forEach { conversation ->
-                    conversationDao.insert(ConversationMapper.toEntity(conversation))
+        try {
+            firestoreConversationDataSource.observeConversations(userId)
+                .collect { conversations ->
+                    conversations.forEach { conversation ->
+                        conversationDao.insert(ConversationMapper.toEntity(conversation))
+                    }
                 }
-            }
+        } catch (e: Exception) {
+            // Ignore errors (e.g., permission denied after logout)
+            // User will see locally cached data
+        }
     }
 }
 

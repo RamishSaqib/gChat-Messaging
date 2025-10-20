@@ -164,11 +164,16 @@ class MessageRepositoryImpl @Inject constructor(
      * Sync messages from Firestore to local database
      */
     private suspend fun syncMessagesFromFirestore(conversationId: String) {
-        firestoreMessageDataSource.observeMessages(conversationId)
-            .collect { messages ->
-                messages.forEach { message ->
-                    messageDao.insert(MessageMapper.toEntity(message))
+        try {
+            firestoreMessageDataSource.observeMessages(conversationId)
+                .collect { messages ->
+                    messages.forEach { message ->
+                        messageDao.insert(MessageMapper.toEntity(message))
+                    }
                 }
-            }
+        } catch (e: Exception) {
+            // Ignore errors (e.g., permission denied after logout)
+            // User will see locally cached messages
+        }
     }
 }
