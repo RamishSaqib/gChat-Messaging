@@ -2,6 +2,52 @@
 
 > **Status**: 🚀 MVP Phase Complete | 🎯 Ready for AI Features
 
+---
+
+## 📋 Pull Request History
+
+### PR #2: Logout Functionality & Firestore Listener Fixes
+**Status:** ✅ Merged  
+**Date:** October 20, 2025
+
+**Features Added:**
+- Logout button in ConversationListScreen TopBar
+- Clean logout with navigation back to login screen
+
+**Bugs Fixed:**
+- Fixed app crash on logout due to active Firestore listeners
+- Fixed PERMISSION_DENIED errors after logout
+- Fixed infinite loading spinner on login
+
+**Technical Changes:**
+- Added error handling in repositories for Firestore sync operations
+- Updated StateFlow timeout to 0 for immediate listener cleanup
+- Restored comprehensive Firestore security rules
+
+---
+
+### PR #1: Initial MVP - Authentication & Messaging
+**Status:** ✅ Merged  
+**Date:** October 20, 2025
+
+**Features Added:**
+- Email/password authentication
+- Google Sign-In integration
+- One-on-one real-time messaging
+- Offline-first architecture with Room database
+- Message status tracking (sending, sent, delivered, read)
+- User profiles with Firestore sync
+
+**Technical Setup:**
+- Clean Architecture (Domain, Data, Presentation)
+- Firebase integration (Auth, Firestore, Storage, FCM)
+- Jetpack Compose UI with Material 3
+- Hilt dependency injection with KSP
+- Room local persistence
+- Firestore security rules and indexes
+
+---
+
 ## Executive Summary
 
 **gChat** is an Android-native messaging application designed to compete with Apple's iMessage while solving a critical gap: seamless international communication. We combine iMessage-level polish with AI-powered real-time translation.
