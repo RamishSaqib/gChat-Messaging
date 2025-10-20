@@ -1,0 +1,173 @@
+package com.gchat.data.remote.firestore
+
+import com.gchat.data.mapper.ConversationMapper
+import com.gchat.domain.model.Conversation
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.Query
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
+import javax.inject.Singleton
+
+/**
+ * Firestore data source for Conversation operations
+ */
+@Singleton
+class FirestoreConversationDataSource @Inject constructor(
+    private val firestore: FirebaseFirestore
+) {
+    
+    private val conversationsCollection = firestore.collection("conversations")
+    
+    suspend fun createConversation(conversation: Conversation): Result<Unit> {
+        return try {
+            conversationsCollection
+                .document(conversation.id)
+                .set(ConversationMapper.toFirestore(conversation))
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun getConversation(conversationId: String): Result<Conversation> {
+        return try {
+            val document = conversationsCollection
+                .document(conversationId)
+                .get()
+                .await()
+            
+            val conversation = ConversationMapper.fromFirestore(document)
+            if (conversation != null) {
+                Result.success(conversation)
+            } else {
+                Result.failure(Exception("Conversation not found"))
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    fun observeConversations(userId: String): Flow<List<Conversation>> = callbackFlow {
+        val listener = conversationsCollection
+            .whereArrayContains("participants", userId)
+            .orderBy("updatedAt", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val conversations = snapshot?.documents
+                    ?.mapNotNull { ConversationMapper.fromFirestore(it) }
+                    ?: emptyList()
+                
+                trySend(conversations)
+            }
+        
+        awaitClose { listener.remove() }
+    }
+    
+    fun observeConversation(conversationId: String): Flow<Conversation?> = callbackFlow {
+        val listener = conversationsCollection
+            .document(conversationId)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+                
+                val conversation = snapshot?.let { ConversationMapper.fromFirestore(it) }
+                trySend(conversation)
+            }
+        
+        awaitClose { listener.remove() }
+    }
+    
+    suspend fun getUserConversations(userId: String): Result<List<Conversation>> {
+        return try {
+            val documents = conversationsCollection
+                .whereArrayContains("participants", userId)
+                .orderBy("updatedAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+            
+            val conversations = documents.mapNotNull { ConversationMapper.fromFirestore(it) }
+            Result.success(conversations)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateConversation(
+        conversationId: String,
+        updates: Map<String, Any?>
+    ): Result<Unit> {
+        return try {
+            conversationsCollection
+                .document(conversationId)
+                .update(updates)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun updateLastMessage(
+        conversationId: String,
+        messageId: String,
+        messageText: String?,
+        senderId: String,
+        timestamp: Long
+    ): Result<Unit> {
+        return updateConversation(
+            conversationId,
+            mapOf(
+                "lastMessage" to mapOf(
+                    "id" to messageId,
+                    "senderId" to senderId,
+                    "text" to messageText,
+                    "timestamp" to timestamp
+                ),
+                "updatedAt" to timestamp
+            )
+        )
+    }
+    
+    suspend fun deleteConversation(conversationId: String): Result<Unit> {
+        return try {
+            conversationsCollection
+                .document(conversationId)
+                .delete()
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    /**
+     * Find existing one-on-one conversation between two users
+     */
+    suspend fun findOneOnOneConversation(userId1: String, userId2: String): Result<Conversation?> {
+        return try {
+            val documents = conversationsCollection
+                .whereEqualTo("type", "ONE_ON_ONE")
+                .whereArrayContains("participants", userId1)
+                .get()
+                .await()
+            
+            val conversation = documents.mapNotNull { ConversationMapper.fromFirestore(it) }
+                .firstOrNull { it.participants.contains(userId2) }
+            
+            Result.success(conversation)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+}
+

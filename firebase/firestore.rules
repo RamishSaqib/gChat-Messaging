@@ -1,0 +1,131 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // ===== Helper Functions =====
+    
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isParticipant(conversation) {
+      return request.auth.uid in conversation.data.participants;
+    }
+    
+    function isValidUser() {
+      return request.auth != null && 
+             request.resource.data.keys().hasAll(['displayName', 'email', 'createdAt']) &&
+             request.resource.data.displayName is string &&
+             request.resource.data.displayName.size() > 0;
+    }
+    
+    function isValidConversation() {
+      return request.resource.data.keys().hasAll(['type', 'participants', 'updatedAt', 'createdAt']) &&
+             request.resource.data.participants is list &&
+             request.resource.data.participants.size() >= 2 &&
+             request.auth.uid in request.resource.data.participants;
+    }
+    
+    function isValidMessage() {
+      return request.resource.data.keys().hasAll(['conversationId', 'senderId', 'text', 'timestamp', 'status']) &&
+             request.resource.data.senderId == request.auth.uid &&
+             request.resource.data.text is string &&
+             request.resource.data.text.size() <= 10000; // Max message length
+    }
+    
+    // ===== Users Collection =====
+    
+    match /users/{userId} {
+      // Anyone authenticated can read any user profile
+      allow read: if isAuthenticated();
+      
+      // Users can create their own profile
+      allow create: if isOwner(userId) && isValidUser();
+      
+      // Users can only update their own profile
+      allow update: if isOwner(userId);
+      
+      // Users can delete their own profile
+      allow delete: if isOwner(userId);
+    }
+    
+    // ===== Conversations Collection =====
+    
+    match /conversations/{conversationId} {
+      // Only participants can read conversation
+      allow read: if isAuthenticated() && isParticipant(resource);
+      
+      // Authenticated users can create conversations if they are a participant
+      allow create: if isAuthenticated() && isValidConversation();
+      
+      // Only participants can update conversation
+      allow update: if isAuthenticated() && isParticipant(resource);
+      
+      // Only participants can delete conversation
+      allow delete: if isAuthenticated() && isParticipant(resource);
+      
+      // ===== Messages Subcollection =====
+      
+      match /messages/{messageId} {
+        // Only participants of the conversation can read messages
+        allow read: if isAuthenticated() && 
+                       isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)));
+        
+        // Only participants can create messages
+        allow create: if isAuthenticated() && 
+                         isValidMessage() &&
+                         isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)));
+        
+        // Anyone authenticated can update message status (for read receipts)
+        allow update: if isAuthenticated() &&
+                         isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)));
+        
+        // Only sender can delete their message
+        allow delete: if isAuthenticated() && 
+                         request.auth.uid == resource.data.senderId;
+      }
+      
+      // ===== Typing Indicators Subcollection =====
+      
+      match /typing/{userId} {
+        // Participants can read typing indicators
+        allow read: if isAuthenticated() && 
+                       isParticipant(get(/databases/$(database)/documents/conversations/$(conversationId)));
+        
+        // Users can write their own typing indicator
+        allow write: if isAuthenticated() && isOwner(userId);
+      }
+    }
+    
+    // ===== Translations Collection (Cache) =====
+    
+    match /translations/{messageId} {
+      // Anyone authenticated can read cached translations
+      allow read: if isAuthenticated();
+      
+      // Only Cloud Functions can write translations
+      allow write: if false;
+    }
+    
+    // ===== User Preferences Collection =====
+    
+    match /userPreferences/{userId} {
+      // Users can read their own preferences
+      allow read: if isAuthenticated() && isOwner(userId);
+      
+      // Users can write their own preferences
+      allow write: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // ===== Default: Deny All =====
+    
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
