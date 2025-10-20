@@ -30,7 +30,7 @@ fun ConversationListScreen(
     onLogout: () -> Unit,
     viewModel: ConversationListViewModel = hiltViewModel()
 ) {
-    val conversations by viewModel.conversations.collectAsState()
+    val conversationsWithUsers by viewModel.conversationsWithUsers.collectAsState()
     
     Scaffold(
         topBar = {
@@ -61,7 +61,7 @@ fun ConversationListScreen(
             }
         }
     ) { paddingValues ->
-        if (conversations.isEmpty()) {
+        if (conversationsWithUsers.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -88,10 +88,10 @@ fun ConversationListScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                items(conversations, key = { it.id }) { conversation ->
+                items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
                     ConversationItem(
-                        conversation = conversation,
-                        onClick = { onConversationClick(conversation.id) }
+                        conversationWithUser = conversationWithUser,
+                        onClick = { onConversationClick(conversationWithUser.conversation.id) }
                     )
                     Divider()
                 }
@@ -102,9 +102,25 @@ fun ConversationListScreen(
 
 @Composable
 fun ConversationItem(
-    conversation: Conversation,
+    conversationWithUser: ConversationWithUser,
     onClick: () -> Unit
 ) {
+    val conversation = conversationWithUser.conversation
+    val otherUser = conversationWithUser.otherUser
+    
+    // Display name: use other user's name for 1-on-1, group name for groups
+    val displayName = when {
+        otherUser != null -> otherUser.displayName
+        conversation.name != null -> conversation.name
+        else -> "Unknown User"
+    }
+    
+    // Profile picture URL: use other user's picture for 1-on-1, group icon for groups
+    val profilePictureUrl = when {
+        otherUser != null -> otherUser.profilePictureUrl
+        else -> conversation.iconUrl
+    }
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -114,10 +130,11 @@ fun ConversationItem(
     ) {
         // Profile picture with fallback to initials
         ProfilePicture(
-            url = conversation.iconUrl,
-            displayName = conversation.name ?: "Conversation",
+            url = profilePictureUrl,
+            displayName = displayName,
             size = 56.dp,
-            showOnlineIndicator = false
+            showOnlineIndicator = true,
+            isOnline = otherUser?.isOnline ?: false
         )
         
         Spacer(modifier = Modifier.width(16.dp))
@@ -129,7 +146,7 @@ fun ConversationItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = conversation.name ?: "Conversation",
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
