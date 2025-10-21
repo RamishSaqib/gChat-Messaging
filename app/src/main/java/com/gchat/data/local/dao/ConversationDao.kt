@@ -54,6 +54,12 @@ interface ConversationDao {
     @Query("UPDATE conversations SET autoTranslateEnabled = :enabled WHERE id = :conversationId")
     suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean)
     
+    @Query("UPDATE conversations SET name = :name, updatedAt = :timestamp WHERE id = :conversationId")
+    suspend fun updateGroupName(conversationId: String, name: String, timestamp: Long)
+    
+    @Query("UPDATE conversations SET iconUrl = :iconUrl, updatedAt = :timestamp WHERE id = :conversationId")
+    suspend fun updateGroupIcon(conversationId: String, iconUrl: String?, timestamp: Long)
+    
     @Delete
     suspend fun delete(conversation: ConversationEntity)
     

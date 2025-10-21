@@ -278,17 +278,37 @@ class ConversationRepositoryImpl @Inject constructor(
     }
     
     override suspend fun updateGroupName(conversationId: String, newName: String): Result<Unit> {
-        return firestoreConversationDataSource.updateConversation(
-            conversationId,
-            mapOf("name" to newName, "updatedAt" to System.currentTimeMillis())
-        )
+        return try {
+            val timestamp = System.currentTimeMillis()
+            
+            // Update locally first for immediate UI update
+            conversationDao.updateGroupName(conversationId, newName, timestamp)
+            
+            // Then sync to Firestore
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf("name" to newName, "updatedAt" to timestamp)
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
     
     override suspend fun updateGroupIcon(conversationId: String, newIconUrl: String?): Result<Unit> {
-        return firestoreConversationDataSource.updateConversation(
-            conversationId,
-            mapOf("iconUrl" to newIconUrl, "updatedAt" to System.currentTimeMillis())
-        )
+        return try {
+            val timestamp = System.currentTimeMillis()
+            
+            // Update locally first for immediate UI update
+            conversationDao.updateGroupIcon(conversationId, newIconUrl, timestamp)
+            
+            // Then sync to Firestore
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf("iconUrl" to newIconUrl, "updatedAt" to timestamp)
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
     }
     
     override suspend fun addParticipants(conversationId: String, participantIds: List<String>): Result<Unit> {
