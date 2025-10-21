@@ -6,6 +6,67 @@
 
 ## 📋 Pull Request History
 
+### PR #9: Profile & Group Management
+**Status:** ✅ Merged to `main`  
+**Date:** October 21, 2025  
+**Time Spent:** ~2.5 hours
+
+**Features Implemented:**
+- ✅ User profile screen with display name and profile picture editing
+- ✅ Profile picture button in ConversationListScreen TopBar
+- ✅ Group info screen with full management capabilities
+- ✅ DM info screen for 1-on-1 chat details
+- ✅ Add/remove group members (admin only)
+- ✅ Promote members to admin
+- ✅ Edit group name and icon
+- ✅ Leave group functionality
+- ✅ Profile picture and online status in ChatScreen TopBar
+
+**UI Design:**
+- **Profile Screen:** Full-screen editor for display name and profile picture
+- **Group Info Screen:** Group icon at top, editable name, member list with admin badges
+- **DM Info Screen:** Shows other user's profile, online status, and last seen
+- **TopBar Enhancements:** 
+  - ConversationListScreen: Profile picture (left), "gChat" centered, logout (right)
+  - ChatScreen: Profile picture + name (left), shows online indicator for 1-on-1 chats
+- **Member Management:** Tap member to promote or remove (admins only)
+- **Image Uploads:** Camera/gallery picker for profile pictures and group icons
+
+**Technical Implementation:**
+- Created `ProfileScreen` and `ProfileViewModel` for user profile editing
+- Created `GroupInfoScreen` and `GroupInfoViewModel` for group management
+- Created `DMInfoScreen` and `DMInfoViewModel` for 1-on-1 chat info
+- Added navigation routes: `Profile`, `GroupInfo`, `DMInfo`
+- Extended `ConversationRepository` with group management methods:
+  - `updateGroupName()`, `updateGroupIcon()`
+  - `addParticipants()`, `removeParticipant()`
+  - `promoteToAdmin()`, `leaveGroup()`
+- Updated Firestore storage rules for `profile_pictures/` and `group_icons/` paths
+- Refactored `GroupInfoContent` into smaller composables to reduce complexity:
+  - `GroupIconSection`, `GroupNameSection`, `MembersSectionHeader`
+- Used `CenterAlignedTopAppBar` for proper title centering
+- Image upload with progress indicators and error handling
+
+**Navigation Flow:**
+- **Profile:** Tap profile picture in ConversationListScreen TopBar → ProfileScreen
+- **Group Info:** Tap TopBar title/icon in group chat → GroupInfoScreen
+- **DM Info:** Tap TopBar title/icon in 1-on-1 chat → DMInfoScreen
+
+**Bugs Fixed:**
+- Fixed `val` reassignment errors by using callback functions properly
+- Fixed TopBar title alignment using `CenterAlignedTopAppBar`
+
+**Testing Notes:**
+- Test profile picture upload from camera and gallery
+- Test group name and icon editing
+- Test adding/removing members (admin only)
+- Test promoting users to admin
+- Test leaving a group
+- Verify online status shows correctly in chat TopBar
+- Verify centered "gChat" title in main screen
+
+---
+
 ### PR #8: Typing Indicators
 **Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  

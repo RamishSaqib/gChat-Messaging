@@ -1,6 +1,6 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #8 - Typing Indicators | **Status:** 🎉 All MVP + UX Enhancements Complete!
+> **Last Merged:** PR #9 - Profile & Group Management | **Status:** 🎉 All MVP + UX Enhancements Complete!
 
 ---
 
@@ -9,7 +9,82 @@
 **Completed PRs:** 9 (Merged to main)  
 **Current PR:** None  
 **Current Sprint:** MVP + UX Enhancements Complete ✅  
-**Next Up:** AI Translation Phase (Core Feature)
+**Next Up:** AI Translation Phase (Core Feature) or Nickname System
+
+---
+
+## ✅ PR #9: Profile & Group Management (MERGED ✅)
+
+**Goal:** Implement user profile editing, group management, and enhanced TopBar UI
+
+**Branch:** `feature/pr9-profile-group-management` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (Core MVP Feature)
+
+**Time Spent:** ~2.5 hours
+
+### User Profile
+- [x] Add profile picture to ConversationListScreen TopBar
+- [x] Create ProfileScreen with display name and picture editing
+- [x] Create ProfileViewModel for profile updates
+- [x] Add navigation route for ProfileScreen
+- [x] Clickable profile picture in TopBar navigates to ProfileScreen
+- [x] Image upload UI (camera/gallery picker)
+- [x] Upload progress indicator
+- [x] Update Firestore storage rules for profile_pictures/
+
+### Group Info
+- [x] Create GroupInfoScreen UI (icon, name, members list)
+- [x] Create GroupInfoViewModel
+- [x] Add member management (add/remove/promote)
+- [x] Add group name editing
+- [x] Add group icon editing
+- [x] Add leave group functionality
+- [x] Wire GroupInfoScreen to ChatScreen TopBar
+- [x] Show "(Admin)" badge next to admin names
+- [x] Admin-only permissions for add/remove members
+- [x] Anyone can change group name/icon
+- [x] Update Firestore storage rules for group_icons/
+
+### DM Info
+- [x] Create DMInfoScreen
+- [x] Wire DMInfoScreen to ChatScreen TopBar
+- [x] Show other user's profile picture and online status
+- [x] Display last seen timestamp
+
+### Repository Extensions
+- [x] Add updateGroupName() to ConversationRepository
+- [x] Add updateGroupIcon() to ConversationRepository
+- [x] Add addParticipants() to ConversationRepository
+- [x] Add removeParticipant() to ConversationRepository
+- [x] Add promoteToAdmin() to ConversationRepository
+- [x] Add leaveGroup() to ConversationRepository
+
+### UI Enhancements
+- [x] Add profile picture to ChatScreen TopBar (with name)
+- [x] Show online indicator for 1-on-1 chats in TopBar
+- [x] Redesign ConversationListScreen TopBar layout
+- [x] Move profile picture to left side of TopBar
+- [x] Center "gChat" title using CenterAlignedTopAppBar
+- [x] Keep logout button on right
+
+### Code Quality
+- [x] Refactor GroupInfoContent to reduce complexity
+- [x] Extract GroupIconSection composable
+- [x] Extract GroupNameSection composable
+- [x] Extract MembersSectionHeader composable
+- [x] Fix val reassignment errors with proper callbacks
+
+### Testing
+- [x] Test profile picture upload (camera and gallery)
+- [x] Test group name and icon editing
+- [x] Test adding/removing members (admin only)
+- [x] Test promoting users to admin
+- [x] Test leaving a group
+- [x] Verify online status in chat TopBar
+- [x] Verify centered title in main screen
 
 ---
 
