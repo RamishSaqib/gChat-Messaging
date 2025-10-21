@@ -42,6 +42,7 @@ class ConversationListViewModel @Inject constructor(
         val currentUserId = authRepository.getCurrentUserId() ?: ""
         
         getConversationsUseCase().collect { conversations ->
+            android.util.Log.d("ConversationListVM", "UseCase emitted ${conversations.size} conversations")
             // Create a combined flow that updates when any user status changes
             val conversationFlows = conversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
@@ -110,6 +111,7 @@ class ConversationListViewModel @Inject constructor(
             
             // Combine all conversation flows and emit as a list
             combine(conversationFlows) { it.toList() }.collect { conversationsWithUsers ->
+                android.util.Log.d("ConversationListVM", "Emitting ${conversationsWithUsers.size} conversations with users to UI")
                 emit(conversationsWithUsers)
             }
         }

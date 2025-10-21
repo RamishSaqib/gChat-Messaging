@@ -50,6 +50,9 @@ class ConversationRepositoryImpl @Inject constructor(
         
         // Return Flow from local database
         return conversationDao.getAllConversationsFlow()
+            .onEach { entities ->
+                android.util.Log.d("ConversationRepo", "Room Flow emitted ${entities.size} conversations")
+            }
             .map { entities ->
                 entities.map { entity ->
                     // Create lastMessage from entity fields (no need to look up in messages table)
@@ -69,6 +72,9 @@ class ConversationRepositoryImpl @Inject constructor(
                     
                     ConversationMapper.toDomain(entity, lastMessage)
                 }
+            }
+            .onEach { conversations ->
+                android.util.Log.d("ConversationRepo", "Mapped to ${conversations.size} domain conversations")
             }
     }
     
