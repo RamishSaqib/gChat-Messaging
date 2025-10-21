@@ -40,7 +40,12 @@ object ConversationMapper {
             updatedAt = entity.updatedAt,
             createdAt = entity.createdAt,
             autoTranslateEnabled = entity.autoTranslateEnabled,
-            creatorId = entity.creatorId
+            creatorId = entity.creatorId,
+            deletedBy = try {
+                json.decodeFromString(entity.deletedBy)
+            } catch (e: Exception) {
+                emptyList()
+            }
         )
     }
     
@@ -61,7 +66,8 @@ object ConversationMapper {
             updatedAt = domain.updatedAt,
             createdAt = domain.createdAt,
             autoTranslateEnabled = domain.autoTranslateEnabled,
-            creatorId = domain.creatorId
+            creatorId = domain.creatorId,
+            deletedBy = json.encodeToString(domain.deletedBy)
         )
     }
     
@@ -91,6 +97,8 @@ object ConversationMapper {
                 }
             }
             
+            val deletedByList = document.get("deletedBy") as? List<*>
+            
             Conversation(
                 id = document.id,
                 type = ConversationType.valueOf(document.getString("type") ?: "ONE_ON_ONE"),
@@ -106,7 +114,8 @@ object ConversationMapper {
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
                 createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
                 autoTranslateEnabled = false, // User preference, stored locally
-                creatorId = document.getString("creatorId")
+                creatorId = document.getString("creatorId"),
+                deletedBy = deletedByList?.mapNotNull { it as? String } ?: emptyList()
             )
         } catch (e: Exception) {
             null
@@ -133,7 +142,8 @@ object ConversationMapper {
             "lastMessage" to lastMessageMap,
             "updatedAt" to conversation.updatedAt,
             "createdAt" to conversation.createdAt,
-            "creatorId" to conversation.creatorId
+            "creatorId" to conversation.creatorId,
+            "deletedBy" to conversation.deletedBy
         )
     }
 }

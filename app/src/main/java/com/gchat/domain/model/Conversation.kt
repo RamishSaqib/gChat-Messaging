@@ -18,7 +18,8 @@ data class Conversation(
     val updatedAt: Long = System.currentTimeMillis(),
     val createdAt: Long = System.currentTimeMillis(),
     val autoTranslateEnabled: Boolean = false,
-    val creatorId: String? = null // ID of user who created the conversation (for initial message flow)
+    val creatorId: String? = null, // ID of user who created the conversation (for initial message flow)
+    val deletedBy: List<String> = emptyList() // User IDs who deleted this conversation
 ) {
     /**
      * Get display name for the conversation

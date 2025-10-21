@@ -21,7 +21,7 @@ import com.gchat.data.local.entity.UserEntity
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 5, // v5: Added creatorId field to ConversationEntity
+    version = 6, // v6: Added deletedBy field to ConversationEntity for per-user deletion
     exportSchema = false
 )
 @TypeConverters(Converters::class)

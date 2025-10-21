@@ -91,6 +91,13 @@ class MessagingService : FirebaseMessagingService() {
         isGroupChat: Boolean,
         groupName: String?
     ) {
+        // Don't show notification for own messages
+        val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId == senderId) {
+            android.util.Log.d("MessagingService", "Skipping notification for own message")
+            return
+        }
+        
         // Create intent to open conversation
         val intent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK

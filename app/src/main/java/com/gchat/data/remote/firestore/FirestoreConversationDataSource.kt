@@ -175,7 +175,8 @@ class FirestoreConversationDataSource @Inject constructor(
     }
     
     /**
-     * Remove a user from a conversation. If they're the last participant, delete the entire conversation.
+     * Mark conversation as deleted for a user. Doesn't remove from participants.
+     * Allows for per-user deletion and restoration when new messages arrive.
      */
     suspend fun removeUserFromConversation(conversationId: String, userId: String): Result<Unit> {
         return try {
@@ -188,26 +189,13 @@ class FirestoreConversationDataSource @Inject constructor(
                 return Result.success(Unit)
             }
             
-            val conversation = ConversationMapper.fromFirestore(snapshot)
-            if (conversation == null) {
-                return Result.failure(Exception("Failed to parse conversation"))
-            }
-            
-            val updatedParticipants = conversation.participants.filter { it != userId }
-            
-            if (updatedParticipants.isEmpty()) {
-                // No more participants, delete the entire conversation
-                android.util.Log.d("FirestoreConversation", "Deleting conversation $conversationId (no more participants)")
-                docRef.delete().await()
-            } else {
-                // Remove user from participants array
-                android.util.Log.d("FirestoreConversation", "Removing user $userId from conversation $conversationId")
-                docRef.update("participants", updatedParticipants).await()
-            }
+            // Add user to deletedBy array without removing from participants
+            android.util.Log.d("FirestoreConversation", "Adding user $userId to deletedBy for conversation $conversationId")
+            docRef.update("deletedBy", com.google.firebase.firestore.FieldValue.arrayUnion(userId)).await()
             
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.w("FirestoreConversation", "Failed to remove user from conversation: ${e.message}")
+            android.util.Log.w("FirestoreConversation", "Failed to mark conversation as deleted: ${e.message}")
             // Don't fail if the document doesn't exist
             if (e.message?.contains("NOT_FOUND") == true || e.message?.contains("PERMISSION_DENIED") == true) {
                 Result.success(Unit)

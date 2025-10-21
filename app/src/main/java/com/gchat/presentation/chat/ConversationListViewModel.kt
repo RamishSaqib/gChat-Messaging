@@ -48,9 +48,11 @@ class ConversationListViewModel @Inject constructor(
             val currentUserId = authRepository.getCurrentUserId() ?: ""
             android.util.Log.d("ConversationListVM", "UseCase emitted ${conversations.size} conversations")
             
-            // Filter: only show conversations with messages OR where current user is the creator
+            // Filter: only show conversations that are not deleted by current user
+            // AND (have messages OR current user is the creator)
             val visibleConversations = conversations.filter { conversation ->
-                conversation.lastMessage != null || conversation.creatorId == currentUserId
+                val isDeleted = conversation.deletedBy.contains(currentUserId)
+                !isDeleted && (conversation.lastMessage != null || conversation.creatorId == currentUserId)
             }
             android.util.Log.d("ConversationListVM", "Filtered to ${visibleConversations.size} visible conversations")
             

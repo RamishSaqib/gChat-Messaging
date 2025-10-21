@@ -209,6 +209,25 @@ class ConversationRepositoryImpl @Inject constructor(
         timestamp: Long
     ): Result<Unit> {
         return try {
+            // Check if conversation has any deleted users - if so, clear deletedBy when new message arrives
+            val conversation = conversationDao.getConversationById(conversationId)
+            if (conversation != null) {
+                val deletedByList = try {
+                    kotlinx.serialization.json.Json.decodeFromString<List<String>>(conversation.deletedBy)
+                } catch (e: Exception) {
+                    emptyList()
+                }
+                
+                if (deletedByList.isNotEmpty()) {
+                    android.util.Log.d("ConversationRepo", "Clearing deletedBy for conversation $conversationId due to new message")
+                    // Clear deletedBy in Firestore - conversation reappears for users who deleted it
+                    firestoreConversationDataSource.updateConversation(
+                        conversationId,
+                        mapOf("deletedBy" to emptyList<String>())
+                    )
+                }
+            }
+            
             // Update locally
             conversationDao.updateLastMessage(
                 conversationId,

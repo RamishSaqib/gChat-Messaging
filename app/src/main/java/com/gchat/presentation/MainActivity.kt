@@ -57,6 +57,8 @@ class MainActivity : ComponentActivity() {
                                 navController.navigate(Screen.ConversationList.route) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
+                                // Wait for conversation list screen to load before navigating to chat
+                                kotlinx.coroutines.delay(300)
                                 navController.navigate(Screen.Chat.createRoute(conversationId))
                                 
                                 // Clear the intent flags so we don't navigate again
