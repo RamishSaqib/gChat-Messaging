@@ -110,7 +110,7 @@ fun DMInfoScreen(
             
             // User Profile Picture
             ProfilePicture(
-                imageUrl = otherUser?.profilePictureUrl,
+                url = otherUser?.profilePictureUrl,
                 displayName = otherUser?.displayName ?: "User",
                 size = 120.dp,
                 showOnlineIndicator = true,

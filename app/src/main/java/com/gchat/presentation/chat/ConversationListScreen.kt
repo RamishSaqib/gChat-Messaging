@@ -70,7 +70,7 @@ fun ConversationListScreen(
                     // Profile picture button
                     IconButton(onClick = onProfileClick) {
                         ProfilePicture(
-                            imageUrl = currentUser?.profilePictureUrl,
+                            url = currentUser?.profilePictureUrl,
                             displayName = currentUser?.displayName ?: "User",
                             size = 32.dp,
                             showOnlineIndicator = false

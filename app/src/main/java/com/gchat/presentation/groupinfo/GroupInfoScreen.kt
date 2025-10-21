@@ -132,7 +132,7 @@ fun GroupInfoScreen(
                             )
                         } else {
                             ProfilePicture(
-                                imageUrl = conversation?.iconUrl,
+                                url = conversation?.iconUrl,
                                 displayName = groupName,
                                 size = 120.dp,
                                 showOnlineIndicator = false
@@ -381,7 +381,7 @@ fun MemberItem(
         },
         leadingContent = {
             ProfilePicture(
-                imageUrl = member.profilePictureUrl,
+                url = member.profilePictureUrl,
                 displayName = member.displayName,
                 size = 40.dp,
                 showOnlineIndicator = true,
