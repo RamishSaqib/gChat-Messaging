@@ -1,5 +1,6 @@
 package com.gchat.presentation.chat
 
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -8,6 +9,7 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -16,6 +18,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
+import com.gchat.domain.model.MessageType
+import com.gchat.presentation.components.ImageMessageBubble
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -82,7 +86,10 @@ fun ChatScreen(
                 items(messages, key = { it.id }) { message ->
                     MessageBubble(
                         message = message,
-                        isOwnMessage = message.senderId == currentUserId
+                        isOwnMessage = message.senderId == currentUserId,
+                        onImageClick = { imageUrl ->
+                            // Navigate to image viewer (will add this shortly)
+                        }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                 }
@@ -94,45 +101,56 @@ fun ChatScreen(
 @Composable
 fun MessageBubble(
     message: Message,
-    isOwnMessage: Boolean
+    isOwnMessage: Boolean,
+    onImageClick: (String) -> Unit
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (isOwnMessage) Arrangement.End else Arrangement.Start
     ) {
-        Surface(
-            shape = RoundedCornerShape(16.dp),
-            color = if (isOwnMessage) {
-                MaterialTheme.colorScheme.primary
-            } else {
-                MaterialTheme.colorScheme.secondaryContainer
-            },
-            modifier = Modifier.widthIn(max = 280.dp)
-        ) {
-            Column(
-                modifier = Modifier.padding(12.dp)
+        // Use ImageMessageBubble for image messages
+        if (message.type == MessageType.IMAGE && message.mediaUrl != null) {
+            ImageMessageBubble(
+                message = message,
+                isCurrentUser = isOwnMessage,
+                onImageClick = onImageClick
+            )
+        } else {
+            // Regular text message bubble
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = if (isOwnMessage) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.secondaryContainer
+                },
+                modifier = Modifier.widthIn(max = 280.dp)
             ) {
-                Text(
-                    text = message.text ?: "",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = if (isOwnMessage) {
-                        MaterialTheme.colorScheme.onPrimary
-                    } else {
-                        MaterialTheme.colorScheme.onSecondaryContainer
-                    }
-                )
-                
-                Spacer(modifier = Modifier.height(4.dp))
-                
-                Text(
-                    text = formatTime(message.timestamp),
-                    style = MaterialTheme.typography.labelSmall,
-                    color = if (isOwnMessage) {
-                        MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                    } else {
-                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                    }
-                )
+                Column(
+                    modifier = Modifier.padding(12.dp)
+                ) {
+                    Text(
+                        text = message.text ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = if (isOwnMessage) {
+                            MaterialTheme.colorScheme.onPrimary
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer
+                        }
+                    )
+                    
+                    Spacer(modifier = Modifier.height(4.dp))
+                    
+                    Text(
+                        text = formatTime(message.timestamp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = if (isOwnMessage) {
+                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                        } else {
+                            MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        }
+                    )
+                }
             }
         }
     }
