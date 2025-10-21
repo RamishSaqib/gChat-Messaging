@@ -1,15 +1,65 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #7 - Push Notifications | **Status:** 🎉 MVP Complete!
+> **Last Merged:** PR #6 - Read Receipts | **Status:** 🎉 MVP Complete + Read Receipts!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 7 (Merged to main)  
+**Completed PRs:** 8 (Merged to main)  
 **Current PR:** None (MVP Phase Complete!)  
 **Current Sprint:** MVP Complete ✅  
-**Next Up:** PR #6 (Read Receipts - Optional) → AI Translation Phase
+**Next Up:** AI Translation Phase (Core Feature)
+
+---
+
+## ✅ PR #6: Read Receipts (MERGED ✅)
+
+**Goal:** Implement read receipts with checkmarks for 1-on-1 chats and profile avatars for group chats
+
+**Status:** ✅ Merged to `main`
+
+**Priority:** High (User Experience Enhancement)
+
+**Time Spent:** ~1.5 hours
+
+### Feature Tasks
+- [x] Update Message model to include readBy map (userId → timestamp)
+- [x] Add helper functions: isReadBy(), getReadTimestamp(), isReadByAll(), isReadByAny()
+- [x] Update MessageEntity and mapper for read status persistence
+- [x] Create MarkMessageAsReadUseCase for marking messages as read
+- [x] Update ChatViewModel to mark messages as read when viewed
+- [x] Implement markAllMessagesAsRead() to auto-mark on screen open
+
+### UI Components
+- [x] Create ReadReceiptCheckmarks composable for 1-on-1 chats
+  - [x] Single gray checkmark (✓) for sent but not read
+  - [x] Double white checkmarks (✓✓) for read
+- [x] Create ReadByAvatars composable for group chats
+  - [x] Show stacked profile picture bubbles
+  - [x] Limit to 3 visible avatars with "+X" indicator
+  - [x] Position at bottom-right next to timestamp
+- [x] Update MessageBubble to conditionally show checkmarks vs avatars
+- [x] Exclude sender from read indicators
+
+### Data Layer
+- [x] Update Firestore rules to allow read status updates
+- [x] Implement Firestore transaction for atomic read status updates
+- [x] Support both new map format and old list format (backward compatible)
+- [x] Room database support for readBy map serialization
+
+### Bug Fixes
+- [x] Fix compilation errors from readBy type change (List → Map)
+- [x] Update ConversationMapper to use emptyMap() instead of emptyList()
+- [x] Update ConversationRepositoryImpl for all lastMessage instances
+- [x] Consolidate duplicate use case files (removed plural version)
+- [x] Change read checkmark color to white for better contrast
+
+### Testing Checklist
+- [x] Test 1-on-1 read receipts (checkmarks change from gray to white)
+- [x] Test group chat read receipts (avatars appear as users read)
+- [x] Verify real-time updates across devices
+- [x] Test auto-mark as read when opening conversation
 
 ---
 

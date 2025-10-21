@@ -6,6 +6,50 @@
 
 ## 📋 Pull Request History
 
+### PR #6: Read Receipts
+**Status:** ✅ Merged to `main`  
+**Date:** October 21, 2025  
+**Time Spent:** ~1.5 hours
+
+**Features Implemented:**
+- ✅ Read receipts for 1-on-1 chats (checkmarks)
+- ✅ Read receipts for group chats (profile picture avatars)
+- ✅ Auto-mark messages as read when conversation is opened
+- ✅ Real-time read status updates across devices
+- ✅ Timestamp tracking for when each user reads a message
+
+**UI Design:**
+- **1-on-1 Chats:**
+  - Single gray checkmark (✓) - Message sent but not read
+  - Double white checkmarks (✓✓) - Message read by recipient
+- **Group Chats:**
+  - Small profile picture avatars of users who read the message
+  - Stacked avatars (max 3 visible, "+X" for additional readers)
+  - Positioned at bottom-right of message bubble next to timestamp
+  - Sender's avatar excluded from read indicators
+
+**Technical Implementation:**
+- Updated `Message.readBy` from `List<String>` to `Map<String, Long>` (userId → readTimestamp)
+- Created `MarkMessageAsReadUseCase` for marking messages as read
+- Added helper functions: `isReadBy()`, `getReadTimestamp()`, `isReadByAll()`, `isReadByAny()`
+- Created `ReadReceiptCheckmarks` composable for 1-on-1 chats
+- Created `ReadByAvatars` composable for group chats (stacked profile pictures)
+- Updated `MessageBubble` to conditionally show checkmarks vs avatars based on chat type
+- `ChatViewModel.markAllMessagesAsRead()` auto-marks messages when screen is viewed
+- Firestore and Room database support for read status persistence
+- Backward compatible with old list format
+
+**Bugs Fixed:**
+- Fixed compilation errors from `readBy` type change (List → Map)
+- Consolidated duplicate use case files (removed plural version)
+
+**Testing Notes:**
+- Send message from Device A, open chat on Device B to see read status change
+- Group chats show stacked avatars of all users who have read the message
+- Read status updates in real-time via Firestore listeners
+
+---
+
 ### PR #7: Push Notifications (FCM)
 **Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  
