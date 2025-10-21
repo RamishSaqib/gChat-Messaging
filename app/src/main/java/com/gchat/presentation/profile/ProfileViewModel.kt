@@ -50,14 +50,19 @@ class ProfileViewModel @Inject constructor(
     private fun loadUserProfile() {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId()
+            android.util.Log.d("ProfileViewModel", "Loading profile for user: $userId")
             if (userId != null) {
                 userRepository.getUserFlow(userId).collect { user ->
+                    android.util.Log.d("ProfileViewModel", "User data collected: ${user?.displayName}, email: ${user?.email}")
                     _currentUser.value = user
                     user?.let {
                         _displayName.value = it.displayName
                         _profilePictureUrl.value = it.profilePictureUrl
+                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}")
                     }
                 }
+            } else {
+                android.util.Log.e("ProfileViewModel", "No user ID found!")
             }
         }
     }
