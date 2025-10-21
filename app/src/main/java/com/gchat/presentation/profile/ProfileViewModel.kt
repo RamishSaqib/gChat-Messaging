@@ -72,8 +72,8 @@ class ProfileViewModel @Inject constructor(
             
             _uploadProgress.value = 0f
             
-            // Upload image to Firebase Storage
-            val storagePath = "profile_pictures/${userId}_${System.currentTimeMillis()}.jpg"
+            // Upload image to Firebase Storage (must match storage rules path structure)
+            val storagePath = "profile_pictures/${userId}/${System.currentTimeMillis()}.jpg"
             mediaRepository.uploadImage(uri, storagePath).fold(
                 onSuccess = { downloadUrl ->
                     _profilePictureUrl.value = downloadUrl
