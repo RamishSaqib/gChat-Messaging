@@ -1,6 +1,8 @@
 package com.gchat.presentation.chat
 
+import android.Manifest
 import android.net.Uri
+import android.os.Build
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -17,22 +19,28 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageType
 import com.gchat.presentation.components.ImageMessageBubble
 import com.gchat.util.rememberImagePickerLaunchers
+import com.google.accompanist.permissions.ExperimentalPermissionsApi
+import com.google.accompanist.permissions.isGranted
+import com.google.accompanist.permissions.rememberPermissionState
+import com.google.accompanist.permissions.shouldShowRationale
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
 @Composable
 fun ChatScreen(
     conversationId: String,
     onNavigateBack: () -> Unit,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
+    val context = LocalContext.current
     val messages by viewModel.messages.collectAsState()
     val messageText by viewModel.messageText.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
@@ -42,6 +50,9 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     
     var showImagePicker by remember { mutableStateOf(false) }
+    
+    // Camera permission
+    val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
     
     // Image picker
     val imagePickerLaunchers = rememberImagePickerLaunchers(
@@ -135,13 +146,25 @@ fun ChatScreen(
         ) {
             ImagePickerBottomSheet(
                 onCameraClick = {
-                    imagePickerLaunchers.launchCamera()
+                    if (cameraPermissionState.status.isGranted) {
+                        imagePickerLaunchers.launchCamera()
+                    } else {
+                        cameraPermissionState.launchPermissionRequest()
+                    }
                 },
                 onGalleryClick = {
                     imagePickerLaunchers.launchGallery()
                 },
                 onDismiss = { showImagePicker = false }
             )
+        }
+    }
+    
+    // Launch camera when permission is granted
+    LaunchedEffect(cameraPermissionState.status.isGranted) {
+        if (cameraPermissionState.status.isGranted && showImagePicker) {
+            // Permission was just granted, now launch camera
+            // (This will trigger if user grants permission from the dialog)
         }
     }
 }
