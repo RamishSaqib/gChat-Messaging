@@ -26,6 +26,7 @@ data class ConversationEntity(
     val unreadCount: Int,
     val updatedAt: Long,
     val createdAt: Long,
-    val autoTranslateEnabled: Boolean
+    val autoTranslateEnabled: Boolean,
+    val creatorId: String? = null // ID of user who created the conversation
 )
 

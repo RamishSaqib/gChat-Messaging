@@ -39,7 +39,8 @@ object ConversationMapper {
             unreadCount = entity.unreadCount,
             updatedAt = entity.updatedAt,
             createdAt = entity.createdAt,
-            autoTranslateEnabled = entity.autoTranslateEnabled
+            autoTranslateEnabled = entity.autoTranslateEnabled,
+            creatorId = entity.creatorId
         )
     }
     
@@ -59,7 +60,8 @@ object ConversationMapper {
             unreadCount = domain.unreadCount,
             updatedAt = domain.updatedAt,
             createdAt = domain.createdAt,
-            autoTranslateEnabled = domain.autoTranslateEnabled
+            autoTranslateEnabled = domain.autoTranslateEnabled,
+            creatorId = domain.creatorId
         )
     }
     
@@ -103,7 +105,8 @@ object ConversationMapper {
                 unreadCount = 0, // Calculated client-side
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
                 createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
-                autoTranslateEnabled = false // User preference, stored locally
+                autoTranslateEnabled = false, // User preference, stored locally
+                creatorId = document.getString("creatorId")
             )
         } catch (e: Exception) {
             null
@@ -129,7 +132,8 @@ object ConversationMapper {
             "nicknames" to conversation.nicknames,
             "lastMessage" to lastMessageMap,
             "updatedAt" to conversation.updatedAt,
-            "createdAt" to conversation.createdAt
+            "createdAt" to conversation.createdAt,
+            "creatorId" to conversation.creatorId
         )
     }
 }

@@ -21,7 +21,7 @@ import com.gchat.data.local.entity.UserEntity
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 4, // v4: Added nicknames field to ConversationEntity
+    version = 5, // v5: Added creatorId field to ConversationEntity
     exportSchema = false
 )
 @TypeConverters(Converters::class)

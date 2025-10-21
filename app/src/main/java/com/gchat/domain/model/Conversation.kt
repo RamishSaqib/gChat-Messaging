@@ -17,7 +17,8 @@ data class Conversation(
     val unreadCount: Int = 0,
     val updatedAt: Long = System.currentTimeMillis(),
     val createdAt: Long = System.currentTimeMillis(),
-    val autoTranslateEnabled: Boolean = false
+    val autoTranslateEnabled: Boolean = false,
+    val creatorId: String? = null // ID of user who created the conversation (for initial message flow)
 ) {
     /**
      * Get display name for the conversation

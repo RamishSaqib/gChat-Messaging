@@ -279,13 +279,15 @@ class ConversationRepositoryImpl @Inject constructor(
                         conversationDao.insert(ConversationMapper.toEntity(existingConversation))
                         Result.success(existingConversation)
                     } else {
-                        // Create new conversation
+                        // Create new conversation with both participants but mark creator
+                        // Conversation will only be visible to receiver after first message
                         val newConversation = Conversation(
                             id = UUID.randomUUID().toString(),
                             type = ConversationType.ONE_ON_ONE,
-                            participants = listOf(currentUserId, otherUserId),
+                            participants = listOf(currentUserId, otherUserId), // Both users
                             createdAt = System.currentTimeMillis(),
-                            updatedAt = System.currentTimeMillis()
+                            updatedAt = System.currentTimeMillis(),
+                            creatorId = currentUserId // Mark who created it
                         )
                         
                         createConversation(newConversation)

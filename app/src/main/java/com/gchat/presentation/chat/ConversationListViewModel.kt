@@ -48,8 +48,14 @@ class ConversationListViewModel @Inject constructor(
             val currentUserId = authRepository.getCurrentUserId() ?: ""
             android.util.Log.d("ConversationListVM", "UseCase emitted ${conversations.size} conversations")
             
+            // Filter: only show conversations with messages OR where current user is the creator
+            val visibleConversations = conversations.filter { conversation ->
+                conversation.lastMessage != null || conversation.creatorId == currentUserId
+            }
+            android.util.Log.d("ConversationListVM", "Filtered to ${visibleConversations.size} visible conversations")
+            
             // Create a combined flow that updates when any user status changes
-            val conversationFlows = conversations.map { conversation ->
+            val conversationFlows = visibleConversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
                 val lastMessageSenderId = conversation.lastMessage?.senderId
                 
