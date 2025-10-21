@@ -1,0 +1,59 @@
+rules_version = '2';
+
+service firebase.storage {
+  match /b/{bucket}/o {
+    
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(userId) {
+      return request.auth.uid == userId;
+    }
+    
+    function isImage() {
+      return request.resource.contentType.matches('image/.*');
+    }
+    
+    function isValidSize() {
+      // Max 5MB for images
+      return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    // Profile pictures
+    match /profile_pictures/{userId}/{fileName} {
+      // Users can read any profile picture
+      allow read: if isAuthenticated();
+      
+      // Users can only upload their own profile picture
+      allow write: if isAuthenticated() && 
+                      isOwner(userId) && 
+                      isImage() && 
+                      isValidSize();
+      
+      // Users can delete their own profile picture
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+    
+    // Message images
+    match /message_images/{conversationId}/{messageId}/{fileName} {
+      // Users can read message images (conversation participants checked in app)
+      allow read: if isAuthenticated();
+      
+      // Users can upload message images
+      allow write: if isAuthenticated() && 
+                      isImage() && 
+                      isValidSize();
+      
+      // Users can delete their own message images
+      allow delete: if isAuthenticated();
+    }
+    
+    // Deny all other access
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+

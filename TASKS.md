@@ -1,18 +1,87 @@
 # gChat - Development Tasks
 
-> **Current PR:** PR #3 Testing & Merge | **Last Merged:** PR #2 - Logout Functionality
+> **Current PR:** None - Ready for PR #5 | **Last Merged:** PR #4 - Media Sharing & Core Fixes
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 3 (PR #3 ready for merge)  
-**Current Sprint:** Feature Expansion  
-**Next Up:** Media Sharing (PR #4) or Group Chat (PR #5)
+**Completed PRs:** 4  
+**Current Sprint:** Planning Next Features  
+**Next Up:** Complete Image Upload UI (PR #4.5) or Group Chat (PR #5) or Push Notifications (PR #6)
 
 ---
 
-## ✅ PR #3: New Conversation Flow (COMPLETED)
+## ✅ PR #4: Media Sharing & Core Messaging Fixes (COMPLETED)
+
+**Goal:** Enable image sharing infrastructure and fix critical messaging bugs
+
+**Status:** ✅ Complete - Pushed to GitHub
+
+**Summary:**  
+Fixed critical CASCADE delete bug that was deleting all messages, implemented media infrastructure (Firebase Storage, image compression, ProfilePicture component, ImageViewer), and improved UX (message ordering, preview text, bubble colors). Image upload UI deferred to future PR.
+
+**Time Spent:** ~6 hours (4 hours features + 2 hours debugging)
+
+### Backend Tasks
+- [x] Add `mediaUrl` and `mediaType` fields to Message model (already existed)
+- [x] Update Message entity and mapper for media support (already existed)
+- [x] Create `MediaRepository` interface
+- [x] Implement `MediaRepositoryImpl` with Firebase Storage
+- [x] Add Firebase Storage upload/download functions
+- [x] Update Firestore security rules for Storage access
+- [x] Add image compression utility (max 1920px, <500KB)
+- [x] Update User model mapper for profile picture URLs (already existed)
+
+### Critical Bug Fixes (Completed)
+- [x] **CRITICAL:** Fixed CASCADE delete removing all messages when conversation updated
+- [x] Fixed message ordering (DESC → ASC for proper chat flow)
+- [x] Fixed Firestore rules for optional text field in messages
+- [x] Fixed message preview showing "No messages yet" 
+- [x] Fixed received message bubble colors (too light)
+- [x] Fixed StateFlow timeout causing messages to disappear
+- [x] Database migration v1 → v2 (removed foreign key constraint)
+
+### UI Tasks - Image Picker & Upload
+- [x] Add image picker dependency (Coil, Accompanist Permissions - already existed)
+- [x] Create `ImagePickerManager` for camera/gallery selection
+- [x] Request runtime permissions (CAMERA, READ_MEDIA_IMAGES)
+- [x] Add image compression before upload
+- [ ] **DEFERRED:** Create image picker bottom sheet UI
+- [ ] **DEFERRED:** Wire image picker to ChatScreen
+- [ ] **DEFERRED:** Show upload progress indicator
+- [ ] **DEFERRED:** Handle upload errors gracefully
+
+### UI Tasks - Profile Pictures
+- [x] Display profile pictures in conversation list with ProfilePicture composable
+- [x] Add placeholder/initial letter fallback for missing pictures
+- [x] Implement image caching with Coil
+- [x] Show online status indicator (UI only, backend not implemented)
+- [ ] **FUTURE:** Add profile picture upload to settings/profile screen
+- [ ] **FUTURE:** Display profile pictures in chat screen
+
+### UI Tasks - Message Images
+- [x] Update Message model UI to support image messages
+- [x] Create ImageMessageBubble component
+- [x] Create fullscreen ImageViewerScreen with pinch-to-zoom
+- [x] Add image viewer to navigation
+- [x] Show loading skeleton while image loads
+- [ ] **DEFERRED:** Add image attachment button to chat input
+- [ ] **DEFERRED:** Display image thumbnails in message list
+- [ ] **DEFERRED:** Handle image selection → compression → upload → send flow
+
+### Testing (Manual)
+- [x] Test message persistence (no disappearing messages)
+- [x] Test message ordering (oldest to newest)
+- [x] Test message preview in conversation list
+- [x] Test received message bubble colors
+- [ ] **DEFERRED:** Test camera image capture
+- [ ] **DEFERRED:** Test gallery image selection
+- [ ] **DEFERRED:** Test image upload and display
+
+---
+
+## ✅ PR #3: New Conversation Flow (MERGED)
 
 **Goal:** Enable users to start new conversations with other users
 

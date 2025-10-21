@@ -14,11 +14,11 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Conversation
+import com.gchat.presentation.components.ProfilePicture
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -30,7 +30,7 @@ fun ConversationListScreen(
     onLogout: () -> Unit,
     viewModel: ConversationListViewModel = hiltViewModel()
 ) {
-    val conversations by viewModel.conversations.collectAsState()
+    val conversationsWithUsers by viewModel.conversationsWithUsers.collectAsState()
     
     Scaffold(
         topBar = {
@@ -61,7 +61,7 @@ fun ConversationListScreen(
             }
         }
     ) { paddingValues ->
-        if (conversations.isEmpty()) {
+        if (conversationsWithUsers.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -88,10 +88,10 @@ fun ConversationListScreen(
                     .fillMaxSize()
                     .padding(paddingValues)
             ) {
-                items(conversations, key = { it.id }) { conversation ->
+                items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
                     ConversationItem(
-                        conversation = conversation,
-                        onClick = { onConversationClick(conversation.id) }
+                        conversationWithUser = conversationWithUser,
+                        onClick = { onConversationClick(conversationWithUser.conversation.id) }
                     )
                     Divider()
                 }
@@ -102,9 +102,25 @@ fun ConversationListScreen(
 
 @Composable
 fun ConversationItem(
-    conversation: Conversation,
+    conversationWithUser: ConversationWithUser,
     onClick: () -> Unit
 ) {
+    val conversation = conversationWithUser.conversation
+    val otherUser = conversationWithUser.otherUser
+    
+    // Display name: use other user's name for 1-on-1, group name for groups
+    val displayName = when {
+        otherUser != null -> otherUser.displayName
+        conversation.name != null -> conversation.name
+        else -> "Unknown User"
+    }
+    
+    // Profile picture URL: use other user's picture for 1-on-1, group icon for groups
+    val profilePictureUrl = when {
+        otherUser != null -> otherUser.profilePictureUrl
+        else -> conversation.iconUrl
+    }
+    
     Row(
         modifier = Modifier
             .fillMaxWidth()
@@ -112,21 +128,14 @@ fun ConversationItem(
             .padding(16.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // Placeholder for profile picture
-        Surface(
-            modifier = Modifier
-                .size(56.dp)
-                .clip(CircleShape),
-            color = MaterialTheme.colorScheme.primaryContainer
-        ) {
-            Box(contentAlignment = Alignment.Center) {
-                Text(
-                    text = conversation.name?.firstOrNull()?.uppercase() ?: "C",
-                    style = MaterialTheme.typography.titleLarge,
-                    color = MaterialTheme.colorScheme.onPrimaryContainer
-                )
-            }
-        }
+        // Profile picture with fallback to initials
+        ProfilePicture(
+            url = profilePictureUrl,
+            displayName = displayName,
+            size = 56.dp,
+            showOnlineIndicator = true,
+            isOnline = otherUser?.isOnline ?: false
+        )
         
         Spacer(modifier = Modifier.width(16.dp))
         
@@ -137,7 +146,7 @@ fun ConversationItem(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = conversation.name ?: "Conversation",
+                    text = displayName,
                     style = MaterialTheme.typography.titleMedium,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -154,7 +163,11 @@ fun ConversationItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = conversation.lastMessage?.text ?: "No messages yet",
+                text = when {
+                    conversation.lastMessage?.text != null -> conversation.lastMessage.text
+                    conversation.lastMessage?.mediaUrl != null -> "📷 Photo"
+                    else -> "No messages yet"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

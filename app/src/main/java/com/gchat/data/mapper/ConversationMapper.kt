@@ -56,13 +56,32 @@ object ConversationMapper {
             val participantsList = document.get("participants") as? List<*>
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
             
+            // Parse last message if it exists
+            val lastMessage = lastMessageMap?.let {
+                try {
+                    com.gchat.domain.model.Message(
+                        id = it["id"] as? String ?: "",
+                        conversationId = document.id,
+                        senderId = it["senderId"] as? String ?: "",
+                        type = com.gchat.domain.model.MessageType.TEXT, // Default type for preview
+                        text = it["text"] as? String,
+                        mediaUrl = null,
+                        timestamp = (it["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
+                        status = com.gchat.domain.model.MessageStatus.SENT,
+                        readBy = emptyList()
+                    )
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            
             Conversation(
                 id = document.id,
                 type = ConversationType.valueOf(document.getString("type") ?: "ONE_ON_ONE"),
                 participants = participantsList?.mapNotNull { it as? String } ?: emptyList(),
                 name = document.getString("name"),
                 iconUrl = document.getString("iconUrl"),
-                lastMessage = null, // Populated separately
+                lastMessage = lastMessage,
                 unreadCount = 0, // Calculated client-side
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
                 createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),

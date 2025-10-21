@@ -29,6 +29,7 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val messageText by viewModel.messageText.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+    val otherUserName by viewModel.otherUserName.collectAsState()
     val listState = rememberLazyListState()
     
     // Auto-scroll to bottom when new messages arrive
@@ -41,7 +42,7 @@ fun ChatScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Chat") },
+                title = { Text(otherUserName) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, "Back")
@@ -104,7 +105,7 @@ fun MessageBubble(
             color = if (isOwnMessage) {
                 MaterialTheme.colorScheme.primary
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.secondaryContainer
             },
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
@@ -117,7 +118,7 @@ fun MessageBubble(
                     color = if (isOwnMessage) {
                         MaterialTheme.colorScheme.onPrimary
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        MaterialTheme.colorScheme.onSecondaryContainer
                     }
                 )
                 
@@ -129,7 +130,7 @@ fun MessageBubble(
                     color = if (isOwnMessage) {
                         MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                     }
                 )
             }
