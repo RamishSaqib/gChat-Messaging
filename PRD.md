@@ -7,9 +7,9 @@
 ## 📋 Pull Request History
 
 ### PR #8: Typing Indicators
-**Status:** 🚧 In Progress (feature/pr8-typing-indicators)  
+**Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  
-**Time Spent:** ~1 hour
+**Time Spent:** ~1.5 hours
 
 **Features Implemented:**
 - ✅ Real-time typing indicators in 1-on-1 and group chats
@@ -49,7 +49,8 @@
 8. On send message → clear typing status immediately
 
 **Bugs Fixed:**
-- None (new feature)
+- Fixed typing indicators not showing in 1-on-1 chats (populated participantUsers for all chats, not just groups)
+- Fixed race condition where typing indicators wouldn't update if user data loaded after typing started (changed from `.map()` to `combine()` for reactive updates)
 
 **Testing Notes:**
 - Open chat on two devices

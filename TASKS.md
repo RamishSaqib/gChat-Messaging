@@ -1,29 +1,29 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #6 - Read Receipts | **Status:** 🚧 Working on PR #8 - Typing Indicators
+> **Last Merged:** PR #8 - Typing Indicators | **Status:** 🎉 All MVP + UX Enhancements Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 8 (Merged to main)  
-**Current PR:** PR #8 - Typing Indicators (In Progress)  
-**Current Sprint:** Post-MVP Enhancements  
+**Completed PRs:** 9 (Merged to main)  
+**Current PR:** None  
+**Current Sprint:** MVP + UX Enhancements Complete ✅  
 **Next Up:** AI Translation Phase (Core Feature)
 
 ---
 
-## 🚧 PR #8: Typing Indicators (IN PROGRESS)
+## ✅ PR #8: Typing Indicators (MERGED ✅)
 
 **Goal:** Implement real-time typing indicators showing who is typing in 1-on-1 and group chats
 
-**Branch:** `feature/pr8-typing-indicators`
+**Branch:** `feature/pr8-typing-indicators` → **Merged to `main`**
 
-**Status:** 🚧 In Progress - Implementation Complete, Testing Pending
+**Status:** ✅ Merged
 
 **Priority:** Medium (UX Enhancement)
 
-**Time Spent:** ~1 hour
+**Time Spent:** ~1.5 hours
 
 ### Feature Tasks
 - [x] Create TypingIndicator domain model (conversationId, userId, isTyping, timestamp)
@@ -59,12 +59,16 @@
 - [x] Efficient Firestore writes with debouncing
 
 ### Testing
-- [ ] Test typing indicator in 1-on-1 chat (Device A types, Device B sees indicator)
-- [ ] Test 3-second debounce (stop typing, indicator disappears after 3s)
-- [ ] Test immediate clear on send (send message, indicator disappears)
-- [ ] Test group chat with multiple typers (show all names)
-- [ ] Test typing indicator auto-scrolls to bottom
-- [ ] Verify Firestore writes are debounced (not excessive)
+- [x] Test typing indicator in 1-on-1 chat (Device A types, Device B sees indicator)
+- [x] Test 3-second debounce (stop typing, indicator disappears after 3s)
+- [x] Test immediate clear on send (send message, indicator disappears)
+- [x] Test group chat with multiple typers (show all names)
+- [x] Test typing indicator auto-scrolls to bottom
+- [x] Verify Firestore writes are debounced (not excessive)
+
+### Bugs Fixed During Development
+- [x] Fixed typing indicators not showing in 1-on-1 chats (populated participantUsers for all chats)
+- [x] Fixed race condition with `.map()` snapshot access (changed to `combine()` for reactive updates)
 
 ---
 
