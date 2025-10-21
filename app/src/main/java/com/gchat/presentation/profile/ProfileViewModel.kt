@@ -53,12 +53,12 @@ class ProfileViewModel @Inject constructor(
             android.util.Log.d("ProfileViewModel", "Loading profile for user: $userId")
             if (userId != null) {
                 userRepository.getUserFlow(userId).collect { user ->
-                    android.util.Log.d("ProfileViewModel", "User data collected: ${user?.displayName}, email: ${user?.email}")
+                    android.util.Log.d("ProfileViewModel", "User data collected: ${user?.displayName}, email: ${user?.email}, profilePictureUrl: ${user?.profilePictureUrl}")
                     _currentUser.value = user
                     user?.let {
                         _displayName.value = it.displayName
                         _profilePictureUrl.value = it.profilePictureUrl
-                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}")
+                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}, profilePictureUrl: ${it.profilePictureUrl}")
                     }
                 }
             } else {
