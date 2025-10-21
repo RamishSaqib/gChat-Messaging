@@ -228,6 +228,7 @@ fun ConversationListScreen(
                         
                         SwipeToDismiss(
                             state = dismissState,
+                            directions = setOf(DismissDirection.EndToStart),
                             background = {
                                 Box(
                                     modifier = Modifier
@@ -244,14 +245,14 @@ fun ConversationListScreen(
                                     )
                                 }
                             },
-                            directions = setOf(DismissDirection.EndToStart)
-                        ) {
-                            ConversationItem(
-                                conversationWithUser = conversationWithUser,
-                                currentUserId = viewModel.currentUser.value?.id,
-                                onClick = { onConversationClick(conversationWithUser.conversation.id) }
-                            )
-                        }
+                            dismissContent = {
+                                ConversationItem(
+                                    conversationWithUser = conversationWithUser,
+                                    currentUserId = viewModel.currentUser.value?.id,
+                                    onClick = { onConversationClick(conversationWithUser.conversation.id) }
+                                )
+                            }
+                        )
                     }
                 }
             }
