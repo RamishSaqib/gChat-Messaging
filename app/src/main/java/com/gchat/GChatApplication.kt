@@ -86,10 +86,18 @@ class GChatApplication : Application() {
     private suspend fun updateFcmToken(userId: String) {
         try {
             val token = FirebaseMessaging.getInstance().token.await()
-            userRepository.updateFcmToken(userId, token)
+            android.util.Log.d("GChatApp", "FCM Token retrieved: ${token.take(20)}...")
+            userRepository.updateFcmToken(userId, token).fold(
+                onSuccess = {
+                    android.util.Log.d("GChatApp", "FCM Token updated successfully in Firestore")
+                },
+                onFailure = { error ->
+                    android.util.Log.e("GChatApp", "Failed to save FCM token to Firestore: ${error.message}")
+                }
+            )
         } catch (e: Exception) {
             // Log error but don't crash
-            println("Failed to update FCM token: ${e.message}")
+            android.util.Log.e("GChatApp", "Failed to retrieve FCM token: ${e.message}", e)
         }
     }
 

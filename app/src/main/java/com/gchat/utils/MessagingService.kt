@@ -39,14 +39,23 @@ class MessagingService : FirebaseMessagingService() {
     override fun onNewToken(token: String) {
         super.onNewToken(token)
         
+        android.util.Log.d("MessagingService", "New FCM token received: ${token.take(20)}...")
+        
         // Update FCM token in Firestore using repository
-        val userId = auth.currentUser?.uid ?: return
+        val userId = auth.currentUser?.uid ?: run {
+            android.util.Log.w("MessagingService", "No user logged in, cannot save FCM token")
+            return
+        }
+        
+        android.util.Log.d("MessagingService", "Saving FCM token for user: $userId")
         
         serviceScope.launch {
             userRepository.updateFcmToken(userId, token)
+                .onSuccess {
+                    android.util.Log.d("MessagingService", "FCM token saved successfully")
+                }
                 .onFailure { e ->
-                    // Log error but don't crash
-                    println("Failed to update FCM token: ${e.message}")
+                    android.util.Log.e("MessagingService", "Failed to update FCM token: ${e.message}", e)
                 }
         }
     }
