@@ -10,6 +10,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
@@ -20,6 +22,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageType
 import com.gchat.presentation.components.ImageMessageBubble
+import com.gchat.util.rememberImagePickerLaunchers
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -34,12 +37,32 @@ fun ChatScreen(
     val messageText by viewModel.messageText.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
     val otherUserName by viewModel.otherUserName.collectAsState()
+    val uploadProgress by viewModel.uploadProgress.collectAsState()
+    val uploadError by viewModel.uploadError.collectAsState()
     val listState = rememberLazyListState()
+    
+    var showImagePicker by remember { mutableStateOf(false) }
+    
+    // Image picker
+    val imagePickerLaunchers = rememberImagePickerLaunchers(
+        onImageSelected = { uri ->
+            viewModel.sendImageMessage(uri)
+            showImagePicker = false
+        }
+    )
     
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
+        }
+    }
+    
+    // Show error snackbar
+    uploadError?.let { error ->
+        LaunchedEffect(error) {
+            // TODO: Show snackbar with error
+            viewModel.clearUploadError()
         }
     }
     
@@ -58,7 +81,9 @@ fun ChatScreen(
             MessageInput(
                 messageText = messageText,
                 onMessageChange = viewModel::updateMessageText,
-                onSendClick = viewModel::sendMessage
+                onSendClick = viewModel::sendMessage,
+                onAttachmentClick = { showImagePicker = true },
+                isUploading = uploadProgress != null
             )
         }
     ) { paddingValues ->
@@ -94,6 +119,23 @@ fun ChatScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
             }
+        }
+    }
+    
+    // Image picker bottom sheet
+    if (showImagePicker) {
+        ModalBottomSheet(
+            onDismissRequest = { showImagePicker = false }
+        ) {
+            ImagePickerBottomSheet(
+                onCameraClick = {
+                    imagePickerLaunchers.launchCamera()
+                },
+                onGalleryClick = {
+                    imagePickerLaunchers.launchGallery()
+                },
+                onDismiss = { showImagePicker = false }
+            )
         }
     }
 }
@@ -160,7 +202,9 @@ fun MessageBubble(
 fun MessageInput(
     messageText: String,
     onMessageChange: (String) -> Unit,
-    onSendClick: () -> Unit
+    onSendClick: () -> Unit,
+    onAttachmentClick: () -> Unit,
+    isUploading: Boolean = false
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -172,23 +216,129 @@ fun MessageInput(
                 .padding(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Attachment button
+            IconButton(
+                onClick = onAttachmentClick,
+                enabled = !isUploading
+            ) {
+                Icon(Icons.Filled.AttachFile, "Attach image")
+            }
+            
             OutlinedTextField(
                 value = messageText,
                 onValueChange = onMessageChange,
                 modifier = Modifier.weight(1f),
                 placeholder = { Text("Type a message...") },
-                maxLines = 4
+                maxLines = 4,
+                enabled = !isUploading
             )
             
             Spacer(modifier = Modifier.width(8.dp))
             
-            FilledIconButton(
-                onClick = onSendClick,
-                enabled = messageText.isNotBlank()
-            ) {
-                Icon(Icons.Filled.Send, "Send")
+            if (isUploading) {
+                CircularProgressIndicator(
+                    modifier = Modifier.size(48.dp)
+                )
+            } else {
+                FilledIconButton(
+                    onClick = onSendClick,
+                    enabled = messageText.isNotBlank()
+                ) {
+                    Icon(Icons.Filled.Send, "Send")
+                }
             }
         }
+    }
+}
+
+@Composable
+fun ImagePickerBottomSheet(
+    onCameraClick: () -> Unit,
+    onGalleryClick: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(16.dp)
+    ) {
+        Text(
+            text = "Choose Image",
+            style = MaterialTheme.typography.titleLarge,
+            modifier = Modifier.padding(bottom = 16.dp)
+        )
+        
+        // Camera option
+        Surface(
+            onClick = {
+                onCameraClick()
+                onDismiss()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.CameraAlt,
+                    contentDescription = "Take photo",
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Camera",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "Take a new photo",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(8.dp))
+        
+        // Gallery option
+        Surface(
+            onClick = {
+                onGalleryClick()
+                onDismiss()
+            },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(
+                    imageVector = Icons.Filled.PhotoLibrary,
+                    contentDescription = "Choose from gallery",
+                    modifier = Modifier.size(32.dp)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                Column {
+                    Text(
+                        text = "Gallery",
+                        style = MaterialTheme.typography.titleMedium
+                    )
+                    Text(
+                        text = "Choose from your photos",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+        }
+        
+        Spacer(modifier = Modifier.height(32.dp))
     }
 }
 
