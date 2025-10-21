@@ -114,30 +114,30 @@ class ChatViewModel @Inject constructor(
      * Observe who is typing in this conversation
      * Returns a formatted string like "John is typing..." or "John, Sarah are typing..."
      */
-    val typingIndicatorText: StateFlow<String> = typingRepository.observeTypingIndicators(conversationId)
-        .map { typingIndicators ->
-            val currentUserId = authRepository.getCurrentUserId() ?: ""
+    val typingIndicatorText: StateFlow<String> = combine(
+        typingRepository.observeTypingIndicators(conversationId),
+        participantUsers,
+        currentUserId
+    ) { typingIndicators, participants, userId ->
+        // Filter out current user (don't show own typing indicator)
+        val otherTypers = typingIndicators.filter { it.userId != userId }
+        
+        if (otherTypers.isEmpty()) {
+            ""
+        } else {
+            // Get user names for typers
+            val typerNames = otherTypers.mapNotNull { indicator ->
+                participants[indicator.userId]?.displayName
+            }
             
-            // Filter out current user (don't show own typing indicator)
-            val otherTypers = typingIndicators.filter { it.userId != currentUserId }
-            
-            if (otherTypers.isEmpty()) {
-                ""
-            } else {
-                // Get user names for typers
-                val typerNames = otherTypers.mapNotNull { indicator ->
-                    participantUsers.value[indicator.userId]?.displayName
-                }
-                
-                when (typerNames.size) {
-                    0 -> ""
-                    1 -> "${typerNames[0]} is typing..."
-                    2 -> "${typerNames[0]} and ${typerNames[1]} are typing..."
-                    else -> "${typerNames[0]}, ${typerNames[1]}, and ${typerNames.size - 2} others are typing..."
-                }
+            when (typerNames.size) {
+                0 -> ""
+                1 -> "${typerNames[0]} is typing..."
+                2 -> "${typerNames[0]} and ${typerNames[1]} are typing..."
+                else -> "${typerNames[0]}, ${typerNames[1]}, and ${typerNames.size - 2} others are typing..."
             }
         }
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
     
     fun updateMessageText(text: String) {
         _messageText.value = text
