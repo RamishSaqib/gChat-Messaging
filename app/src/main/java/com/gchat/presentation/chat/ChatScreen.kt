@@ -33,6 +33,7 @@ import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageStatus
 import com.gchat.domain.model.MessageType
 import com.gchat.presentation.components.ImageMessageBubble
+import com.gchat.presentation.components.ProfilePicture
 import com.gchat.presentation.components.ReadByAvatars
 import com.gchat.presentation.components.ReadReceiptCheckmarks
 import com.gchat.util.rememberImagePickerLaunchers
@@ -113,18 +114,53 @@ fun ChatScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(
-                        text = otherUserName,
-                        modifier = Modifier.clickable {
-                            conversation?.let { conv ->
-                                if (conv.isGroup()) {
-                                    onNavigateToGroupInfo?.invoke(conversationId)
-                                } else {
-                                    onNavigateToDMInfo?.invoke(conversationId)
+                    Row(
+                        modifier = Modifier
+                            .clickable {
+                                conversation?.let { conv ->
+                                    if (conv.isGroup()) {
+                                        onNavigateToGroupInfo?.invoke(conversationId)
+                                    } else {
+                                        onNavigateToDMInfo?.invoke(conversationId)
+                                    }
                                 }
                             }
+                            .padding(vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val isGroup = conversation?.isGroup() == true
+                        val otherUserId = conversation?.getOtherParticipantId(currentUserId ?: "")
+                        
+                        // Profile picture or group icon
+                        val imageUrl = if (isGroup) {
+                            conversation?.iconUrl
+                        } else {
+                            // Get other user's profile picture for 1-on-1 chat
+                            otherUserId?.let { participantUsers[it]?.profilePictureUrl }
                         }
-                    )
+                        
+                        // Online status (only for 1-on-1 chats)
+                        val isOnline = if (!isGroup && otherUserId != null) {
+                            participantUsers[otherUserId]?.isOnline ?: false
+                        } else {
+                            false
+                        }
+                        
+                        ProfilePicture(
+                            url = imageUrl,
+                            displayName = otherUserName,
+                            size = 40.dp,
+                            showOnlineIndicator = !isGroup,
+                            isOnline = isOnline
+                        )
+                        
+                        Spacer(modifier = Modifier.width(12.dp))
+                        
+                        Text(
+                            text = otherUserName,
+                            style = MaterialTheme.typography.titleMedium
+                        )
+                    }
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
