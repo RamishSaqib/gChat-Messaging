@@ -7,6 +7,8 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.animation.core.tween
+import androidx.compose.foundation.lazy.LazyItemScope
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
@@ -213,7 +215,10 @@ fun ConversationListScreen(
                 LazyColumn(
                     modifier = Modifier.fillMaxSize()
                 ) {
-                    items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
+                    items(
+                        conversationsWithUsers,
+                        key = { it.conversation.id }
+                    ) { conversationWithUser ->
                         val dismissState = rememberDismissState(
                             confirmValueChange = { dismissValue ->
                                 if (dismissValue == DismissValue.DismissedToStart) {
@@ -223,36 +228,49 @@ fun ConversationListScreen(
                                 } else {
                                     false
                                 }
-                            }
+                            },
+                            positionalThreshold = { distance -> distance * 0.25f }
                         )
                         
-                        SwipeToDismiss(
-                            state = dismissState,
-                            directions = setOf(DismissDirection.EndToStart),
-                            background = {
+                        Box(
+                            modifier = Modifier.animateItemPlacement(
+                                animationSpec = tween(durationMillis = 300)
+                            )
+                        ) {
+                            SwipeToDismiss(
+                                state = dismissState,
+                                directions = setOf(DismissDirection.EndToStart),
+                                background = {
+                                val color = when (dismissState.targetValue) {
+                                    DismissValue.DismissedToStart -> MaterialTheme.colorScheme.error
+                                    else -> Color.Transparent
+                                }
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
-                                        .background(MaterialTheme.colorScheme.error)
+                                        .background(color)
                                         .padding(horizontal = 20.dp),
                                     contentAlignment = Alignment.CenterEnd
                                 ) {
-                                    Icon(
-                                        imageVector = Icons.Default.Delete,
-                                        contentDescription = "Delete",
-                                        tint = Color.White,
-                                        modifier = Modifier.size(28.dp)
-                                    )
+                                    if (dismissState.targetValue == DismissValue.DismissedToStart) {
+                                        Icon(
+                                            imageVector = Icons.Default.Delete,
+                                            contentDescription = "Delete",
+                                            tint = Color.White,
+                                            modifier = Modifier.size(28.dp)
+                                        )
+                                    }
                                 }
                             },
                             dismissContent = {
-                                ConversationItem(
-                                    conversationWithUser = conversationWithUser,
-                                    currentUserId = viewModel.currentUser.value?.id,
-                                    onClick = { onConversationClick(conversationWithUser.conversation.id) }
-                                )
-                            }
-                        )
+                                    ConversationItem(
+                                        conversationWithUser = conversationWithUser,
+                                        currentUserId = viewModel.currentUser.value?.id,
+                                        onClick = { onConversationClick(conversationWithUser.conversation.id) }
+                                    )
+                                }
+                            )
+                        }
                     }
                 }
             }
