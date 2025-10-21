@@ -34,6 +34,39 @@ class FirestoreUserDataSource @Inject constructor(
         }
     }
     
+    /**
+     * Creates or updates a user with only essential fields (displayName, email, etc.)
+     * without touching profilePictureUrl or phoneNumber to preserve existing values
+     */
+    suspend fun createOrUpdateEssentialFields(userId: String, displayName: String, email: String?): Result<Unit> {
+        return try {
+            val updates = mutableMapOf<String, Any>(
+                "displayName" to displayName,
+                "isOnline" to true,
+                "lastSeen" to System.currentTimeMillis(),
+                "preferredLanguage" to "en"
+            )
+            
+            // Only add email if not null
+            email?.let { updates["email"] = it }
+            
+            // Check if document exists
+            val doc = usersCollection.document(userId).get().await()
+            if (!doc.exists()) {
+                // First time - also set createdAt
+                updates["createdAt"] = System.currentTimeMillis()
+            }
+            
+            usersCollection
+                .document(userId)
+                .set(updates, com.google.firebase.firestore.SetOptions.merge())
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun getUser(userId: String): Result<User> {
         return try {
             val document = usersCollection

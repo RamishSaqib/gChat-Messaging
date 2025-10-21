@@ -13,6 +13,7 @@ import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -67,37 +68,65 @@ class AuthRepositoryImpl @Inject constructor(
                     AuthResult.Success(updatedUser)
                 },
                 onFailure = { error ->
-                    // User profile missing - create basic profile from Firebase Auth data
-                    android.util.Log.w("AuthRepository", "User profile not found in Firestore, creating from Auth data: ${error.message}")
+                    // User profile missing - update essential fields only (preserves profilePictureUrl if exists)
+                    android.util.Log.w("AuthRepository", "User profile not found in Firestore, updating essential fields: ${error.message}")
                     
                     // Get display name from Firebase Auth profile (set during registration)
                     val displayName = firebaseUser.displayName ?: "User"
                     
-                    val newUser = User(
-                        id = firebaseUser.uid,
+                    android.util.Log.d("AuthRepository", "Updating profile: displayName=$displayName, email=${firebaseUser.email}")
+                    
+                    // Update only essential fields (won't touch profilePictureUrl or phoneNumber)
+                    val updateResult = firestoreUserDataSource.createOrUpdateEssentialFields(
+                        userId = firebaseUser.uid,
                         displayName = displayName,
-                        email = firebaseUser.email,
-                        phoneNumber = firebaseUser.phoneNumber,
-                        profilePictureUrl = firebaseUser.photoUrl?.toString(), // Will be null for email/password users
-                        preferredLanguage = "en",
-                        isOnline = true,
-                        lastSeen = System.currentTimeMillis(),
-                        createdAt = System.currentTimeMillis()
+                        email = firebaseUser.email
                     )
-                    
-                    android.util.Log.d("AuthRepository", "Creating profile: displayName=$displayName, email=${newUser.email}")
-                    
-                    // Try to create profile in Firestore
-                    val createResult = firestoreUserDataSource.createUser(newUser)
-                    createResult.fold(
+                    updateResult.fold(
                         onSuccess = {
-                            android.util.Log.d("AuthRepository", "Profile created successfully")
-                            userDao.insert(UserMapper.toEntity(newUser))
-                            AuthResult.Success(newUser)
+                            android.util.Log.d("AuthRepository", "Profile updated successfully, fetching full profile")
+                            // Now fetch the full profile (which may include existing profilePictureUrl)
+                            runBlocking {
+                                val userResult = firestoreUserDataSource.getUser(firebaseUser.uid)
+                                userResult.fold(
+                                    onSuccess = { user ->
+                                        android.util.Log.d("AuthRepository", "Full profile fetched: displayName=${user.displayName}, profilePictureUrl=${user.profilePictureUrl}")
+                                        val updatedUser = user.copy(isOnline = true, lastSeen = System.currentTimeMillis())
+                                        userDao.insert(UserMapper.toEntity(updatedUser))
+                                    },
+                                    onFailure = {
+                                        android.util.Log.w("AuthRepository", "Could not fetch full profile, creating minimal cache")
+                                        // Cache minimal data
+                                        val minimalUser = User(
+                                            id = firebaseUser.uid,
+                                            displayName = displayName,
+                                            email = firebaseUser.email,
+                                            phoneNumber = null,
+                                            profilePictureUrl = null,
+                                            preferredLanguage = "en",
+                                            isOnline = true,
+                                            lastSeen = System.currentTimeMillis(),
+                                            createdAt = System.currentTimeMillis()
+                                        )
+                                        userDao.insert(UserMapper.toEntity(minimalUser))
+                                    }
+                                )
+                            }
+                            AuthResult.Success(User(
+                                id = firebaseUser.uid,
+                                displayName = displayName,
+                                email = firebaseUser.email,
+                                phoneNumber = null,
+                                profilePictureUrl = null, // Will be loaded by getUserFlow
+                                preferredLanguage = "en",
+                                isOnline = true,
+                                lastSeen = System.currentTimeMillis(),
+                                createdAt = System.currentTimeMillis()
+                            ))
                         },
                         onFailure = { createError ->
-                            android.util.Log.e("AuthRepository", "Failed to create profile: ${createError.message}")
-                            AuthResult.Error("Failed to create user profile. Please try again.")
+                            android.util.Log.e("AuthRepository", "Failed to update profile: ${createError.message}")
+                            AuthResult.Error("Failed to update user profile. Please try again.")
                         }
                     )
                 }
