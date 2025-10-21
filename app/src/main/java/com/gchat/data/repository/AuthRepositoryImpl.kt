@@ -55,8 +55,13 @@ class AuthRepositoryImpl @Inject constructor(
             val userResult = firestoreUserDataSource.getUser(firebaseUser.uid)
             userResult.fold(
                 onSuccess = { user ->
-                    userDao.insert(UserMapper.toEntity(user))
-                    AuthResult.Success(user)
+                    // Update online status
+                    firestoreUserDataSource.updateOnlineStatus(firebaseUser.uid, true)
+                    
+                    // Update local cache with online status
+                    val updatedUser = user.copy(isOnline = true, lastSeen = System.currentTimeMillis())
+                    userDao.insert(UserMapper.toEntity(updatedUser))
+                    AuthResult.Success(updatedUser)
                 },
                 onFailure = { AuthResult.Error(it.message ?: "Failed to fetch user data") }
             )
@@ -111,9 +116,13 @@ class AuthRepositoryImpl @Inject constructor(
             val userResult = firestoreUserDataSource.getUser(firebaseUser.uid)
             userResult.fold(
                 onSuccess = { user ->
-                    // User exists, cache locally
-                    userDao.insert(UserMapper.toEntity(user))
-                    AuthResult.Success(user)
+                    // User exists, update online status
+                    firestoreUserDataSource.updateOnlineStatus(firebaseUser.uid, true)
+                    
+                    // Update local cache with online status
+                    val updatedUser = user.copy(isOnline = true, lastSeen = System.currentTimeMillis())
+                    userDao.insert(UserMapper.toEntity(updatedUser))
+                    AuthResult.Success(updatedUser)
                 },
                 onFailure = {
                     // User doesn't exist, create new user
