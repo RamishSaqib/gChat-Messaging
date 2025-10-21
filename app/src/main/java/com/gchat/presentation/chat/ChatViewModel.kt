@@ -70,10 +70,11 @@ class ChatViewModel @Inject constructor(
             .onFailure { emit(null) }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
-    // Get participants for group chats (userId -> displayName)
+    // Get participants for all chats (userId -> User)
+    // Used for displaying sender names in group chats and typing indicators in all chats
     val participantUsers: StateFlow<Map<String, com.gchat.domain.model.User>> = flow {
         val conv = conversationRepository.getConversation(conversationId).getOrNull()
-        if (conv != null && conv.isGroup()) {
+        if (conv != null) {
             val users = mutableMapOf<String, com.gchat.domain.model.User>()
             conv.participants.forEach { userId ->
                 userRepository.getUser(userId).onSuccess { user ->
