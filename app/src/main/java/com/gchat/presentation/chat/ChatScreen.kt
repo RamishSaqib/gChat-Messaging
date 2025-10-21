@@ -4,6 +4,11 @@ import android.Manifest
 import android.net.Uri
 import android.os.Build
 import androidx.compose.animation.core.*
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -24,6 +29,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
@@ -36,6 +42,8 @@ import com.gchat.presentation.components.ImageMessageBubble
 import com.gchat.presentation.components.ProfilePicture
 import com.gchat.presentation.components.ReadByAvatars
 import com.gchat.presentation.components.ReadReceiptCheckmarks
+import com.gchat.presentation.theme.MessageBubbleShapeReceived
+import com.gchat.presentation.theme.MessageBubbleShapeSent
 import com.gchat.util.rememberImagePickerLaunchers
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -112,62 +120,77 @@ fun ChatScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = {
-                    Row(
-                        modifier = Modifier
-                            .clickable {
-                                conversation?.let { conv ->
-                                    if (conv.isGroup()) {
-                                        onNavigateToGroupInfo?.invoke(conversationId)
-                                    } else {
-                                        onNavigateToDMInfo?.invoke(conversationId)
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                shadowElevation = 0.dp
+            ) {
+                Column {
+                    TopAppBar(
+                        title = {
+                            Row(
+                                modifier = Modifier
+                                    .clickable {
+                                        conversation?.let { conv ->
+                                            if (conv.isGroup()) {
+                                                onNavigateToGroupInfo?.invoke(conversationId)
+                                            } else {
+                                                onNavigateToDMInfo?.invoke(conversationId)
+                                            }
+                                        }
                                     }
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                val isGroup = conversation?.isGroup() == true
+                                val otherUserId = conversation?.getOtherParticipantId(currentUserId ?: "")
+                                
+                                // Profile picture or group icon
+                                val imageUrl = if (isGroup) {
+                                    conversation?.iconUrl
+                                } else {
+                                    // Get other user's profile picture for 1-on-1 chat
+                                    otherUserId?.let { participantUsers[it]?.profilePictureUrl }
                                 }
+                                
+                                // Online status (only for 1-on-1 chats)
+                                val isOnline = if (!isGroup && otherUserId != null) {
+                                    participantUsers[otherUserId]?.isOnline ?: false
+                                } else {
+                                    false
+                                }
+                                
+                                ProfilePicture(
+                                    url = imageUrl,
+                                    displayName = otherUserName,
+                                    size = 40.dp,
+                                    showOnlineIndicator = !isGroup,
+                                    isOnline = isOnline
+                                )
+                                
+                                Spacer(modifier = Modifier.width(12.dp))
+                                
+                                Text(
+                                    text = otherUserName,
+                                    style = MaterialTheme.typography.titleMedium
+                                )
                             }
-                            .padding(vertical = 4.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val isGroup = conversation?.isGroup() == true
-                        val otherUserId = conversation?.getOtherParticipantId(currentUserId ?: "")
-                        
-                        // Profile picture or group icon
-                        val imageUrl = if (isGroup) {
-                            conversation?.iconUrl
-                        } else {
-                            // Get other user's profile picture for 1-on-1 chat
-                            otherUserId?.let { participantUsers[it]?.profilePictureUrl }
-                        }
-                        
-                        // Online status (only for 1-on-1 chats)
-                        val isOnline = if (!isGroup && otherUserId != null) {
-                            participantUsers[otherUserId]?.isOnline ?: false
-                        } else {
-                            false
-                        }
-                        
-                        ProfilePicture(
-                            url = imageUrl,
-                            displayName = otherUserName,
-                            size = 40.dp,
-                            showOnlineIndicator = !isGroup,
-                            isOnline = isOnline
+                        },
+                        navigationIcon = {
+                            IconButton(onClick = onNavigateBack) {
+                                Icon(Icons.Filled.ArrowBack, "Back")
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(
+                            containerColor = Color.Transparent
                         )
-                        
-                        Spacer(modifier = Modifier.width(12.dp))
-                        
-                        Text(
-                            text = otherUserName,
-                            style = MaterialTheme.typography.titleMedium
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Filled.ArrowBack, "Back")
-                    }
+                    )
+                    Divider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
                 }
-            )
+            }
         },
         bottomBar = {
             MessageInput(
@@ -204,36 +227,51 @@ fun ChatScreen(
                 )
             }
         } else {
-            LazyColumn(
+            Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
                     .padding(paddingValues)
-                    .padding(horizontal = 16.dp),
-                state = listState
             ) {
-                items(messages, key = { it.id }) { message ->
-                    MessageBubble(
-                        message = message,
-                        isOwnMessage = message.senderId == currentUserId,
-                        currentUserId = currentUserId ?: "",
-                        isGroupChat = conversation?.isGroup() == true,
-                        senderName = conversation?.getUserDisplayName(
-                            message.senderId,
-                            participantUsers[message.senderId]
-                        ),
-                        participantUsers = participantUsers,
-                        onImageClick = { imageUrl ->
-                            // Navigate to image viewer (will add this shortly)
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 12.dp)
+                        .padding(top = 8.dp),
+                    state = listState
+                ) {
+                    items(messages, key = { it.id }) { message ->
+                        val messageIndex = messages.indexOf(message)
+                        val previousMessage = if (messageIndex > 0) messages[messageIndex - 1] else null
+                        val isGroupedWithPrevious = previousMessage?.let {
+                            it.senderId == message.senderId && 
+                            (message.timestamp - it.timestamp) < 120000 // 2 minutes
+                        } ?: false
+                        
+                        MessageBubble(
+                            message = message,
+                            isOwnMessage = message.senderId == currentUserId,
+                            currentUserId = currentUserId ?: "",
+                            isGroupChat = conversation?.isGroup() == true,
+                            senderName = conversation?.getUserDisplayName(
+                                message.senderId,
+                                participantUsers[message.senderId]
+                            ),
+                            participantUsers = participantUsers,
+                            isGroupedWithPrevious = isGroupedWithPrevious,
+                            onImageClick = { imageUrl ->
+                                // Navigate to image viewer (will add this shortly)
+                            }
+                        )
+                        Spacer(modifier = Modifier.height(if (isGroupedWithPrevious) 2.dp else 12.dp))
+                    }
+                    
+                    // Show typing indicator at the bottom
+                    if (typingIndicatorText.isNotBlank()) {
+                        item {
+                            TypingIndicator(text = typingIndicatorText)
+                            Spacer(modifier = Modifier.height(8.dp))
                         }
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
-                
-                // Show typing indicator at the bottom
-                if (typingIndicatorText.isNotBlank()) {
-                    item {
-                        TypingIndicator(text = typingIndicatorText)
-                        Spacer(modifier = Modifier.height(8.dp))
                     }
                 }
             }
@@ -278,22 +316,24 @@ fun MessageBubble(
     isGroupChat: Boolean = false,
     senderName: String? = null,
     participantUsers: Map<String, com.gchat.domain.model.User> = emptyMap(),
+    isGroupedWithPrevious: Boolean = false,
     onImageClick: (String) -> Unit
 ) {
     // Get users who have read this message (excluding the sender)
     val readByUsers = message.readBy.keys
         .filter { it != message.senderId }
         .mapNotNull { userId -> participantUsers[userId] }
+    
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
-        // Show sender name for group chats (only for others' messages)
-        if (isGroupChat && !isOwnMessage && senderName != null) {
+        // Show sender name for group chats (only for others' messages and when not grouped)
+        if (isGroupChat && !isOwnMessage && senderName != null && !isGroupedWithPrevious) {
             Text(
                 text = senderName,
                 style = MaterialTheme.typography.labelSmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 8.dp, bottom = 2.dp)
+                modifier = Modifier.padding(start = if (isOwnMessage) 0.dp else 12.dp, bottom = 4.dp)
             )
         }
         
@@ -301,26 +341,27 @@ fun MessageBubble(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = if (isOwnMessage) Arrangement.End else Arrangement.Start
         ) {
-            // Use ImageMessageBubble for image messages
-            if (message.type == MessageType.IMAGE && message.mediaUrl != null) {
-                ImageMessageBubble(
-                    message = message,
-                    isCurrentUser = isOwnMessage,
-                    onImageClick = onImageClick
-                )
-            } else {
-                // Regular text message bubble
-                Surface(
-                    shape = RoundedCornerShape(16.dp),
-                    color = if (isOwnMessage) {
-                        MaterialTheme.colorScheme.primary
-                    } else {
-                        MaterialTheme.colorScheme.secondaryContainer
-                    },
-                    modifier = Modifier.widthIn(max = 280.dp)
-                ) {
-                    Column(
-                        modifier = Modifier.padding(12.dp)
+            Column(
+                horizontalAlignment = if (isOwnMessage) Alignment.End else Alignment.Start
+            ) {
+                // Use ImageMessageBubble for image messages
+                if (message.type == MessageType.IMAGE && message.mediaUrl != null) {
+                    ImageMessageBubble(
+                        message = message,
+                        isCurrentUser = isOwnMessage,
+                        onImageClick = onImageClick
+                    )
+                } else {
+                    // Regular text message bubble
+                    Surface(
+                        shape = if (isOwnMessage) MessageBubbleShapeSent else MessageBubbleShapeReceived,
+                        color = if (isOwnMessage) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                        shadowElevation = 0.5.dp,
+                        modifier = Modifier.widthIn(max = 300.dp)
                     ) {
                         Text(
                             text = message.text ?: "",
@@ -329,46 +370,48 @@ fun MessageBubble(
                                 MaterialTheme.colorScheme.onPrimary
                             } else {
                                 MaterialTheme.colorScheme.onSecondaryContainer
-                            }
+                            },
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
                         )
-                        
-                        Spacer(modifier = Modifier.height(4.dp))
-                        
-                        // Timestamp and read receipts
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Text(
-                                text = formatTime(message.timestamp),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = if (isOwnMessage) {
-                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                                } else {
-                                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                                }
-                            )
-                            
-                            // Show read receipts only for own messages
-                            if (isOwnMessage) {
-                                if (isGroupChat) {
-                                    // Show avatar bubbles for group chats
-                                    if (readByUsers.isNotEmpty()) {
-                                        ReadByAvatars(
-                                            readByUsers = readByUsers,
-                                            maxVisible = 3
-                                        )
-                                    }
-                                } else {
-                                    // Show checkmarks for 1-on-1 chats
-                                    ReadReceiptCheckmarks(
-                                        isRead = message.isReadByAny(),
-                                        isSent = message.status == MessageStatus.SENT || message.status == MessageStatus.READ
-                                    )
-                                }
+                    }
+                }
+                
+                // Timestamp and read receipts OUTSIDE the bubble
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(
+                        start = if (isOwnMessage) 0.dp else 12.dp,
+                        end = if (isOwnMessage) 12.dp else 0.dp,
+                        top = 4.dp
+                    )
+                ) {
+                    if (isOwnMessage) {
+                        // Show read receipts for own messages (before timestamp)
+                        if (isGroupChat) {
+                            // Show avatar bubbles for group chats
+                            if (readByUsers.isNotEmpty()) {
+                                ReadByAvatars(
+                                    readByUsers = readByUsers,
+                                    maxVisible = 3
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
                             }
+                        } else {
+                            // Show checkmarks for 1-on-1 chats
+                            ReadReceiptCheckmarks(
+                                isRead = message.isReadByAny(),
+                                isSent = message.status == MessageStatus.SENT || message.status == MessageStatus.READ
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
                         }
                     }
+                    
+                    Text(
+                        text = formatTime(message.timestamp),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    )
                 }
             }
         }
@@ -385,17 +428,26 @@ fun MessageInput(
     selectedImageUri: Uri? = null,
     onClearImage: () -> Unit = {}
 ) {
+    val canSend = messageText.isNotBlank() || selectedImageUri != null
+    
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        shadowElevation = 8.dp
+        color = MaterialTheme.colorScheme.surface,
+        shadowElevation = 0.dp
     ) {
         Column {
+            // Top divider
+            Divider(
+                thickness = 0.5.dp,
+                color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+            )
+            
             // Image preview (if image selected)
             selectedImageUri?.let { uri ->
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(8.dp)
+                        .padding(horizontal = 12.dp, vertical = 8.dp)
                 ) {
                     AsyncImage(
                         model = uri,
@@ -403,26 +455,25 @@ fun MessageInput(
                         modifier = Modifier
                             .fillMaxWidth()
                             .heightIn(max = 200.dp)
-                            .clip(RoundedCornerShape(12.dp)),
+                            .clip(RoundedCornerShape(16.dp)),
                         contentScale = ContentScale.Crop
                     )
                     
                     // Remove button
-                    IconButton(
+                    Surface(
                         onClick = onClearImage,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
-                            .padding(4.dp)
-                            .background(
-                                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
-                                shape = CircleShape
-                            )
-                            .size(32.dp)
+                            .padding(8.dp),
+                        shape = CircleShape,
+                        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
+                        shadowElevation = 2.dp
                     ) {
                         Icon(
                             imageVector = Icons.Filled.Close,
                             contentDescription = "Remove image",
-                            tint = MaterialTheme.colorScheme.onSurface
+                            tint = MaterialTheme.colorScheme.onSurface,
+                            modifier = Modifier.padding(8.dp).size(20.dp)
                         )
                     }
                 }
@@ -431,38 +482,84 @@ fun MessageInput(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+                    .padding(horizontal = 8.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.Bottom
             ) {
                 // Attachment button
                 IconButton(
                     onClick = onAttachmentClick,
-                    enabled = !isUploading && selectedImageUri == null
+                    enabled = !isUploading && selectedImageUri == null,
+                    modifier = Modifier.padding(bottom = 4.dp)
                 ) {
-                    Icon(Icons.Filled.AttachFile, "Attach image")
+                    Icon(
+                        imageVector = Icons.Filled.AttachFile,
+                        contentDescription = "Attach image",
+                        tint = MaterialTheme.colorScheme.primary
+                    )
                 }
                 
-                OutlinedTextField(
+                Spacer(modifier = Modifier.width(4.dp))
+                
+                // Text field with iOS-style pill shape
+                TextField(
                     value = messageText,
                     onValueChange = onMessageChange,
                     modifier = Modifier.weight(1f),
-                    placeholder = { Text(if (selectedImageUri != null) "Add a caption..." else "Type a message...") },
-                    maxLines = 4,
-                    enabled = !isUploading
+                    placeholder = { 
+                        Text(
+                            if (selectedImageUri != null) "Add a caption..." else "Message",
+                            style = MaterialTheme.typography.bodyMedium
+                        ) 
+                    },
+                    textStyle = MaterialTheme.typography.bodyMedium,
+                    maxLines = 5,
+                    enabled = !isUploading,
+                    shape = RoundedCornerShape(24.dp),
+                    colors = TextFieldDefaults.colors(
+                        focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant,
+                        focusedIndicatorColor = Color.Transparent,
+                        unfocusedIndicatorColor = Color.Transparent,
+                        disabledIndicatorColor = Color.Transparent,
+                    )
                 )
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
+                // Send button with animation
                 if (isUploading) {
                     CircularProgressIndicator(
-                        modifier = Modifier.size(48.dp)
+                        modifier = Modifier
+                            .size(32.dp)
+                            .padding(bottom = 4.dp),
+                        strokeWidth = 2.dp
                     )
                 } else {
-                    FilledIconButton(
-                        onClick = onSendClick,
-                        enabled = messageText.isNotBlank() || selectedImageUri != null
+                    AnimatedVisibility(
+                        visible = canSend,
+                        enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
+                        exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
+                        modifier = Modifier.padding(bottom = 4.dp)
                     ) {
-                        Icon(Icons.Filled.Send, "Send")
+                        Surface(
+                            onClick = onSendClick,
+                            shape = CircleShape,
+                            color = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center,
+                                modifier = Modifier.fillMaxSize()
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Filled.Send,
+                                    contentDescription = "Send",
+                                    tint = MaterialTheme.colorScheme.onPrimary,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                            }
+                        }
                     }
                 }
             }

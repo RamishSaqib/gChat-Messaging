@@ -2,11 +2,13 @@ package com.gchat.presentation.chat
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
@@ -24,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Conversation
 import com.gchat.domain.model.User
@@ -61,43 +64,85 @@ fun ConversationListScreen(
     
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(
-                title = { Text("gChat") },
-                colors = TopAppBarDefaults.centerAlignedTopAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer,
-                    titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
-                ),
-                navigationIcon = {
-                    // Profile picture button (on the left)
-                    IconButton(onClick = onProfileClick) {
-                        ProfilePicture(
-                            url = currentUser?.profilePictureUrl,
-                            displayName = currentUser?.displayName ?: "User",
-                            size = 40.dp,
-                            showOnlineIndicator = false
-                        )
-                    }
-                },
-                actions = {
-                    // Logout button (on the right)
-                    IconButton(onClick = {
-                        viewModel.logout {
-                            onLogout()
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                color = MaterialTheme.colorScheme.background,
+                shadowElevation = 0.dp
+            ) {
+                Column {
+                    // Custom top bar with centered title
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 12.dp)
+                    ) {
+                        // Profile picture button (left)
+                        IconButton(
+                            onClick = onProfileClick,
+                            modifier = Modifier
+                                .size(44.dp)
+                                .align(Alignment.CenterStart)
+                        ) {
+                            ProfilePicture(
+                                url = currentUser?.profilePictureUrl,
+                                displayName = currentUser?.displayName ?: "User",
+                                size = 44.dp,
+                                showOnlineIndicator = false
+                            )
                         }
-                    }) {
-                        Icon(
-                            imageVector = Icons.Default.ExitToApp,
-                            contentDescription = "Logout",
-                            tint = MaterialTheme.colorScheme.onPrimaryContainer
+                        
+                        // Centered title
+                        Text(
+                            text = "Chats",
+                            style = MaterialTheme.typography.displayMedium,
+                            modifier = Modifier.align(Alignment.Center)
                         )
+                        
+                        // Logout button (right)
+                        IconButton(
+                            onClick = {
+                                viewModel.logout {
+                                    onLogout()
+                                }
+                            },
+                            modifier = Modifier.align(Alignment.CenterEnd)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.ExitToApp,
+                                contentDescription = "Logout",
+                                tint = MaterialTheme.colorScheme.primary
+                            )
+                        }
                     }
+                    
+                    Divider(
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
+                    )
                 }
-            )
+            }
         },
         floatingActionButton = {
             Box {
-                FloatingActionButton(onClick = { showFabMenu = !showFabMenu }) {
-                    Icon(Icons.Default.Add, contentDescription = "New conversation")
+                // iOS-style rounded square FAB
+                Surface(
+                    onClick = { showFabMenu = !showFabMenu },
+                    shape = RoundedCornerShape(16.dp),
+                    color = MaterialTheme.colorScheme.primary,
+                    shadowElevation = 4.dp,
+                    modifier = Modifier.size(56.dp)
+                ) {
+                    Box(
+                        contentAlignment = Alignment.Center,
+                        modifier = Modifier.fillMaxSize()
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "New conversation",
+                            tint = MaterialTheme.colorScheme.onPrimary,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
                 }
                 DropdownMenu(
                     expanded = showFabMenu,
@@ -127,40 +172,52 @@ fun ConversationListScreen(
             }
         }
     ) { paddingValues ->
-        if (conversationsWithUsers.isEmpty()) {
-            Box(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(MaterialTheme.colorScheme.background)
+                .padding(paddingValues)
+        ) {
+            if (conversationsWithUsers.isEmpty()) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = 32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
+                ) {
                     Text(
                         text = "No conversations yet",
-                        style = MaterialTheme.typography.bodyLarge,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     Text(
-                        text = "Tap + to start chatting",
+                        text = "Start a new conversation to connect with others",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = androidx.compose.ui.text.style.TextAlign.Center
                     )
+                    Spacer(modifier = Modifier.height(24.dp))
+                    Button(
+                        onClick = onNewConversationClick,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.height(48.dp)
+                    ) {
+                        Text("Get Started")
+                    }
                 }
-            }
-        } else {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues)
-            ) {
-                items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
-                    ConversationItem(
-                        conversationWithUser = conversationWithUser,
-                        currentUserId = viewModel.currentUser.value?.id,
-                        onClick = { onConversationClick(conversationWithUser.conversation.id) }
-                    )
-                    Divider()
+            } else {
+                LazyColumn(
+                    modifier = Modifier.fillMaxSize()
+                ) {
+                    items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
+                        ConversationItem(
+                            conversationWithUser = conversationWithUser,
+                            currentUserId = viewModel.currentUser.value?.id,
+                            onClick = { onConversationClick(conversationWithUser.conversation.id) }
+                        )
+                    }
                 }
             }
         }
@@ -190,74 +247,95 @@ fun ConversationItem(
         else -> conversation.iconUrl
     }
     
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        color = MaterialTheme.colorScheme.background
     ) {
-        // Profile picture with fallback to initials
-        ProfilePicture(
-            url = profilePictureUrl,
-            displayName = displayName,
-            size = 56.dp,
-            showOnlineIndicator = true,
-            isOnline = otherUser?.isOnline ?: false
-        )
-        
-        Spacer(modifier = Modifier.width(16.dp))
-        
-        Column(modifier = Modifier.weight(1f)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = displayName,
-                    style = MaterialTheme.typography.titleMedium,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
-                )
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 20.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Profile picture with fallback to initials
+            ProfilePicture(
+                url = profilePictureUrl,
+                displayName = displayName,
+                size = 60.dp,
+                showOnlineIndicator = true,
+                isOnline = otherUser?.isOnline ?: false
+            )
+            
+            Spacer(modifier = Modifier.width(16.dp))
+            
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Text(
+                        text = displayName,
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontSize = 17.sp,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                        ),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                    
+                    Spacer(modifier = Modifier.width(8.dp))
+                    
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            text = formatTimestamp(conversation.updatedAt),
+                            style = MaterialTheme.typography.labelSmall.copy(
+                                fontSize = 15.sp
+                            ),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                        
+                        if (conversation.unreadCount > 0) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = if (conversation.unreadCount > 9) "9+" else conversation.unreadCount.toString(),
+                                        style = MaterialTheme.typography.labelSmall.copy(
+                                            fontSize = 11.sp,
+                                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
+                                        ),
+                                        color = MaterialTheme.colorScheme.onPrimary
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+                
+                Spacer(modifier = Modifier.height(4.dp))
                 
                 Text(
-                    text = formatTimestamp(conversation.updatedAt),
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    text = buildLastMessageText(
+                        conversation = conversation,
+                        lastMessageSender = lastMessageSender,
+                        currentUserId = currentUserId
+                    ),
+                    style = MaterialTheme.typography.bodySmall.copy(
+                        fontSize = 15.sp
+                    ),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
-            }
-            
-            Spacer(modifier = Modifier.height(4.dp))
-            
-            Text(
-                text = buildLastMessageText(
-                    conversation = conversation,
-                    lastMessageSender = lastMessageSender,
-                    currentUserId = currentUserId
-                ),
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-        }
-        
-        if (conversation.unreadCount > 0) {
-            Spacer(modifier = Modifier.width(8.dp))
-            Surface(
-                shape = CircleShape,
-                color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.size(24.dp)
-            ) {
-                Box(contentAlignment = Alignment.Center) {
-                    Text(
-                        text = conversation.unreadCount.toString(),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = MaterialTheme.colorScheme.onPrimary
-                    )
-                }
             }
         }
     }

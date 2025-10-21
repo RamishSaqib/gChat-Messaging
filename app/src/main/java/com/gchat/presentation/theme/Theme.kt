@@ -15,65 +15,83 @@ import androidx.core.view.WindowCompat
 /**
  * gChat Material 3 Theme
  * 
- * Inspired by iMessage's clean, modern design
+ * iOS-inspired design with clean, modern aesthetics
  */
 
-// Light Color Scheme
+// Light Color Scheme - iOS inspired
 private val LightColorScheme = lightColorScheme(
-    primary = Color(0xFF0B6EFD),
+    // Primary - iOS Blue
+    primary = Color(0xFF007AFF),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD6E3FF),
-    onPrimaryContainer = Color(0xFF001B3D),
+    primaryContainer = Color(0xFFD1E4FF),
+    onPrimaryContainer = Color(0xFF001D36),
     
+    // Secondary - iOS Green
     secondary = Color(0xFF34C759),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFFD6F5DD),
-    onSecondaryContainer = Color(0xFF002109),
+    secondaryContainer = Color(0xFFE9E9EB), // Received message bubble
+    onSecondaryContainer = Color(0xFF000000),
     
+    // Tertiary - iOS Orange
     tertiary = Color(0xFFFF9500),
     onTertiary = Color.White,
     
+    // Error - iOS Red
     error = Color(0xFFFF3B30),
     onError = Color.White,
+    errorContainer = Color(0xFFFFDAD6),
+    onErrorContainer = Color(0xFF410002),
     
-    background = Color.White,
-    onBackground = Color.Black,
+    // Background - iOS light background
+    background = Color(0xFFF2F2F7),
+    onBackground = Color(0xFF000000),
     
-    surface = Color(0xFFF5F5F5),
-    onSurface = Color.Black,
-    surfaceVariant = Color(0xFFE8E8E8),
+    // Surface - Pure white
+    surface = Color(0xFFFFFFFF),
+    onSurface = Color(0xFF000000),
+    surfaceVariant = Color(0xFFF2F2F7),
     onSurfaceVariant = Color(0xFF8E8E93),
     
-    outline = Color(0xFFE5E5EA),
-    outlineVariant = Color(0xFFC7C7CC)
+    // Outlines - Subtle dividers
+    outline = Color(0xFFD1D1D6),
+    outlineVariant = Color(0xFFE5E5EA)
 )
 
-// Dark Color Scheme
+// Dark Color Scheme - iOS inspired with true black
 private val DarkColorScheme = darkColorScheme(
-    primary = Color(0xFF0B6EFD),
+    // Primary - iOS Blue (slightly brighter for dark mode)
+    primary = Color(0xFF0A84FF),
     onPrimary = Color.White,
-    primaryContainer = Color(0xFF004494),
-    onPrimaryContainer = Color(0xFFD6E3FF),
+    primaryContainer = Color(0xFF003D7A),
+    onPrimaryContainer = Color(0xFFD1E4FF),
     
-    secondary = Color(0xFF34C759),
+    // Secondary - iOS Green
+    secondary = Color(0xFF32D74B),
     onSecondary = Color.White,
-    secondaryContainer = Color(0xFF005313),
-    onSecondaryContainer = Color(0xFFD6F5DD),
+    secondaryContainer = Color(0xFF2C2C2E), // Received message bubble dark
+    onSecondaryContainer = Color(0xFFFFFFFF),
     
-    tertiary = Color(0xFFFF9500),
+    // Tertiary - iOS Orange
+    tertiary = Color(0xFFFF9F0A),
     onTertiary = Color.Black,
     
-    error = Color(0xFFFF3B30),
+    // Error - iOS Red
+    error = Color(0xFFFF453A),
     onError = Color.White,
+    errorContainer = Color(0xFF93000A),
+    onErrorContainer = Color(0xFFFFDAD6),
     
-    background = Color.Black,
-    onBackground = Color.White,
+    // Background - True black (OLED friendly)
+    background = Color(0xFF000000),
+    onBackground = Color(0xFFFFFFFF),
     
+    // Surface - Dark gray
     surface = Color(0xFF1C1C1E),
-    onSurface = Color.White,
+    onSurface = Color(0xFFFFFFFF),
     surfaceVariant = Color(0xFF2C2C2E),
     onSurfaceVariant = Color(0xFF8E8E93),
     
+    // Outlines - Subtle dividers for dark mode
     outline = Color(0xFF38383A),
     outlineVariant = Color(0xFF48484A)
 )
@@ -97,6 +115,7 @@ fun GChatTheme(
     MaterialTheme(
         colorScheme = colorScheme,
         typography = Typography,
+        shapes = Shapes,
         content = content
     )
 }
