@@ -145,122 +145,34 @@ private fun GroupInfoContent(
                 .padding(paddingValues)
                 .padding(16.dp)
         ) {
-            // Group Icon
             item {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(120.dp)
-                            .clickable { showImagePicker = true },
-                        contentAlignment = Alignment.BottomEnd
-                    ) {
-                        if (uploadProgress != null) {
-                            CircularProgressIndicator(
-                                progress = uploadProgress!!,
-                                modifier = Modifier.size(120.dp)
-                            )
-                        } else {
-                            ProfilePicture(
-                                url = conversation?.iconUrl,
-                                displayName = groupName,
-                                size = 120.dp,
-                                showOnlineIndicator = false
-                            )
-                        }
-                        
-                        // Edit icon
-                        Surface(
-                            modifier = Modifier.size(36.dp),
-                            shape = MaterialTheme.shapes.small,
-                            color = MaterialTheme.colorScheme.primary
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Edit,
-                                contentDescription = "Change icon",
-                                modifier = Modifier.padding(8.dp),
-                                tint = MaterialTheme.colorScheme.onPrimary
-                            )
-                        }
-                    }
-                }
-            }
-            
-            // Group Name
-            item {
-                if (isEditingName) {
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        OutlinedTextField(
-                            value = groupName,
-                            onValueChange = { viewModel.updateGroupName(it) },
-                            modifier = Modifier.weight(1f),
-                            singleLine = true
-                        )
-                        IconButton(onClick = { viewModel.saveGroupName() }) {
-                            Icon(Icons.Default.Check, "Save")
-                        }
-                        IconButton(onClick = { viewModel.cancelEditingName() }) {
-                            Icon(Icons.Default.Close, "Cancel")
-                        }
-                    }
-                } else {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .clickable { viewModel.startEditingName() }
-                            .padding(vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Text(
-                            text = groupName,
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.weight(1f)
-                        )
-                        Icon(Icons.Default.Edit, "Edit name", modifier = Modifier.size(20.dp))
-                    }
-                }
-                
-                Spacer(modifier = Modifier.height(8.dp))
-                Text(
-                    text = "${participants.size} members",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                GroupIconSection(
+                    uploadProgress = uploadProgress,
+                    conversation = conversation,
+                    groupName = groupName,
+                    onShowImagePicker = { onShowImagePickerChange(true) }
                 )
-                Spacer(modifier = Modifier.height(16.dp))
-                Divider()
             }
             
-            // Members Section Header
             item {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(
-                        text = "Members",
-                        style = MaterialTheme.typography.titleMedium
-                    )
-                    if (isAdmin) {
-                        TextButton(onClick = onAddMembers) {
-                            Icon(Icons.Default.Add, "Add members", modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("Add")
-                        }
-                    }
-                }
+                GroupNameSection(
+                    groupName = groupName,
+                    isEditingName = isEditingName,
+                    participantsCount = participants.size,
+                    onUpdateGroupName = viewModel::updateGroupName,
+                    onSaveGroupName = viewModel::saveGroupName,
+                    onCancelEditingName = viewModel::cancelEditingName,
+                    onStartEditingName = viewModel::startEditingName
+                )
             }
             
-            // Members List
+            item {
+                MembersSectionHeader(
+                    isAdmin = isAdmin,
+                    onAddMembers = onAddMembers
+                )
+            }
+            
             items(participants) { member ->
                 MemberItem(
                     member = member,
@@ -269,8 +181,8 @@ private fun GroupInfoContent(
                     canManage = isAdmin && member.id != currentUserId,
                     onClick = {
                         if (isAdmin && member.id != currentUserId) {
-                            selectedMember = member
-                            showMemberOptions = true
+                            onSelectedMemberChange(member)
+                            onShowMemberOptionsChange(true)
                         }
                     }
                 )
@@ -426,6 +338,137 @@ private fun GroupInfoTopBar(
             }
         }
     )
+}
+
+@Composable
+private fun GroupIconSection(
+    uploadProgress: Float?,
+    conversation: com.gchat.domain.model.Conversation?,
+    groupName: String,
+    onShowImagePicker: () -> Unit
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Box(
+            modifier = Modifier
+                .size(120.dp)
+                .clickable { onShowImagePicker() },
+            contentAlignment = Alignment.BottomEnd
+        ) {
+            if (uploadProgress != null) {
+                CircularProgressIndicator(
+                    progress = uploadProgress!!,
+                    modifier = Modifier.size(120.dp)
+                )
+            } else {
+                ProfilePicture(
+                    url = conversation?.iconUrl,
+                    displayName = groupName,
+                    size = 120.dp,
+                    showOnlineIndicator = false
+                )
+            }
+            
+            // Edit icon
+            Surface(
+                modifier = Modifier.size(36.dp),
+                shape = MaterialTheme.shapes.small,
+                color = MaterialTheme.colorScheme.primary
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Edit,
+                    contentDescription = "Change icon",
+                    modifier = Modifier.padding(8.dp),
+                    tint = MaterialTheme.colorScheme.onPrimary
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun GroupNameSection(
+    groupName: String,
+    isEditingName: Boolean,
+    participantsCount: Int,
+    onUpdateGroupName: (String) -> Unit,
+    onSaveGroupName: () -> Unit,
+    onCancelEditingName: () -> Unit,
+    onStartEditingName: () -> Unit
+) {
+    if (isEditingName) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            OutlinedTextField(
+                value = groupName,
+                onValueChange = onUpdateGroupName,
+                modifier = Modifier.weight(1f),
+                singleLine = true
+            )
+            IconButton(onClick = onSaveGroupName) {
+                Icon(Icons.Default.Check, "Save")
+            }
+            IconButton(onClick = onCancelEditingName) {
+                Icon(Icons.Default.Close, "Cancel")
+            }
+        }
+    } else {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clickable { onStartEditingName() }
+                .padding(vertical = 8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = groupName,
+                style = MaterialTheme.typography.headlineSmall,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(Icons.Default.Edit, "Edit name", modifier = Modifier.size(20.dp))
+        }
+    }
+    
+    Spacer(modifier = Modifier.height(8.dp))
+    Text(
+        text = "$participantsCount members",
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant
+    )
+    Spacer(modifier = Modifier.height(16.dp))
+    Divider()
+}
+
+@Composable
+private fun MembersSectionHeader(
+    isAdmin: Boolean,
+    onAddMembers: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(vertical = 16.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Text(
+            text = "Members",
+            style = MaterialTheme.typography.titleMedium
+        )
+        if (isAdmin) {
+            TextButton(onClick = onAddMembers) {
+                Icon(Icons.Default.Add, "Add members", modifier = Modifier.size(18.dp))
+                Spacer(modifier = Modifier.width(4.dp))
+                Text("Add")
+            }
+        }
+    }
 }
 
 @Composable
