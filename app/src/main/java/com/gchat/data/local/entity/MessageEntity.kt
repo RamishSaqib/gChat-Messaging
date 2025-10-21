@@ -13,15 +13,8 @@ import androidx.room.PrimaryKey
     indices = [
         Index(value = ["conversationId", "timestamp"]),
         Index(value = ["id"], unique = true)
-    ],
-    foreignKeys = [
-        ForeignKey(
-            entity = ConversationEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["conversationId"],
-            onDelete = ForeignKey.CASCADE
-        )
     ]
+    // Removed foreign key constraint to prevent cascade deletion when conversation is updated
 )
 data class MessageEntity(
     @PrimaryKey val id: String,
