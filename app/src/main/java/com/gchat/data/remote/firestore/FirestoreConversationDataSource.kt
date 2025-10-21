@@ -166,6 +166,49 @@ class FirestoreConversationDataSource @Inject constructor(
     }
     
     /**
+     * Remove a user from a conversation. If they're the last participant, delete the entire conversation.
+     */
+    suspend fun removeUserFromConversation(conversationId: String, userId: String): Result<Unit> {
+        return try {
+            val docRef = conversationsCollection.document(conversationId)
+            val snapshot = docRef.get().await()
+            
+            if (!snapshot.exists()) {
+                // Conversation doesn't exist in Firestore, that's okay
+                android.util.Log.d("FirestoreConversation", "Conversation $conversationId not found in Firestore, skipping")
+                return Result.success(Unit)
+            }
+            
+            val conversation = ConversationMapper.fromFirestore(snapshot)
+            if (conversation == null) {
+                return Result.failure(Exception("Failed to parse conversation"))
+            }
+            
+            val updatedParticipants = conversation.participants.filter { it != userId }
+            
+            if (updatedParticipants.isEmpty()) {
+                // No more participants, delete the entire conversation
+                android.util.Log.d("FirestoreConversation", "Deleting conversation $conversationId (no more participants)")
+                docRef.delete().await()
+            } else {
+                // Remove user from participants array
+                android.util.Log.d("FirestoreConversation", "Removing user $userId from conversation $conversationId")
+                docRef.update("participants", updatedParticipants).await()
+            }
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.w("FirestoreConversation", "Failed to remove user from conversation: ${e.message}")
+            // Don't fail if the document doesn't exist
+            if (e.message?.contains("NOT_FOUND") == true || e.message?.contains("PERMISSION_DENIED") == true) {
+                Result.success(Unit)
+            } else {
+                Result.failure(e)
+            }
+        }
+    }
+    
+    /**
      * Find existing one-on-one conversation between two users
      */
     suspend fun findOneOnOneConversation(userId1: String, userId2: String): Result<Conversation?> {

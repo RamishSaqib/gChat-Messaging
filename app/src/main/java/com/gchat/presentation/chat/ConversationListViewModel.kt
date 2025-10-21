@@ -6,6 +6,7 @@ import com.gchat.domain.model.Conversation
 import com.gchat.domain.model.User
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.UserRepository
+import com.gchat.domain.usecase.DeleteConversationUseCase
 import com.gchat.domain.usecase.GetConversationsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
@@ -18,6 +19,7 @@ import javax.inject.Inject
 @HiltViewModel
 class ConversationListViewModel @Inject constructor(
     getConversationsUseCase: GetConversationsUseCase,
+    private val deleteConversationUseCase: DeleteConversationUseCase,
     private val authRepository: AuthRepository,
     private val userRepository: UserRepository
 ) : ViewModel() {
@@ -120,6 +122,23 @@ class ConversationListViewModel @Inject constructor(
         started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
         initialValue = emptyList()
     )
+    
+    fun deleteConversation(conversationId: String, onComplete: (Result<Unit>) -> Unit = {}) {
+        viewModelScope.launch {
+            android.util.Log.d("ConversationListVM", "Deleting conversation: $conversationId")
+            val result = deleteConversationUseCase(conversationId)
+            result.fold(
+                onSuccess = {
+                    android.util.Log.d("ConversationListVM", "Conversation deleted successfully")
+                    onComplete(Result.success(Unit))
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ConversationListVM", "Failed to delete conversation: ${error.message}")
+                    onComplete(Result.failure(error))
+                }
+            )
+        }
+    }
     
     fun logout(onComplete: () -> Unit) {
         viewModelScope.launch {

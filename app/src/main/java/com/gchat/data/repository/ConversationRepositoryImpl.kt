@@ -235,18 +235,28 @@ class ConversationRepositoryImpl @Inject constructor(
     
     override suspend fun deleteConversation(conversationId: String): Result<Unit> {
         return try {
-            // Delete locally
+            val currentUserId = auth.currentUser?.uid
+                ?: return Result.failure(Exception("User not authenticated"))
+            
+            android.util.Log.d("ConversationRepo", "Deleting conversation $conversationId for user $currentUserId")
+            
+            // Delete locally first (immediate UI update)
             val conversation = conversationDao.getConversationById(conversationId)
             if (conversation != null) {
                 conversationDao.delete(conversation)
                 messageDao.deleteByConversation(conversationId)
+                android.util.Log.d("ConversationRepo", "Deleted conversation locally")
             }
             
-            // Delete from Firestore
-            firestoreConversationDataSource.deleteConversation(conversationId)
+            // Remove user from Firestore conversation (or delete if last participant)
+            val firestoreResult = firestoreConversationDataSource.removeUserFromConversation(conversationId, currentUserId)
+            firestoreResult.onFailure { error ->
+                android.util.Log.w("ConversationRepo", "Failed to remove from Firestore: ${error.message}, but local delete succeeded")
+            }
             
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("ConversationRepo", "Failed to delete conversation: ${e.message}", e)
             Result.failure(e)
         }
     }

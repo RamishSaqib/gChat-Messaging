@@ -11,6 +11,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.ExitToApp
 import androidx.compose.material.icons.filled.Group
 import androidx.compose.material.icons.filled.Person
@@ -24,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -212,11 +214,44 @@ fun ConversationListScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
-                        ConversationItem(
-                            conversationWithUser = conversationWithUser,
-                            currentUserId = viewModel.currentUser.value?.id,
-                            onClick = { onConversationClick(conversationWithUser.conversation.id) }
+                        val dismissState = rememberSwipeToDismissBoxState(
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                    // Delete the conversation
+                                    viewModel.deleteConversation(conversationWithUser.conversation.id)
+                                    true
+                                } else {
+                                    false
+                                }
+                            }
                         )
+                        
+                        SwipeToDismissBox(
+                            state = dismissState,
+                            backgroundContent = {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .background(MaterialTheme.colorScheme.error)
+                                        .padding(horizontal = 20.dp),
+                                    contentAlignment = Alignment.CenterEnd
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Delete,
+                                        contentDescription = "Delete",
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                            },
+                            enableDismissFromStartToEnd = false
+                        ) {
+                            ConversationItem(
+                                conversationWithUser = conversationWithUser,
+                                currentUserId = viewModel.currentUser.value?.id,
+                                onClick = { onConversationClick(conversationWithUser.conversation.id) }
+                            )
+                        }
                     }
                 }
             }
