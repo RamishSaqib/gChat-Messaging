@@ -214,9 +214,9 @@ fun ConversationListScreen(
                     modifier = Modifier.fillMaxSize()
                 ) {
                     items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
-                        val dismissState = rememberSwipeToDismissBoxState(
+                        val dismissState = rememberDismissState(
                             confirmValueChange = { dismissValue ->
-                                if (dismissValue == SwipeToDismissBoxValue.EndToStart) {
+                                if (dismissValue == DismissValue.DismissedToStart) {
                                     // Delete the conversation
                                     viewModel.deleteConversation(conversationWithUser.conversation.id)
                                     true
@@ -226,9 +226,9 @@ fun ConversationListScreen(
                             }
                         )
                         
-                        SwipeToDismissBox(
+                        SwipeToDismiss(
                             state = dismissState,
-                            backgroundContent = {
+                            background = {
                                 Box(
                                     modifier = Modifier
                                         .fillMaxSize()
@@ -244,7 +244,7 @@ fun ConversationListScreen(
                                     )
                                 }
                             },
-                            enableDismissFromStartToEnd = false
+                            directions = setOf(DismissDirection.EndToStart)
                         ) {
                             ConversationItem(
                                 conversationWithUser = conversationWithUser,
