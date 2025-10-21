@@ -21,8 +21,8 @@ import com.gchat.data.local.entity.UserEntity
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 2, // Incremented: removed foreign key constraint from MessageEntity
-    exportSchema = true
+    version = 3, // v3: Added groupAdmins field to ConversationEntity
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {

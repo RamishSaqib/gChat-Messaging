@@ -6,6 +6,48 @@
 
 ## 📋 Pull Request History
 
+### PR #5: Group Chat
+**Status:** 🟡 In Progress - Core features complete, ready for testing  
+**Date Started:** October 20, 2025  
+**Time Spent:** ~3 hours so far
+
+**Features Implemented:**
+- ✅ Create group conversations with 3-50 participants
+- ✅ Group name and custom group icon/avatar upload
+- ✅ Group admin roles (creator is initial admin)
+- ✅ Sender names displayed in group message bubbles
+- ✅ FAB menu with "New Group" option in conversation list
+- ✅ Conversation list correctly displays group name and icon
+- ✅ CreateGroupScreen with participant search and selection
+- ✅ Real-time user search with add/remove participants
+
+**Technical Completed:**
+- CreateGroupUseCase with validation (3-50 participants, creator as admin)
+- CreateGroupScreen and CreateGroupViewModel
+- Updated Conversation model with groupAdmins field
+- Database schema v3 (added groupAdmins to ConversationEntity)
+- Firestore rules: group validation, admin-only updates, participant limits
+- Firebase Storage rules: group_icons path with 5MB limit
+- ChatViewModel exposes conversation and participantUsers for sender display
+- Navigation: CreateGroup route integrated
+
+**Deferred to Future PRs:**
+- GroupInfoScreen (view/edit group, manage members) → PR #5.6 or #6
+- Message history filtering for new members → PR #5.5 (privacy feature)
+- Participant count badge in conversation list
+- Leave group functionality
+- Add/remove participants after creation
+
+**Testing Needed:**
+- [ ] Create group with 3+ participants
+- [ ] Send messages in group chat
+- [ ] Verify sender names display correctly
+- [ ] Test group icon upload
+- [ ] Verify Firestore security rules
+- [ ] Test navigation flow (list → create → chat)
+
+---
+
 ### PR #4.5: Image Upload UI with Caption Support
 **Status:** ✅ Merged to Main  
 **Date:** October 20, 2025

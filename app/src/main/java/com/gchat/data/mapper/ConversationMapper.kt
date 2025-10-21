@@ -25,6 +25,11 @@ object ConversationMapper {
             },
             name = entity.name,
             iconUrl = entity.iconUrl,
+            groupAdmins = try {
+                json.decodeFromString(entity.groupAdmins)
+            } catch (e: Exception) {
+                emptyList()
+            },
             lastMessage = lastMessage,
             unreadCount = entity.unreadCount,
             updatedAt = entity.updatedAt,
@@ -40,6 +45,7 @@ object ConversationMapper {
             participants = json.encodeToString(domain.participants),
             name = domain.name,
             iconUrl = domain.iconUrl,
+            groupAdmins = json.encodeToString(domain.groupAdmins),
             lastMessageId = domain.lastMessage?.id,
             lastMessageText = domain.lastMessage?.text,
             lastMessageTimestamp = domain.lastMessage?.timestamp ?: domain.updatedAt,
@@ -54,6 +60,7 @@ object ConversationMapper {
     fun fromFirestore(document: DocumentSnapshot): Conversation? {
         return try {
             val participantsList = document.get("participants") as? List<*>
+            val groupAdminsList = document.get("groupAdmins") as? List<*>
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
             
             // Parse last message if it exists
@@ -81,6 +88,7 @@ object ConversationMapper {
                 participants = participantsList?.mapNotNull { it as? String } ?: emptyList(),
                 name = document.getString("name"),
                 iconUrl = document.getString("iconUrl"),
+                groupAdmins = groupAdminsList?.mapNotNull { it as? String } ?: emptyList(),
                 lastMessage = lastMessage,
                 unreadCount = 0, // Calculated client-side
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
@@ -107,6 +115,7 @@ object ConversationMapper {
             "participants" to conversation.participants,
             "name" to conversation.name,
             "iconUrl" to conversation.iconUrl,
+            "groupAdmins" to conversation.groupAdmins,
             "lastMessage" to lastMessageMap,
             "updatedAt" to conversation.updatedAt,
             "createdAt" to conversation.createdAt

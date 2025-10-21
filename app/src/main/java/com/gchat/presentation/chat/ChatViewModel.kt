@@ -58,7 +58,30 @@ class ChatViewModel @Inject constructor(
         emit(authRepository.getCurrentUserId())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
-    // Get other user's display name for the TopBar
+    // Get conversation details
+    val conversation: StateFlow<com.gchat.domain.model.Conversation?> = flow {
+        conversationRepository.getConversation(conversationId)
+            .onSuccess { emit(it) }
+            .onFailure { emit(null) }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    
+    // Get participants for group chats (userId -> displayName)
+    val participantUsers: StateFlow<Map<String, com.gchat.domain.model.User>> = flow {
+        val conv = conversationRepository.getConversation(conversationId).getOrNull()
+        if (conv != null && conv.isGroup()) {
+            val users = mutableMapOf<String, com.gchat.domain.model.User>()
+            conv.participants.forEach { userId ->
+                userRepository.getUser(userId).onSuccess { user ->
+                    users[userId] = user
+                }
+            }
+            emit(users)
+        } else {
+            emit(emptyMap())
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    
+    // Get display name for the TopBar
     val otherUserName: StateFlow<String> = flow {
         val currentUserId = authRepository.getCurrentUserId() ?: ""
         val conversation = conversationRepository.getConversation(conversationId).getOrNull()
