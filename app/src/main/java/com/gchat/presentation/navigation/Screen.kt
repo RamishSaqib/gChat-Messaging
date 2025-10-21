@@ -8,8 +8,12 @@ sealed class Screen(val route: String) {
     object Register : Screen("register")
     object ConversationList : Screen("conversations")
     object NewConversation : Screen("new_conversation")
+    object CreateGroup : Screen("create_group")
     data object Chat : Screen("chat/{conversationId}") {
         fun createRoute(conversationId: String) = "chat/$conversationId"
+    }
+    data object GroupInfo : Screen("group_info/{conversationId}") {
+        fun createRoute(conversationId: String) = "group_info/$conversationId"
     }
     data object ImageViewer : Screen("image_viewer/{imageUrl}") {
         fun createRoute(imageUrl: String) = "image_viewer/${java.net.URLEncoder.encode(imageUrl, "UTF-8")}"

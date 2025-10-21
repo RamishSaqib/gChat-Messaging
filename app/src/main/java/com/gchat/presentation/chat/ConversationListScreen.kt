@@ -8,10 +8,15 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ExitToApp
+import androidx.compose.material.icons.filled.Group
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
@@ -27,10 +32,12 @@ import java.util.*
 fun ConversationListScreen(
     onConversationClick: (String) -> Unit,
     onNewConversationClick: () -> Unit,
+    onNewGroupClick: () -> Unit,
     onLogout: () -> Unit,
     viewModel: ConversationListViewModel = hiltViewModel()
 ) {
     val conversationsWithUsers by viewModel.conversationsWithUsers.collectAsState()
+    var showFabMenu by remember { mutableStateOf(false) }
     
     Scaffold(
         topBar = {
@@ -56,8 +63,35 @@ fun ConversationListScreen(
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = onNewConversationClick) {
-                Icon(Icons.Default.Add, contentDescription = "New conversation")
+            Box {
+                FloatingActionButton(onClick = { showFabMenu = !showFabMenu }) {
+                    Icon(Icons.Default.Add, contentDescription = "New conversation")
+                }
+                DropdownMenu(
+                    expanded = showFabMenu,
+                    onDismissRequest = { showFabMenu = false }
+                ) {
+                    DropdownMenuItem(
+                        text = { Text("New Conversation") },
+                        onClick = {
+                            showFabMenu = false
+                            onNewConversationClick()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.Person, contentDescription = null)
+                        }
+                    )
+                    DropdownMenuItem(
+                        text = { Text("New Group") },
+                        onClick = {
+                            showFabMenu = false
+                            onNewGroupClick()
+                        },
+                        leadingIcon = {
+                            Icon(Icons.Default.Group, contentDescription = null)
+                        }
+                    )
+                }
             }
         }
     ) { paddingValues ->

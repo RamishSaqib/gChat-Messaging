@@ -14,6 +14,7 @@ import com.gchat.presentation.auth.LoginScreen
 import com.gchat.presentation.auth.RegisterScreen
 import com.gchat.presentation.chat.ChatScreen
 import com.gchat.presentation.chat.ConversationListScreen
+import com.gchat.presentation.creategroup.CreateGroupScreen
 import com.gchat.presentation.imageviewer.ImageViewerScreen
 import com.gchat.presentation.newconversation.NewConversationScreen
 import java.net.URLDecoder
@@ -64,6 +65,9 @@ fun NavGraph(
                 onNewConversationClick = {
                     navController.navigate(Screen.NewConversation.route)
                 },
+                onNewGroupClick = {
+                    navController.navigate(Screen.CreateGroup.route)
+                },
                 onLogout = {
                     // Clear back stack and navigate to login
                     navController.navigate(Screen.Login.route) {
@@ -83,6 +87,20 @@ fun NavGraph(
                 },
                 onConversationCreated = { conversationId ->
                     // Navigate to the chat screen and remove new conversation from back stack
+                    navController.navigate(Screen.Chat.createRoute(conversationId)) {
+                        popUpTo(Screen.ConversationList.route)
+                    }
+                }
+            )
+        }
+        
+        composable(Screen.CreateGroup.route) {
+            CreateGroupScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onGroupCreated = { conversationId ->
+                    // Navigate to the chat screen and remove create group from back stack
                     navController.navigate(Screen.Chat.createRoute(conversationId)) {
                         popUpTo(Screen.ConversationList.route)
                     }
