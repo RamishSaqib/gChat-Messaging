@@ -43,11 +43,11 @@ class ConversationListViewModel @Inject constructor(
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
     // Combine conversations with real-time user data
-    val conversationsWithUsers: StateFlow<List<ConversationWithUser>> = flow {
-        val currentUserId = authRepository.getCurrentUserId() ?: ""
-        
-        getConversationsUseCase().collect { conversations ->
+    val conversationsWithUsers: StateFlow<List<ConversationWithUser>> = getConversationsUseCase()
+        .flatMapLatest { conversations ->
+            val currentUserId = authRepository.getCurrentUserId() ?: ""
             android.util.Log.d("ConversationListVM", "UseCase emitted ${conversations.size} conversations")
+            
             // Create a combined flow that updates when any user status changes
             val conversationFlows = conversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
@@ -120,16 +120,15 @@ class ConversationListViewModel @Inject constructor(
                     // Filter out dismissed conversations for immediate UI update
                     conversations.filter { it.conversation.id !in dismissedIds }
                 }
-                .collect { conversationsWithUsers ->
+                .onEach { conversationsWithUsers ->
                     android.util.Log.d("ConversationListVM", "Emitting ${conversationsWithUsers.size} conversations with users to UI")
-                    emit(conversationsWithUsers)
                 }
         }
-    }.stateIn(
-        scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-        initialValue = emptyList()
-    )
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.Eagerly, // Changed to Eagerly to keep collecting even when screen not visible
+            initialValue = emptyList()
+        )
     
     fun deleteConversation(conversationId: String, onComplete: (Result<Unit>) -> Unit = {}) {
         viewModelScope.launch {
