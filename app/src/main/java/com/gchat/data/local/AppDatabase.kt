@@ -21,7 +21,7 @@ import com.gchat.data.local.entity.UserEntity
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 2, // Incremented: removed foreign key constraint from MessageEntity
+    version = 3, // v3: Added groupAdmins field to ConversationEntity
     exportSchema = true
 )
 @TypeConverters(Converters::class)

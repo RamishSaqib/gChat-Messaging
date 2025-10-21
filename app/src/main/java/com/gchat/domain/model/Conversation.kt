@@ -11,6 +11,7 @@ data class Conversation(
     val participants: List<String>, // User IDs
     val name: String? = null, // For groups
     val iconUrl: String? = null, // For groups
+    val groupAdmins: List<String> = emptyList(), // User IDs of group admins
     val lastMessage: Message? = null,
     val unreadCount: Int = 0,
     val updatedAt: Long = System.currentTimeMillis(),
@@ -38,6 +39,27 @@ data class Conversation(
     fun getOtherParticipantId(currentUserId: String): String? {
         if (type != ConversationType.ONE_ON_ONE) return null
         return participants.firstOrNull { it != currentUserId }
+    }
+    
+    /**
+     * Check if a user is a group admin
+     */
+    fun isAdmin(userId: String): Boolean {
+        return groupAdmins.contains(userId)
+    }
+    
+    /**
+     * Check if this is a group conversation
+     */
+    fun isGroup(): Boolean {
+        return type == ConversationType.GROUP
+    }
+    
+    /**
+     * Get participant count
+     */
+    fun getParticipantCount(): Int {
+        return participants.size
     }
 }
 
