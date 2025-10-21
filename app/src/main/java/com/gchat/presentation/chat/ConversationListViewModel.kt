@@ -25,6 +25,18 @@ class ConversationListViewModel @Inject constructor(
     // Cache for user data flows to observe real-time status changes
     private val userFlowCache = mutableMapOf<String, StateFlow<User?>>()
     
+    // Current user information
+    val currentUser: StateFlow<User?> = flow {
+        val userId = authRepository.getCurrentUserId()
+        if (userId != null) {
+            userRepository.getUserFlow(userId).collect { user ->
+                emit(user)
+            }
+        } else {
+            emit(null)
+        }
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    
     // Combine conversations with real-time user data
     val conversationsWithUsers: StateFlow<List<ConversationWithUser>> = flow {
         val currentUserId = authRepository.getCurrentUserId() ?: ""

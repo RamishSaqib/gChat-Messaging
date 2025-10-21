@@ -276,6 +276,81 @@ class ConversationRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun updateGroupName(conversationId: String, newName: String): Result<Unit> {
+        return firestoreConversationDataSource.updateConversation(
+            conversationId,
+            mapOf("name" to newName, "updatedAt" to System.currentTimeMillis())
+        )
+    }
+    
+    override suspend fun updateGroupIcon(conversationId: String, newIconUrl: String?): Result<Unit> {
+        return firestoreConversationDataSource.updateConversation(
+            conversationId,
+            mapOf("iconUrl" to newIconUrl, "updatedAt" to System.currentTimeMillis())
+        )
+    }
+    
+    override suspend fun addParticipants(conversationId: String, participantIds: List<String>): Result<Unit> {
+        return try {
+            val conversation = getConversation(conversationId).getOrThrow()
+            val updatedParticipants = (conversation.participants + participantIds).distinct()
+            
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf(
+                    "participants" to updatedParticipants,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun removeParticipant(conversationId: String, participantId: String): Result<Unit> {
+        return try {
+            val conversation = getConversation(conversationId).getOrThrow()
+            val updatedParticipants = conversation.participants.filter { it != participantId }
+            val updatedAdmins = conversation.groupAdmins.filter { it != participantId }
+            
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf(
+                    "participants" to updatedParticipants,
+                    "groupAdmins" to updatedAdmins,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun promoteToAdmin(conversationId: String, userId: String): Result<Unit> {
+        return try {
+            val conversation = getConversation(conversationId).getOrThrow()
+            if (!conversation.groupAdmins.contains(userId)) {
+                val updatedAdmins = conversation.groupAdmins + userId
+                
+                firestoreConversationDataSource.updateConversation(
+                    conversationId,
+                    mapOf(
+                        "groupAdmins" to updatedAdmins,
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+            } else {
+                Result.success(Unit)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun leaveGroup(conversationId: String, userId: String): Result<Unit> {
+        return removeParticipant(conversationId, userId)
+    }
+    
     private suspend fun syncConversationsFromFirestore(userId: String) {
         try {
             firestoreConversationDataSource.observeConversations(userId)

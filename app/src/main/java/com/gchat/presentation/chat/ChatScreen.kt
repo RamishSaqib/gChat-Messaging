@@ -47,6 +47,8 @@ import java.util.*
 fun ChatScreen(
     conversationId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToGroupInfo: ((String) -> Unit)? = null,
+    onNavigateToDMInfo: ((String) -> Unit)? = null,
     viewModel: ChatViewModel = hiltViewModel()
 ) {
     val context = LocalContext.current
@@ -109,7 +111,20 @@ fun ChatScreen(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text(otherUserName) },
+                title = {
+                    Text(
+                        text = otherUserName,
+                        modifier = Modifier.clickable {
+                            conversation?.let { conv ->
+                                if (conv.isGroup()) {
+                                    onNavigateToGroupInfo?.invoke(conversationId)
+                                } else {
+                                    onNavigateToDMInfo?.invoke(conversationId)
+                                }
+                            }
+                        }
+                    )
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Filled.ArrowBack, "Back")

@@ -15,5 +15,13 @@ interface ConversationRepository {
     suspend fun updateLastMessage(conversationId: String, messageId: String, messageText: String?, senderId: String, timestamp: Long): Result<Unit>
     suspend fun deleteConversation(conversationId: String): Result<Unit>
     suspend fun findOrCreateOneOnOneConversation(currentUserId: String, otherUserId: String): Result<Conversation>
+    
+    // Group management methods
+    suspend fun updateGroupName(conversationId: String, newName: String): Result<Unit>
+    suspend fun updateGroupIcon(conversationId: String, newIconUrl: String?): Result<Unit>
+    suspend fun addParticipants(conversationId: String, participantIds: List<String>): Result<Unit>
+    suspend fun removeParticipant(conversationId: String, participantId: String): Result<Unit>
+    suspend fun promoteToAdmin(conversationId: String, userId: String): Result<Unit>
+    suspend fun leaveGroup(conversationId: String, userId: String): Result<Unit>
 }
 

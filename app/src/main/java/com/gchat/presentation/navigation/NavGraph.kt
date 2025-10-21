@@ -15,8 +15,11 @@ import com.gchat.presentation.auth.RegisterScreen
 import com.gchat.presentation.chat.ChatScreen
 import com.gchat.presentation.chat.ConversationListScreen
 import com.gchat.presentation.creategroup.CreateGroupScreen
+import com.gchat.presentation.dminfo.DMInfoScreen
+import com.gchat.presentation.groupinfo.GroupInfoScreen
 import com.gchat.presentation.imageviewer.ImageViewerScreen
 import com.gchat.presentation.newconversation.NewConversationScreen
+import com.gchat.presentation.profile.ProfileScreen
 import java.net.URLDecoder
 
 @Composable
@@ -68,6 +71,9 @@ fun NavGraph(
                 onNewGroupClick = {
                     navController.navigate(Screen.CreateGroup.route)
                 },
+                onProfileClick = {
+                    navController.navigate(Screen.Profile.route)
+                },
                 onLogout = {
                     // Clear back stack and navigate to login
                     navController.navigate(Screen.Login.route) {
@@ -76,6 +82,14 @@ fun NavGraph(
                         }
                         launchSingleTop = true
                     }
+                }
+            )
+        }
+        
+        composable(Screen.Profile.route) {
+            ProfileScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
                 }
             )
         }
@@ -114,8 +128,44 @@ fun NavGraph(
                 navArgument("conversationId") { type = NavType.StringType }
             )
         ) {
+            val conversationId = it.arguments?.getString("conversationId") ?: ""
             ChatScreen(
-                conversationId = it.arguments?.getString("conversationId") ?: "",
+                conversationId = conversationId,
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onNavigateToGroupInfo = { convId ->
+                    navController.navigate(Screen.GroupInfo.createRoute(convId))
+                },
+                onNavigateToDMInfo = { convId ->
+                    navController.navigate(Screen.DMInfo.createRoute(convId))
+                }
+            )
+        }
+        
+        composable(
+            route = Screen.GroupInfo.route,
+            arguments = listOf(
+                navArgument("conversationId") { type = NavType.StringType }
+            )
+        ) {
+            GroupInfoScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onAddMembers = {
+                    // TODO: Navigate to add members screen
+                }
+            )
+        }
+        
+        composable(
+            route = Screen.DMInfo.route,
+            arguments = listOf(
+                navArgument("conversationId") { type = NavType.StringType }
+            )
+        ) {
+            DMInfoScreen(
                 onNavigateBack = {
                     navController.popBackStack()
                 }

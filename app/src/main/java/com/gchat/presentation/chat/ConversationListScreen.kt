@@ -39,10 +39,12 @@ fun ConversationListScreen(
     onConversationClick: (String) -> Unit,
     onNewConversationClick: () -> Unit,
     onNewGroupClick: () -> Unit,
+    onProfileClick: () -> Unit,
     onLogout: () -> Unit,
     viewModel: ConversationListViewModel = hiltViewModel()
 ) {
     val conversationsWithUsers by viewModel.conversationsWithUsers.collectAsState()
+    val currentUser by viewModel.currentUser.collectAsState()
     var showFabMenu by remember { mutableStateOf(false) }
     
     // Request notification permission for Android 13+ (API 33+)
@@ -65,6 +67,17 @@ fun ConversationListScreen(
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
                 actions = {
+                    // Profile picture button
+                    IconButton(onClick = onProfileClick) {
+                        ProfilePicture(
+                            imageUrl = currentUser?.profilePictureUrl,
+                            displayName = currentUser?.displayName ?: "User",
+                            size = 32.dp,
+                            showOnlineIndicator = false
+                        )
+                    }
+                    
+                    // Logout button
                     IconButton(onClick = {
                         viewModel.logout {
                             onLogout()
