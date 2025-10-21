@@ -1,11 +1,14 @@
 package com.gchat.presentation.chat
 
+import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gchat.domain.model.Message
+import com.gchat.domain.model.MessageType
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.ConversationRepository
+import com.gchat.domain.repository.MediaRepository
 import com.gchat.domain.repository.UserRepository
 import com.gchat.domain.usecase.GetMessagesUseCase
 import com.gchat.domain.usecase.MarkMessageAsReadUseCase
@@ -26,6 +29,7 @@ class ChatViewModel @Inject constructor(
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
+    private val mediaRepository: MediaRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -36,6 +40,12 @@ class ChatViewModel @Inject constructor(
     
     private val _sendingState = MutableStateFlow(false)
     val sendingState: StateFlow<Boolean> = _sendingState.asStateFlow()
+    
+    private val _uploadProgress = MutableStateFlow<Float?>(null)
+    val uploadProgress: StateFlow<Float?> = _uploadProgress.asStateFlow()
+    
+    private val _uploadError = MutableStateFlow<String?>(null)
+    val uploadError: StateFlow<String?> = _uploadError.asStateFlow()
     
     val messages: StateFlow<List<Message>> = getMessagesUseCase(conversationId)
         .stateIn(
@@ -97,6 +107,43 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             markMessageAsReadUseCase(conversationId, messageId, userId)
         }
+    }
+    
+    fun sendImageMessage(imageUri: Uri, caption: String? = null) {
+        val userId = currentUserId.value ?: return
+        
+        viewModelScope.launch {
+            _sendingState.value = true
+            _uploadProgress.value = 0f
+            _uploadError.value = null
+            
+            // Upload image to Firebase Storage
+            mediaRepository.uploadImage(userId, imageUri, "chat_images")
+                .onSuccess { imageUrl ->
+                    _uploadProgress.value = 0.8f
+                    
+                    // Send message with image URL
+                    sendMessageUseCase(
+                        conversationId = conversationId,
+                        senderId = userId,
+                        text = caption ?: "",
+                        type = MessageType.IMAGE,
+                        mediaUrl = imageUrl
+                    )
+                    
+                    _uploadProgress.value = null
+                    _sendingState.value = false
+                }
+                .onFailure { error ->
+                    _uploadError.value = "Failed to upload image: ${error.message}"
+                    _uploadProgress.value = null
+                    _sendingState.value = false
+                }
+        }
+    }
+    
+    fun clearUploadError() {
+        _uploadError.value = null
     }
 }
 
