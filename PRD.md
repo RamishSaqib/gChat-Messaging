@@ -6,8 +6,45 @@
 
 ## 📋 Pull Request History
 
-### PR #4: Media Sharing & Core Messaging Fixes
+### PR #4.5: Image Upload UI with Caption Support
 **Status:** ✅ Ready for Merge  
+**Date:** October 20, 2025
+
+**Features Added:**
+- Complete image upload UI with attachment button and picker bottom sheet
+- Image preview with caption support before sending
+- Camera and gallery integration with permission handling
+- Remove/cancel selected image button
+- Upload progress indicator (circular progress during upload)
+- Error handling with Snackbar notifications
+- Smart placeholder text ("Add a caption..." when image selected)
+
+**User Experience:**
+- Tap attachment button → Choose Camera or Gallery
+- Image preview appears above text input
+- Add optional caption text with image
+- X button to remove image if needed
+- Send button enabled with image (text optional)
+- Upload progress shows during Firebase Storage upload
+- Text field clears after sending
+
+**Technical Implementation:**
+- ChatViewModel: `sendImageMessage()` with caption parameter
+- MessageInput: Image preview, caption support, remove button
+- ImagePickerBottomSheet: Beautiful UI for source selection
+- Camera permission handling with Accompanist Permissions
+- Firebase Storage rules deployed for `chat_images/{userId}/` path
+- Image compression handled by MediaRepositoryImpl
+
+**Bugs Fixed:**
+- Fixed uploadImage parameter order (Uri, path)
+- Added camera permission request before launching camera
+- Clear text field after sending image with caption
+
+---
+
+### PR #4: Media Sharing & Core Messaging Fixes
+**Status:** ✅ Merged  
 **Date:** October 20, 2025
 
 **Features Added:**

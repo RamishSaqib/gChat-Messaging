@@ -14,27 +14,29 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import coil.compose.SubcomposeAsyncImage
+import com.gchat.domain.model.Message
 
 /**
  * Displays an image message bubble
  */
 @Composable
 fun ImageMessageBubble(
-    imageUrl: String,
-    caption: String?,
-    isSentByCurrentUser: Boolean,
+    message: Message,
+    isCurrentUser: Boolean,
     onImageClick: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val imageUrl = message.mediaUrl ?: return
+    val caption = message.text
     Column(
         modifier = modifier
             .widthIn(max = 280.dp)
             .clip(RoundedCornerShape(16.dp))
             .background(
-                if (isSentByCurrentUser)
+                if (isCurrentUser)
                     MaterialTheme.colorScheme.primaryContainer
                 else
-                    MaterialTheme.colorScheme.surfaceVariant
+                    MaterialTheme.colorScheme.secondaryContainer
             )
             .padding(8.dp)
     ) {
@@ -66,10 +68,10 @@ fun ImageMessageBubble(
             Text(
                 text = caption,
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (isSentByCurrentUser)
+                color = if (isCurrentUser)
                     MaterialTheme.colorScheme.onPrimaryContainer
                 else
-                    MaterialTheme.colorScheme.onSurfaceVariant
+                    MaterialTheme.colorScheme.onSecondaryContainer
             )
         }
     }

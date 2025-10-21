@@ -1,18 +1,62 @@
 # gChat - Development Tasks
 
-> **Current PR:** None - Ready for PR #5 | **Last Merged:** PR #4 - Media Sharing & Core Fixes
+> **Current PR:** None - Ready for PR #5 | **Last Merged:** PR #4.5 - Image Upload UI
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 4  
+**Completed PRs:** 5 (4 merged + 4.5 ready)  
 **Current Sprint:** Planning Next Features  
-**Next Up:** Complete Image Upload UI (PR #4.5) or Group Chat (PR #5) or Push Notifications (PR #6)
+**Next Up:** Group Chat (PR #5) or Push Notifications (PR #6) or AI Translation (PR #7)
 
 ---
 
-## ✅ PR #4: Media Sharing & Core Messaging Fixes (COMPLETED)
+## ✅ PR #4.5: Image Upload UI with Caption Support (COMPLETED)
+
+**Goal:** Complete the image upload UI with preview, caption support, and polished UX
+
+**Status:** ✅ Complete - Pushed to GitHub, Ready for Merge
+
+**Summary:**  
+Implemented complete image upload flow with attachment button, camera/gallery picker, image preview before sending, optional caption support, and upload progress indicator. Users can now send images with text captions in a polished, modern messaging UX.
+
+**Time Spent:** ~3 hours
+
+### Implementation Tasks
+- [x] Add `sendImageMessage()` to ChatViewModel with caption parameter
+- [x] Update `SendMessageUseCase` to support mediaUrl parameter
+- [x] Add attachment button to MessageInput
+- [x] Create ImagePickerBottomSheet with Camera/Gallery options
+- [x] Wire ImagePickerManager to ChatScreen
+- [x] Add camera permission handling with Accompanist Permissions
+- [x] Implement image preview in MessageInput (above text field)
+- [x] Add remove/cancel image button (X overlay on preview)
+- [x] Show upload progress indicator (CircularProgressIndicator)
+- [x] Handle upload errors with Snackbar
+- [x] Update placeholder text based on image selection state
+- [x] Clear text field after sending image with caption
+- [x] Enable send button when image selected (text optional)
+- [x] Disable attachment button while image is selected
+
+### Bugs Fixed During Development
+- [x] Fixed uploadImage parameter order (Uri, path vs userId, uri, path)
+- [x] Added camera permission request before launching camera (SecurityException)
+- [x] Clear text field after sending image with caption
+
+### Testing Completed
+- [x] Camera capture flow (permission → capture → preview → send)
+- [x] Gallery selection flow (pick → preview → send)
+- [x] Image with caption (text displays in message)
+- [x] Image without caption (image only message)
+- [x] Remove image button (cancel selection)
+- [x] Upload progress indicator
+- [x] Firebase Storage upload and download
+- [x] Error handling and Snackbar display
+
+---
+
+## ✅ PR #4: Media Sharing & Core Messaging Fixes (MERGED)
 
 **Goal:** Enable image sharing infrastructure and fix critical messaging bugs
 

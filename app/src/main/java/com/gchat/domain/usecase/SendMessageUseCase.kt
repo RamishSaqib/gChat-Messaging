@@ -19,7 +19,8 @@ class SendMessageUseCase @Inject constructor(
         conversationId: String,
         senderId: String,
         text: String,
-        type: MessageType = MessageType.TEXT
+        type: MessageType = MessageType.TEXT,
+        mediaUrl: String? = null
     ): Result<Message> {
         return try {
             val message = Message(
@@ -27,7 +28,8 @@ class SendMessageUseCase @Inject constructor(
                 conversationId = conversationId,
                 senderId = senderId,
                 type = type,
-                text = text,
+                text = if (text.isBlank()) null else text,
+                mediaUrl = mediaUrl,
                 timestamp = System.currentTimeMillis(),
                 status = MessageStatus.SENDING
             )
