@@ -36,25 +36,41 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
-    // Chat images (message attachments)
-    match /chat_images/{userId}/{fileName} {
-      // Anyone authenticated can read chat images
-      allow read: if isAuthenticated();
-      
-      // Users can only upload to their own folder
-      allow write: if isAuthenticated() && 
-                      isOwner(userId) && 
-                      isImage() && 
-                      isValidSize();
-      
-      // Users can delete their own images
-      allow delete: if isAuthenticated() && isOwner(userId);
-    }
-    
-    // Deny all other access
-    match /{allPaths=**} {
-      allow read, write: if false;
-    }
-  }
-}
+            // Chat images (message attachments)
+            match /chat_images/{userId}/{fileName} {
+              // Anyone authenticated can read chat images
+              allow read: if isAuthenticated();
+              
+              // Users can only upload to their own folder
+              allow write: if isAuthenticated() && 
+                              isOwner(userId) && 
+                              isImage() && 
+                              isValidSize();
+              
+              // Users can delete their own images
+              allow delete: if isAuthenticated() && isOwner(userId);
+            }
+            
+            // Group icons
+            match /group_icons/{fileName} {
+              // Anyone authenticated can read group icons
+              allow read: if isAuthenticated();
+              
+              // Any authenticated user can upload group icons during creation
+              // (Admin validation happens in Firestore rules)
+              allow write: if isAuthenticated() && 
+                              isImage() && 
+                              isValidSize();
+              
+              // Anyone authenticated can delete group icons
+              // (Used during group deletion or icon updates)
+              allow delete: if isAuthenticated();
+            }
+            
+            // Deny all other access
+            match /{allPaths=**} {
+              allow read, write: if false;
+            }
+          }
+        }
 
