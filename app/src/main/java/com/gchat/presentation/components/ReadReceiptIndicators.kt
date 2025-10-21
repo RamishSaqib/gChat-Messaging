@@ -40,7 +40,7 @@ fun ReadReceiptCheckmarks(
     modifier: Modifier = Modifier
 ) {
     val color = if (isRead) {
-        Color(0xFF4CAF50) // Green for read (better contrast on blue background)
+        Color.White // White for read (clean look on blue background)
     } else {
         Color.Gray // Gray for sent but not read
     }
