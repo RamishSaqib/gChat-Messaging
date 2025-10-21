@@ -6,8 +6,40 @@
 
 ## 📋 Pull Request History
 
-### PR #3: New Conversation Flow
+### PR #4: Media Sharing & Core Messaging Fixes
 **Status:** ✅ Ready for Merge  
+**Date:** October 20, 2025
+
+**Features Added:**
+- ProfilePicture composable with online status indicator
+- Image message display infrastructure (ImageMessageBubble, ImageViewerScreen)
+- MediaRepository with Firebase Storage integration
+- Message preview in conversation list shows latest message text
+
+**Bugs Fixed:**
+- **CRITICAL:** Fixed CASCADE delete bug that was deleting all messages when conversation updated
+- Fixed message ordering (now shows oldest → newest, proper chat convention)
+- Fixed Firestore rules to allow messages with optional text (for image messages)
+- Fixed message bubbles color (darker gray for received messages)
+- Fixed message preview showing "No messages yet" for active conversations
+- Fixed StateFlow timeout causing messages to briefly appear then disappear
+
+**Technical Changes:**
+- Removed foreign key constraint from MessageEntity (prevented cascade deletion)
+- Database version bumped from 1 to 2
+- Updated message ordering: `ORDER BY timestamp ASC`
+- Enhanced ConversationMapper to parse lastMessage from Firestore
+- Firebase Storage security rules with 5MB image limit
+- Image compression utility in MediaRepositoryImpl
+- FileProvider configuration for camera capture
+- Added required permissions (CAMERA, READ_MEDIA_IMAGES)
+
+**Note:** Image upload UI not yet wired to ChatScreen - infrastructure ready for future PR.
+
+---
+
+### PR #3: New Conversation Flow
+**Status:** ✅ Merged  
 **Date:** October 20, 2025
 
 **Features Added:**
