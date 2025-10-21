@@ -30,6 +30,7 @@ class MessageRepositoryImpl @Inject constructor(
     private val scope = CoroutineScope(Dispatchers.IO)
     
     override fun getMessagesFlow(conversationId: String): Flow<List<Message>> {
+        android.util.Log.d("MessageRepository", "getMessagesFlow called for conversation: $conversationId")
         // Start background sync from Firestore
         scope.launch {
             syncMessagesFromFirestore(conversationId)
@@ -37,7 +38,14 @@ class MessageRepositoryImpl @Inject constructor(
         
         // Return Flow from local database (single source of truth)
         return messageDao.getMessagesFlow(conversationId)
-            .map { entities -> entities.map { MessageMapper.toDomain(it) } }
+            .map { entities -> 
+                android.util.Log.d("MessageRepository", "Room emitted ${entities.size} message entities")
+                entities.map { MessageMapper.toDomain(it) }
+            }
+            .map { messages ->
+                android.util.Log.d("MessageRepository", "Mapped to ${messages.size} domain messages")
+                messages
+            }
     }
     
     override suspend fun sendMessage(message: Message): Result<Unit> {
@@ -165,13 +173,17 @@ class MessageRepositoryImpl @Inject constructor(
      */
     private suspend fun syncMessagesFromFirestore(conversationId: String) {
         try {
+            android.util.Log.d("MessageRepository", "Starting Firestore sync for conversation: $conversationId")
             firestoreMessageDataSource.observeMessages(conversationId)
                 .collect { messages ->
+                    android.util.Log.d("MessageRepository", "Syncing ${messages.size} messages from Firestore to Room")
                     messages.forEach { message ->
                         messageDao.insert(MessageMapper.toEntity(message))
                     }
+                    android.util.Log.d("MessageRepository", "Finished syncing messages to Room")
                 }
         } catch (e: Exception) {
+            android.util.Log.e("MessageRepository", "Firestore sync error: ${e.message}", e)
             // Ignore errors (e.g., permission denied after logout)
             // User will see locally cached messages
         }
