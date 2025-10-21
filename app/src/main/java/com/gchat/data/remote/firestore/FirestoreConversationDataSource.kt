@@ -57,8 +57,14 @@ class FirestoreConversationDataSource @Inject constructor(
             .orderBy("updatedAt", Query.Direction.DESCENDING)
             .addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE) { snapshot, error ->
                 if (error != null) {
-                    android.util.Log.e("FirestoreConversation", "Snapshot listener error: ${error.message}", error)
-                    close(error)
+                    // Handle PERMISSION_DENIED gracefully (happens after logout)
+                    if (error.message?.contains("PERMISSION_DENIED") == true) {
+                        android.util.Log.d("FirestoreConversation", "Snapshot listener permission denied (user logged out?), closing gracefully")
+                        close() // Close without error to avoid crash
+                    } else {
+                        android.util.Log.e("FirestoreConversation", "Snapshot listener error: ${error.message}", error)
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
                 
@@ -78,7 +84,14 @@ class FirestoreConversationDataSource @Inject constructor(
             .document(conversationId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    // Handle PERMISSION_DENIED gracefully (happens after logout)
+                    if (error.message?.contains("PERMISSION_DENIED") == true) {
+                        android.util.Log.d("FirestoreConversation", "Snapshot listener permission denied (user logged out?), closing gracefully")
+                        close() // Close without error to avoid crash
+                    } else {
+                        android.util.Log.e("FirestoreConversation", "Snapshot listener error: ${error.message}", error)
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
                 

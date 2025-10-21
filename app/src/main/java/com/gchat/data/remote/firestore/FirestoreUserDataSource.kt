@@ -57,7 +57,14 @@ class FirestoreUserDataSource @Inject constructor(
             .document(userId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    // Handle PERMISSION_DENIED gracefully (happens after logout)
+                    if (error.message?.contains("PERMISSION_DENIED") == true) {
+                        android.util.Log.d("FirestoreUser", "Snapshot listener permission denied (user logged out?), closing gracefully")
+                        close() // Close without error to avoid crash
+                    } else {
+                        android.util.Log.e("FirestoreUser", "Snapshot listener error: ${error.message}", error)
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
                 
