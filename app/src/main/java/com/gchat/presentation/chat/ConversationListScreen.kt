@@ -177,9 +177,9 @@ fun ConversationItem(
     val otherUser = conversationWithUser.otherUser
     val lastMessageSender = conversationWithUser.lastMessageSender
     
-    // Display name: use other user's name for 1-on-1, group name for groups
+    // Display name: use nickname if set, otherwise real name
     val displayName = when {
-        otherUser != null -> otherUser.displayName
+        otherUser != null -> conversation.getUserDisplayName(otherUser.id, otherUser)
         conversation.name != null -> conversation.name
         else -> "Unknown User"
     }
@@ -281,8 +281,8 @@ private fun buildLastMessageText(
         else -> "New message"
     }
     
-    // For group chats or if there's a sender, add prefix
-    if (conversation.isGroup() || lastMessage.senderId != currentUserId) {
+    // For group chats, always show sender name prefix
+    if (conversation.isGroup()) {
         val senderPrefix = when {
             lastMessage.senderId == currentUserId -> "You: "
             else -> {
@@ -295,6 +295,12 @@ private fun buildLastMessageText(
             }
         }
         return "$senderPrefix$messageContent"
+    }
+    
+    // For DMs (1-on-1), only show "You: " if it's your message
+    // The other person's name is already in the conversation title
+    if (lastMessage.senderId == currentUserId) {
+        return "You: $messageContent"
     }
     
     return messageContent
