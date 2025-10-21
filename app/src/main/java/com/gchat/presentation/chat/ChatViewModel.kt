@@ -132,6 +132,8 @@ class ChatViewModel @Inject constructor(
                         mediaUrl = imageUrl
                     )
                     
+                    // Clear the message text after sending
+                    _messageText.value = ""
                     _uploadProgress.value = null
                     _sendingState.value = false
                 }
