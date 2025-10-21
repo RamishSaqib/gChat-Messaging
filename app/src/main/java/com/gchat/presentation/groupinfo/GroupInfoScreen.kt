@@ -15,7 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.User
 import com.gchat.presentation.components.ProfilePicture
-import com.gchat.utils.rememberImagePickerLaunchers
+import com.gchat.util.rememberImagePickerLaunchers
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
 import com.google.accompanist.permissions.rememberPermissionState
