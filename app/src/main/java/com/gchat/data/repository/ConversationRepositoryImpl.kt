@@ -284,11 +284,13 @@ class ConversationRepositoryImpl @Inject constructor(
             // Update locally first for immediate UI update
             conversationDao.updateGroupName(conversationId, newName, timestamp)
             
-            // Then sync to Firestore
-            firestoreConversationDataSource.updateConversation(
+            // Then sync to Firestore (await to ensure completion)
+            val result = firestoreConversationDataSource.updateConversation(
                 conversationId,
                 mapOf("name" to newName, "updatedAt" to timestamp)
             )
+            
+            result
         } catch (e: Exception) {
             Result.failure(e)
         }
@@ -301,11 +303,13 @@ class ConversationRepositoryImpl @Inject constructor(
             // Update locally first for immediate UI update
             conversationDao.updateGroupIcon(conversationId, newIconUrl, timestamp)
             
-            // Then sync to Firestore
-            firestoreConversationDataSource.updateConversation(
+            // Then sync to Firestore (await to ensure completion)
+            val result = firestoreConversationDataSource.updateConversation(
                 conversationId,
                 mapOf("iconUrl" to newIconUrl, "updatedAt" to timestamp)
             )
+            
+            result
         } catch (e: Exception) {
             Result.failure(e)
         }
