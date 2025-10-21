@@ -1,27 +1,27 @@
 # gChat - Development Tasks
 
-> **Current PR:** PR #7 - Push Notifications | **Last Merged:** PR #5.7 - Real-Time Online Presence Detection
+> **Last Merged:** PR #7 - Push Notifications | **Status:** 🎉 MVP Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 6 (Merged to main)  
-**Current PR:** PR #7 (Push Notifications) - Ready for Merge  
-**Current Sprint:** MVP Completion - Final MVP Feature  
-**Next Up:** PR #6 (Read Receipts) → AI Translation Phase
+**Completed PRs:** 7 (Merged to main)  
+**Current PR:** None (MVP Phase Complete!)  
+**Current Sprint:** MVP Complete ✅  
+**Next Up:** PR #6 (Read Receipts - Optional) → AI Translation Phase
 
 ---
 
-## 🔔 PR #7: Push Notifications (FCM) (READY FOR MERGE)
+## 🔔 PR #7: Push Notifications (FCM) (MERGED ✅)
 
 **Goal:** Implement Firebase Cloud Messaging for push notifications when new messages arrive
 
-**Status:** ⏳ Ready for Merge (Branch: `feature/pr7-push-notifications`)
+**Status:** ✅ Merged to `main`
 
 **Priority:** High (MVP Feature)
 
-**Time Spent:** ~2.5 hours
+**Time Spent:** ~3 hours
 
 ### Client-Side Tasks
 - [x] Enhance MessagingService to use UserRepository
@@ -64,14 +64,20 @@
 5. Verify functions in Firebase Console
 
 ### Testing Checklist
-- [ ] Deploy Cloud Functions to Firebase
-- [ ] Send message from Device A
-- [ ] Verify notification appears on Device B (foreground)
-- [ ] Verify notification appears on Device B (background)
-- [ ] Verify notification appears on Device B (app killed)
-- [ ] Tap notification and verify app opens to correct conversation
-- [ ] Test group chat notifications
-- [ ] Test notification permission request on Android 13+
+- [x] Deploy Cloud Functions to Firebase
+- [x] Send message from Device A
+- [x] Verify notification appears on Device B (foreground)
+- [x] Verify notification appears on Device B (background)
+- [x] Verify notification appears on Device B (app killed)
+- [x] Tap notification and verify app opens to correct conversation
+- [x] Test group chat notifications
+- [x] Test notification permission request on Android 13+
+
+### Bug Fixes
+- [x] Fixed 404 error when sending notifications (updated to FCM HTTP v1 API)
+- [x] Replaced deprecated `sendToDevice` with modern `sendEach` method
+- [x] Added comprehensive FCM token logging for debugging
+- [x] Verified FCM tokens are correctly saved to Firestore
 
 ---
 

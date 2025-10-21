@@ -7,9 +7,9 @@
 ## 📋 Pull Request History
 
 ### PR #7: Push Notifications (FCM)
-**Status:** ⏳ Ready for Merge (Branch: `feature/pr7-push-notifications`)  
+**Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  
-**Time Spent:** ~2.5 hours
+**Time Spent:** ~3 hours
 
 **Features Implemented:**
 - ✅ Automatic FCM token registration and updates
@@ -32,6 +32,8 @@
 - Created Cloud Function: `deleteConversationMessages` (cleanup on conversation delete)
 - Created Cloud Function: `updateUserLastSeen` (auto-update on offline)
 - Added firebase/functions with package.json, index.js, README, .gitignore
+- **Fixed:** Updated Cloud Functions to use modern FCM HTTP v1 API (replaced deprecated `sendToDevice` with `sendEach`)
+- Added comprehensive FCM token logging for troubleshooting
 
 **Notification Features:**
 - Title: Sender name (1-on-1) or Group name (group chat)
