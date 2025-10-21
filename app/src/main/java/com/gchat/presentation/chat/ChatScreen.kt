@@ -49,6 +49,8 @@ fun ChatScreen(
     val messages by viewModel.messages.collectAsState()
     val messageText by viewModel.messageText.collectAsState()
     val currentUserId by viewModel.currentUserId.collectAsState()
+    val conversation by viewModel.conversation.collectAsState()
+    val participantUsers by viewModel.participantUsers.collectAsState()
     val otherUserName by viewModel.otherUserName.collectAsState()
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val uploadError by viewModel.uploadError.collectAsState()
@@ -146,6 +148,8 @@ fun ChatScreen(
                     MessageBubble(
                         message = message,
                         isOwnMessage = message.senderId == currentUserId,
+                        isGroupChat = conversation?.isGroup() == true,
+                        senderName = participantUsers[message.senderId]?.displayName,
                         onImageClick = { imageUrl ->
                             // Navigate to image viewer (will add this shortly)
                         }
@@ -190,54 +194,70 @@ fun ChatScreen(
 fun MessageBubble(
     message: Message,
     isOwnMessage: Boolean,
+    isGroupChat: Boolean = false,
+    senderName: String? = null,
     onImageClick: (String) -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = if (isOwnMessage) Arrangement.End else Arrangement.Start
+    Column(
+        modifier = Modifier.fillMaxWidth()
     ) {
-        // Use ImageMessageBubble for image messages
-        if (message.type == MessageType.IMAGE && message.mediaUrl != null) {
-            ImageMessageBubble(
-                message = message,
-                isCurrentUser = isOwnMessage,
-                onImageClick = onImageClick
+        // Show sender name for group chats (only for others' messages)
+        if (isGroupChat && !isOwnMessage && senderName != null) {
+            Text(
+                text = senderName,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = 8.dp, bottom = 2.dp)
             )
-        } else {
-            // Regular text message bubble
-            Surface(
-                shape = RoundedCornerShape(16.dp),
-                color = if (isOwnMessage) {
-                    MaterialTheme.colorScheme.primary
-                } else {
-                    MaterialTheme.colorScheme.secondaryContainer
-                },
-                modifier = Modifier.widthIn(max = 280.dp)
-            ) {
-                Column(
-                    modifier = Modifier.padding(12.dp)
+        }
+        
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = if (isOwnMessage) Arrangement.End else Arrangement.Start
+        ) {
+            // Use ImageMessageBubble for image messages
+            if (message.type == MessageType.IMAGE && message.mediaUrl != null) {
+                ImageMessageBubble(
+                    message = message,
+                    isCurrentUser = isOwnMessage,
+                    onImageClick = onImageClick
+                )
+            } else {
+                // Regular text message bubble
+                Surface(
+                    shape = RoundedCornerShape(16.dp),
+                    color = if (isOwnMessage) {
+                        MaterialTheme.colorScheme.primary
+                    } else {
+                        MaterialTheme.colorScheme.secondaryContainer
+                    },
+                    modifier = Modifier.widthIn(max = 280.dp)
                 ) {
-                    Text(
-                        text = message.text ?: "",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = if (isOwnMessage) {
-                            MaterialTheme.colorScheme.onPrimary
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer
-                        }
-                    )
-                    
-                    Spacer(modifier = Modifier.height(4.dp))
-                    
-                    Text(
-                        text = formatTime(message.timestamp),
-                        style = MaterialTheme.typography.labelSmall,
-                        color = if (isOwnMessage) {
-                            MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                        } else {
-                            MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
-                        }
-                    )
+                    Column(
+                        modifier = Modifier.padding(12.dp)
+                    ) {
+                        Text(
+                            text = message.text ?: "",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = if (isOwnMessage) {
+                                MaterialTheme.colorScheme.onPrimary
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer
+                            }
+                        )
+                        
+                        Spacer(modifier = Modifier.height(4.dp))
+                        
+                        Text(
+                            text = formatTime(message.timestamp),
+                            style = MaterialTheme.typography.labelSmall,
+                            color = if (isOwnMessage) {
+                                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                            } else {
+                                MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                            }
+                        )
+                    }
                 }
             }
         }
