@@ -47,8 +47,6 @@ class CreateGroupViewModel @Inject constructor(
     private val _error = MutableStateFlow<String?>(null)
     val error: StateFlow<String?> = _error.asStateFlow()
 
-    private val currentUserId = authRepository.getCurrentUserId()
-
     init {
         _searchQuery
             .debounce(300L)
@@ -79,6 +77,7 @@ class CreateGroupViewModel @Inject constructor(
 
     private fun searchUsers(query: String) {
         viewModelScope.launch {
+            val currentUserId = authRepository.getCurrentUserId()
             currentUserId?.let { userId ->
                 userRepository.searchUsers(query, userId)
                     .onSuccess { users ->
@@ -122,8 +121,9 @@ class CreateGroupViewModel @Inject constructor(
             return
         }
 
-        currentUserId?.let { userId ->
-            viewModelScope.launch {
+        viewModelScope.launch {
+            val currentUserId = authRepository.getCurrentUserId()
+            currentUserId?.let { userId ->
                 _isCreating.value = true
 
                 // Upload group icon if provided
@@ -146,9 +146,10 @@ class CreateGroupViewModel @Inject constructor(
                     _error.value = "Failed to create group: ${e.message}"
                     _isCreating.value = false
                 }
+            } ?: run {
+                _error.value = "User not authenticated."
+                _isCreating.value = false
             }
-        } ?: run {
-            _error.value = "User not authenticated."
         }
     }
 

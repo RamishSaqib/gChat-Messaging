@@ -22,7 +22,7 @@ import com.gchat.data.local.entity.UserEntity
         MessageEntity::class
     ],
     version = 3, // v3: Added groupAdmins field to ConversationEntity
-    exportSchema = true
+    exportSchema = false
 )
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
