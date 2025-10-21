@@ -20,14 +20,26 @@ class UserRepositoryImpl @Inject constructor(
 ) : UserRepository {
     
     override fun getUserFlow(userId: String): Flow<User?> {
-        // Observe from Firestore for real-time updates
-        return firestoreUserDataSource.observeUser(userId)
-            .onEach { user ->
-                // Cache locally when updates arrive
+        // Offline-first approach: Start with cached data, then observe Firestore updates
+        return kotlinx.coroutines.flow.flow {
+            // Emit cached data first (immediate load)
+            val cachedUser = userDao.getUserById(userId)
+            if (cachedUser != null) {
+                emit(UserMapper.toDomain(cachedUser))
+            }
+            
+            // Then observe Firestore for real-time updates
+            firestoreUserDataSource.observeUser(userId).collect { user ->
                 if (user != null) {
+                    // Cache locally when updates arrive
                     userDao.insert(UserMapper.toEntity(user))
+                    emit(user)
+                } else if (cachedUser == null) {
+                    // Only emit null if we don't have cached data
+                    emit(null)
                 }
             }
+        }
     }
     
     override suspend fun getUser(userId: String): Result<User> {
