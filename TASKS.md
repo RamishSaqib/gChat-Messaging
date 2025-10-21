@@ -1,14 +1,77 @@
 # gChat - Development Tasks
 
-> **Current PR:** None - Ready for Next Feature | **Last Merged:** PR #5.7 - Real-Time Online Presence Detection
+> **Current PR:** PR #7 - Push Notifications | **Last Merged:** PR #5.7 - Real-Time Online Presence Detection
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 6 (All merged to main)  
-**Current Sprint:** MVP Completion - Final Features  
-**Next Up:** PR #6 (Read Receipts) → PR #7 (Push Notifications) → AI Translation Phase
+**Completed PRs:** 6 (Merged to main)  
+**Current PR:** PR #7 (Push Notifications) - Ready for Merge  
+**Current Sprint:** MVP Completion - Final MVP Feature  
+**Next Up:** PR #6 (Read Receipts) → AI Translation Phase
+
+---
+
+## 🔔 PR #7: Push Notifications (FCM) (READY FOR MERGE)
+
+**Goal:** Implement Firebase Cloud Messaging for push notifications when new messages arrive
+
+**Status:** ⏳ Ready for Merge (Branch: `feature/pr7-push-notifications`)
+
+**Priority:** High (MVP Feature)
+
+**Time Spent:** ~2.5 hours
+
+### Client-Side Tasks
+- [x] Enhance MessagingService to use UserRepository
+- [x] Add FCM token update in GChatApplication.onStart()
+- [x] Update MessagingService.onNewToken() to use repository pattern
+- [x] Improve notification display with sender name and message preview
+- [x] Add support for group chat notifications
+- [x] Handle notification click to navigate to conversation
+- [x] Add notification permission request for Android 13+ (POST_NOTIFICATIONS)
+- [x] Update MainActivity to handle notification intents
+- [x] Test notification permission flow
+
+### Server-Side Tasks (Cloud Functions)
+- [x] Create firebase/functions/ directory structure
+- [x] Add package.json with dependencies (firebase-admin, firebase-functions)
+- [x] Create `sendMessageNotification` Cloud Function
+  - [x] Trigger on new message onCreate
+  - [x] Fetch conversation and participant data
+  - [x] Get sender user data for display name
+  - [x] Get recipient FCM tokens
+  - [x] Build notification payload (title, body, data)
+  - [x] Send push notification via Firebase Admin SDK
+  - [x] Handle invalid tokens and cleanup
+- [x] Create `deleteConversationMessages` Cloud Function (cleanup)
+- [x] Create `updateUserLastSeen` Cloud Function (auto-update)
+- [x] Add .gitignore for functions (never commit service keys!)
+- [x] Create comprehensive README for Cloud Functions setup
+
+### Documentation
+- [x] Document Cloud Functions setup steps
+- [x] Document notification payload structure
+- [x] Document testing procedure
+- [x] Add deployment instructions
+
+### Deployment Steps (For User)
+1. Navigate to `firebase/functions/`
+2. Run `npm install`
+3. Run `firebase login` (if not already logged in)
+4. Run `npm run deploy`
+5. Verify functions in Firebase Console
+
+### Testing Checklist
+- [ ] Deploy Cloud Functions to Firebase
+- [ ] Send message from Device A
+- [ ] Verify notification appears on Device B (foreground)
+- [ ] Verify notification appears on Device B (background)
+- [ ] Verify notification appears on Device B (app killed)
+- [ ] Tap notification and verify app opens to correct conversation
+- [ ] Test group chat notifications
+- [ ] Test notification permission request on Android 13+
 
 ---
 

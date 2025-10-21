@@ -39,11 +39,24 @@ class MainActivity : ComponentActivity() {
                     val authViewModel: AuthViewModel = hiltViewModel()
                     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
                     
-                    // Auto-navigate to conversation list if authenticated on app start
+                    // Handle notification navigation
+                    val conversationId = intent?.getStringExtra("conversationId")
+                    val openChat = intent?.getBooleanExtra("openChat", false) ?: false
+                    
+                    // Auto-navigate on app start
                     LaunchedEffect(Unit) {
                         if (isAuthenticated) {
-                            navController.navigate(Screen.ConversationList.route) {
-                                popUpTo(Screen.Login.route) { inclusive = true }
+                            if (openChat && conversationId != null) {
+                                // Navigate to specific conversation from notification
+                                navController.navigate(Screen.ConversationList.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
+                                navController.navigate(Screen.Chat.createRoute(conversationId))
+                            } else {
+                                // Regular navigation to conversation list
+                                navController.navigate(Screen.ConversationList.route) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                }
                             }
                         }
                     }
@@ -52,6 +65,12 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+    
+    override fun onNewIntent(intent: android.content.Intent?) {
+        super.onNewIntent(intent)
+        // Update intent so getIntent() returns the latest intent
+        setIntent(intent)
     }
 }
 

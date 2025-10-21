@@ -6,6 +6,66 @@
 
 ## 📋 Pull Request History
 
+### PR #7: Push Notifications (FCM)
+**Status:** ⏳ Ready for Merge (Branch: `feature/pr7-push-notifications`)  
+**Date:** October 21, 2025  
+**Time Spent:** ~2.5 hours
+
+**Features Implemented:**
+- ✅ Automatic FCM token registration and updates
+- ✅ FCM token updates on app foreground and login
+- ✅ Notification permission request for Android 13+ (POST_NOTIFICATIONS)
+- ✅ Rich notifications with sender names and message preview
+- ✅ Group chat notifications with group name and sender
+- ✅ Notification click navigation to specific conversation
+- ✅ Firebase Cloud Functions for server-side notification sending
+- ✅ Automatic invalid token cleanup
+- ✅ BigTextStyle notifications for long messages
+
+**Technical Completed:**
+- Enhanced MessagingService with UserRepository integration
+- Added FCM token update in GChatApplication (onStart lifecycle)
+- Improved notification display with sender info and group chat support
+- MainActivity now handles notification intents and navigates to conversation
+- ConversationListScreen requests POST_NOTIFICATIONS permission on Android 13+
+- Created Cloud Function: `sendMessageNotification` (triggers on new message)
+- Created Cloud Function: `deleteConversationMessages` (cleanup on conversation delete)
+- Created Cloud Function: `updateUserLastSeen` (auto-update on offline)
+- Added firebase/functions with package.json, index.js, README, .gitignore
+
+**Notification Features:**
+- Title: Sender name (1-on-1) or Group name (group chat)
+- Body: Message text (1-on-1) or "Sender: Message" (group chat)
+- Click action: Opens app directly to the conversation
+- Grouped by conversation ID
+- High priority for immediate delivery
+- 24-hour TTL for pending notifications
+
+**Cloud Functions Setup Required:**
+1. Navigate to `firebase/functions/`
+2. Run `npm install` to install dependencies
+3. Run `npm run deploy` to deploy functions to Firebase
+4. Verify functions are active in Firebase Console
+
+**How It Works:**
+1. User opens app → FCM token retrieved and stored in Firestore
+2. User sends message → Firestore onCreate trigger
+3. Cloud Function `sendMessageNotification` executes
+4. Function fetches recipient FCM tokens from Firestore
+5. Notification sent via Firebase Admin SDK
+6. Recipient taps notification → App opens to conversation
+
+**Bugs Fixed:**
+- None (new feature)
+
+**Testing Notes:**
+- Cloud Functions must be deployed for notifications to work
+- Test with two devices: one sends message, other receives notification
+- Foreground notifications appear as system notifications
+- Background/killed app: notification wakes app on tap
+
+---
+
 ### PR #5.7: Real-Time Online Presence Detection
 **Status:** ✅ Merged to Main  
 **Date:** October 21, 2025  
