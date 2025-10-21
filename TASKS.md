@@ -1,15 +1,90 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #9 - Profile & Group Management | **Status:** 🎉 All MVP + UX Enhancements Complete!
+> **Last Merged:** PR #10 - Nickname System | **Status:** 🎉 All MVP + Core UX Features Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 9 (Merged to main)  
+**Completed PRs:** 10 (Merged to main)  
 **Current PR:** None  
-**Current Sprint:** MVP + UX Enhancements Complete ✅  
-**Next Up:** AI Translation Phase (Core Feature) or Nickname System
+**Current Sprint:** MVP + Core UX Features Complete ✅  
+**Next Up:** AI Translation Phase (Primary Selling Point!)
+
+---
+
+## ✅ PR #10: Nickname System (MERGED ✅)
+
+**Goal:** Implement per-conversation nickname system for personalizing how users appear
+
+**Branch:** `feature/pr10-nickname-system` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** Medium (UX Enhancement)
+
+**Time Spent:** ~2 hours
+
+### Core Nickname System
+- [x] Add `nicknames` map to Conversation model (userId → nickname)
+- [x] Add `getUserDisplayName()` helper method to Conversation
+- [x] Update ConversationEntity with nicknames field
+- [x] Migrate Room database to version 6
+- [x] Add `setNickname()` to ConversationRepository
+
+### Group Chat Nicknames
+- [x] Add "Change Nickname" option to GroupInfoScreen member menu
+- [x] Create nickname dialog UI (input, save, remove, cancel)
+- [x] Add `getCurrentNickname()` to GroupInfoViewModel
+- [x] Add `setNickname()` to GroupInfoViewModel
+- [x] Update member list to display nicknames
+
+### DM Nicknames
+- [x] Add "Change Nickname" menu item to DMInfoScreen
+- [x] Create nickname dialog UI for DMs
+- [x] Add nickname methods to DMInfoViewModel
+- [x] Update DM info display to show nicknames
+
+### Display Nicknames Everywhere
+- [x] Update ChatScreen message bubbles to show nicknames
+- [x] Update ChatScreen TopBar to show nickname for DMs
+- [x] Update typing indicator text to use nicknames
+- [x] Update ConversationListScreen titles to show nicknames
+- [x] Update message preview formatting for clean display
+
+### Conversation List Integration
+- [x] Update ConversationWithUser to include lastMessageSender
+- [x] Fetch lastMessageSender User object for nickname lookup
+- [x] Create buildLastMessageText() helper for smart formatting
+- [x] Handle group vs DM message preview differences
+
+### Push Notifications
+- [x] Update Cloud Functions to retrieve nicknames map
+- [x] Use nickname for notification title/body in sendMessageNotification
+- [x] Deploy updated Cloud Functions
+
+### Firestore Rules
+- [x] Allow participants to update nicknames field in conversations
+
+### Bug Fixes
+- [x] Fix nickname not showing in conversation list title
+- [x] Fix nickname not showing in notifications
+- [x] Fix notification click navigation (MainActivity intent handling)
+- [x] Fix message preview showing duplicate names in DMs
+- [x] Fix val reassignment errors in GroupInfoScreen
+- [x] Add missing User import in ConversationListScreen
+
+### Testing
+- [x] Test setting nickname in group chat
+- [x] Test removing nickname in group chat
+- [x] Test setting nickname in DM
+- [x] Test removing nickname in DM
+- [x] Test nickname appears in messages
+- [x] Test nickname appears in typing indicators
+- [x] Test nickname appears in conversation list
+- [x] Test nickname appears in notifications
+- [x] Test notification click navigation works correctly
+- [x] Test fallback to display name when no nickname
 
 ---
 

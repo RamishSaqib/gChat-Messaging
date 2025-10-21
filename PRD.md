@@ -6,6 +6,61 @@
 
 ## 📋 Pull Request History
 
+### PR #10: Nickname System
+**Status:** ✅ Merged to `main`  
+**Date:** October 21, 2025  
+**Time Spent:** ~2 hours
+
+**Features Implemented:**
+- ✅ Per-conversation nickname system for users
+- ✅ Nickname setting in group chat member list
+- ✅ Nickname setting in DM info screen
+- ✅ Nicknames display everywhere: messages, typing indicators, TopBar, conversation list
+- ✅ Empty nickname falls back to real display name
+- ✅ Nicknames stored in Firestore conversation document
+- ✅ Nicknames appear in push notifications
+
+**UI Design:**
+- **Group Chats:** Members list in GroupInfoScreen has menu option to set nickname
+- **DMs:** DMInfoScreen has menu option to set nickname for other user
+- **Display:** Nicknames replace display names throughout the app when set
+- **Conversation List:** Shows nickname as conversation title for DMs
+- **Message Preview:** Smart formatting - shows "You: " for own messages, nickname for others in groups, just content for others in DMs
+- **Dialogs:** Simple text input with Save, Remove, and Cancel buttons
+
+**Technical Implementation:**
+- Extended `Conversation` model with `nicknames` map (userId → nickname string)
+- Added `getUserDisplayName()` helper to get nickname or fallback to real name
+- Updated `ConversationEntity` and database schema (version 6)
+- Extended `ConversationRepository` with `setNickname()` method
+- Updated `ChatViewModel` to use nicknames in typing indicator text
+- Updated `GroupInfoViewModel` and `DMInfoViewModel` with nickname methods
+- Updated `ConversationListViewModel` to fetch `lastMessageSender` for nickname display
+- Modified Cloud Functions to use nicknames in push notifications
+- Updated Firestore security rules to allow `nicknames` field updates
+
+**Navigation Flow:**
+- **Groups:** GroupInfoScreen → Tap member → "Change Nickname" option
+- **DMs:** DMInfoScreen → "Change Nickname" menu item
+
+**Bugs Fixed:**
+- Fixed nickname not showing in conversation list title
+- Fixed nickname not showing in notifications (Cloud Functions update)
+- Fixed notification click navigation issue (MainActivity intent handling)
+- Fixed message preview showing duplicate names in DMs
+- Fixed `val` reassignment errors in GroupInfoScreen
+- Fixed missing User import in ConversationListScreen
+
+**Testing Notes:**
+- Test setting/removing nicknames in group chats
+- Test setting/removing nicknames in DMs
+- Test that nicknames appear in all UI locations
+- Test that notifications use nicknames
+- Test that notification clicks navigate correctly
+- Verify message preview formatting is clean
+
+---
+
 ### PR #9: Profile & Group Management
 **Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  
