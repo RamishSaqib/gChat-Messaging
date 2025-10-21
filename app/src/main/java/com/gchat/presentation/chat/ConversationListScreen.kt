@@ -221,27 +221,20 @@ fun ConversationListScreen(
                         key = { it.conversation.id }
                     ) { conversationWithUser ->
                         val dismissState = rememberDismissState(
-                            confirmValueChange = { dismissValue ->
-                                if (dismissValue == DismissValue.DismissedToStart) {
-                                    // Delete the conversation
-                                    viewModel.deleteConversation(conversationWithUser.conversation.id)
-                                    true
-                                } else {
-                                    false
-                                }
-                            },
                             positionalThreshold = { distance -> distance * 0.25f }
                         )
                         
-                        Box(
-                            modifier = Modifier.animateItemPlacement(
-                                animationSpec = tween(durationMillis = 300)
-                            )
-                        ) {
-                            SwipeToDismiss(
-                                state = dismissState,
-                                directions = setOf(DismissDirection.EndToStart),
-                                background = {
+                        // Trigger delete when swiped away
+                        LaunchedEffect(dismissState.currentValue) {
+                            if (dismissState.currentValue == DismissValue.DismissedToStart) {
+                                viewModel.deleteConversation(conversationWithUser.conversation.id)
+                            }
+                        }
+                        
+                        SwipeToDismiss(
+                            state = dismissState,
+                            directions = setOf(DismissDirection.EndToStart),
+                            background = {
                                 val color = when (dismissState.targetValue) {
                                     DismissValue.DismissedToStart -> MaterialTheme.colorScheme.error
                                     else -> Color.Transparent
@@ -264,14 +257,13 @@ fun ConversationListScreen(
                                 }
                             },
                             dismissContent = {
-                                    ConversationItem(
-                                        conversationWithUser = conversationWithUser,
-                                        currentUserId = viewModel.currentUser.value?.id,
-                                        onClick = { onConversationClick(conversationWithUser.conversation.id) }
-                                    )
-                                }
-                            )
-                        }
+                                ConversationItem(
+                                    conversationWithUser = conversationWithUser,
+                                    currentUserId = viewModel.currentUser.value?.id,
+                                    onClick = { onConversationClick(conversationWithUser.conversation.id) }
+                                )
+                            }
+                        )
                     }
                 }
             }
