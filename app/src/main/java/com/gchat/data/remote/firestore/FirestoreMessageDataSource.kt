@@ -27,12 +27,15 @@ class FirestoreMessageDataSource @Inject constructor(
     
     suspend fun sendMessage(message: Message): Result<Unit> {
         return try {
+            android.util.Log.d("FirestoreMessageDS", "Attempting to send message: ${message.id} to conversation: ${message.conversationId}")
             getMessagesCollection(message.conversationId)
                 .document(message.id)
                 .set(MessageMapper.toFirestore(message))
                 .await()
+            android.util.Log.d("FirestoreMessageDS", "Message sent successfully: ${message.id}")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("FirestoreMessageDS", "Failed to send message: ${e.javaClass.simpleName} - ${e.message}", e)
             Result.failure(e)
         }
     }
