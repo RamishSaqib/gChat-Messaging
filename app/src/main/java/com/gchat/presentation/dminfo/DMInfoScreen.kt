@@ -40,13 +40,29 @@ class DMInfoViewModel @Inject constructor(
     private val _otherUser = MutableStateFlow<User?>(null)
     val otherUser: StateFlow<User?> = _otherUser.asStateFlow()
     
+    private val _conversation = MutableStateFlow<com.gchat.domain.model.Conversation?>(null)
+    val conversation: StateFlow<com.gchat.domain.model.Conversation?> = _conversation.asStateFlow()
+    
+    private val _currentUserId = MutableStateFlow<String?>(null)
+    val currentUserId: StateFlow<String?> = _currentUserId.asStateFlow()
+    
+    private val _success = MutableStateFlow<String?>(null)
+    val success: StateFlow<String?> = _success.asStateFlow()
+    
+    private val _error = MutableStateFlow<String?>(null)
+    val error: StateFlow<String?> = _error.asStateFlow()
+    
     init {
         loadOtherUser()
+        loadConversation()
     }
     
     private fun loadOtherUser() {
         viewModelScope.launch {
-            val currentUserId = authRepository.getCurrentUserId() ?: return@launch
+            val currentUserId = authRepository.getCurrentUserId()
+            _currentUserId.value = currentUserId
+            
+            if (currentUserId == null) return@launch
             val conversation = conversationRepository.getConversation(conversationId).getOrNull() ?: return@launch
             
             val otherUserId = conversation.getOtherParticipantId(currentUserId)
@@ -57,6 +73,44 @@ class DMInfoViewModel @Inject constructor(
             }
         }
     }
+    
+    private fun loadConversation() {
+        viewModelScope.launch {
+            conversationRepository.getConversationFlow(conversationId).collect { conv ->
+                _conversation.value = conv
+            }
+        }
+    }
+    
+    fun setNickname(nickname: String?) {
+        viewModelScope.launch {
+            val userId = _currentUserId.value ?: return@launch
+            
+            conversationRepository.setNickname(conversationId, userId, nickname).fold(
+                onSuccess = {
+                    if (nickname.isNullOrBlank()) {
+                        _success.value = "Nickname removed"
+                    } else {
+                        _success.value = "Nickname updated to \"$nickname\""
+                    }
+                },
+                onFailure = { _error.value = "Failed to update nickname: ${it.message}" }
+            )
+        }
+    }
+    
+    fun getCurrentNickname(): String? {
+        val userId = _currentUserId.value ?: return null
+        return _conversation.value?.getNickname(userId)
+    }
+    
+    fun clearError() {
+        _error.value = null
+    }
+    
+    fun clearSuccess() {
+        _success.value = null
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -66,10 +120,29 @@ fun DMInfoScreen(
     viewModel: DMInfoViewModel = hiltViewModel()
 ) {
     val otherUser by viewModel.otherUser.collectAsState()
+    val success by viewModel.success.collectAsState()
+    val error by viewModel.error.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
     var showNicknameDialog by remember { mutableStateOf(false) }
     
+    val snackbarHostState = remember { SnackbarHostState() }
+    
+    // Show success/error messages
+    LaunchedEffect(success) {
+        success?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearSuccess()
+        }
+    }
+    LaunchedEffect(error) {
+        error?.let {
+            snackbarHostState.showSnackbar(it)
+            viewModel.clearError()
+        }
+    }
+    
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text("Chat Info") },
@@ -165,15 +238,49 @@ fun DMInfoScreen(
         }
     }
     
-    // Nickname Dialog (placeholder)
+    // Nickname Dialog
     if (showNicknameDialog) {
+        var nicknameText by remember { mutableStateOf(viewModel.getCurrentNickname() ?: "") }
+        
         AlertDialog(
             onDismissRequest = { showNicknameDialog = false },
-            title = { Text("Change Nickname") },
-            text = { Text("Nickname feature coming soon!") },
+            title = { Text("Change My Nickname") },
+            text = {
+                Column {
+                    Text(
+                        text = "Set a custom nickname that only shows in this chat.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = nicknameText,
+                        onValueChange = { nicknameText = it },
+                        label = { Text("Nickname") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
             confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setNickname(nicknameText.ifBlank { null })
+                    showNicknameDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                if (nicknameText.isNotBlank()) {
+                    TextButton(onClick = {
+                        viewModel.setNickname(null)
+                        showNicknameDialog = false
+                    }) {
+                        Text("Remove")
+                    }
+                }
                 TextButton(onClick = { showNicknameDialog = false }) {
-                    Text("OK")
+                    Text("Cancel")
                 }
             }
         )

@@ -176,6 +176,7 @@ private fun GroupInfoContent(
             items(participants) { member ->
                 MemberItem(
                     member = member,
+                    displayName = conversation?.getUserDisplayName(member.id, member) ?: member.displayName,
                     isAdmin = conversation?.isAdmin(member.id) == true,
                     isCurrentUser = member.id == currentUserId,
                     canManage = isAdmin && member.id != currentUserId,
@@ -280,15 +281,49 @@ private fun GroupInfoContent(
         )
     }
     
-    // Nickname Dialog (placeholder for now)
+    // Nickname Dialog
     if (showNicknameDialog) {
+        var nicknameText by remember { mutableStateOf(viewModel.getCurrentNickname() ?: "") }
+        
         AlertDialog(
             onDismissRequest = { onShowNicknameDialogChange(false) },
-            title = { Text("Change Nickname") },
-            text = { Text("Nickname feature coming soon!") },
+            title = { Text("Change My Nickname") },
+            text = {
+                Column {
+                    Text(
+                        text = "Set a custom nickname that only shows in this group.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = nicknameText,
+                        onValueChange = { nicknameText = it },
+                        label = { Text("Nickname") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
             confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setNickname(nicknameText.ifBlank { null })
+                    onShowNicknameDialogChange(false)
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                if (nicknameText.isNotBlank()) {
+                    TextButton(onClick = {
+                        viewModel.setNickname(null)
+                        onShowNicknameDialogChange(false)
+                    }) {
+                        Text("Remove")
+                    }
+                }
                 TextButton(onClick = { onShowNicknameDialogChange(false) }) {
-                    Text("OK")
+                    Text("Cancel")
                 }
             }
         )
@@ -474,6 +509,7 @@ private fun MembersSectionHeader(
 @Composable
 fun MemberItem(
     member: User,
+    displayName: String,
     isAdmin: Boolean,
     isCurrentUser: Boolean,
     canManage: Boolean,
@@ -482,7 +518,7 @@ fun MemberItem(
     ListItem(
         headlineContent = {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(member.displayName)
+                Text(displayName)
                 if (isCurrentUser) {
                     Text(
                         text = " (You)",

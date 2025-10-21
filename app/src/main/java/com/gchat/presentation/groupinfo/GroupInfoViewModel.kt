@@ -178,6 +178,28 @@ class GroupInfoViewModel @Inject constructor(
         }
     }
     
+    fun setNickname(nickname: String?) {
+        viewModelScope.launch {
+            val userId = _currentUserId.value ?: return@launch
+            
+            conversationRepository.setNickname(conversationId, userId, nickname).fold(
+                onSuccess = {
+                    if (nickname.isNullOrBlank()) {
+                        _success.value = "Nickname removed"
+                    } else {
+                        _success.value = "Nickname updated to \"$nickname\""
+                    }
+                },
+                onFailure = { _error.value = "Failed to update nickname: ${it.message}" }
+            )
+        }
+    }
+    
+    fun getCurrentNickname(): String? {
+        val userId = _currentUserId.value ?: return null
+        return _conversation.value?.getNickname(userId)
+    }
+    
     fun clearError() {
         _error.value = null
     }

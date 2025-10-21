@@ -30,6 +30,11 @@ object ConversationMapper {
             } catch (e: Exception) {
                 emptyList()
             },
+            nicknames = try {
+                json.decodeFromString(entity.nicknames)
+            } catch (e: Exception) {
+                emptyMap()
+            },
             lastMessage = lastMessage,
             unreadCount = entity.unreadCount,
             updatedAt = entity.updatedAt,
@@ -46,6 +51,7 @@ object ConversationMapper {
             name = domain.name,
             iconUrl = domain.iconUrl,
             groupAdmins = json.encodeToString(domain.groupAdmins),
+            nicknames = json.encodeToString(domain.nicknames),
             lastMessageId = domain.lastMessage?.id,
             lastMessageText = domain.lastMessage?.text,
             lastMessageTimestamp = domain.lastMessage?.timestamp ?: domain.updatedAt,
@@ -61,6 +67,7 @@ object ConversationMapper {
         return try {
             val participantsList = document.get("participants") as? List<*>
             val groupAdminsList = document.get("groupAdmins") as? List<*>
+            val nicknamesMap = document.get("nicknames") as? Map<*, *>
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
             
             // Parse last message if it exists
@@ -89,6 +96,9 @@ object ConversationMapper {
                 name = document.getString("name"),
                 iconUrl = document.getString("iconUrl"),
                 groupAdmins = groupAdminsList?.mapNotNull { it as? String } ?: emptyList(),
+                nicknames = nicknamesMap?.mapNotNull { (k, v) ->
+                    (k as? String)?.let { key -> (v as? String)?.let { value -> key to value } }
+                }?.toMap() ?: emptyMap(),
                 lastMessage = lastMessage,
                 unreadCount = 0, // Calculated client-side
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
@@ -116,6 +126,7 @@ object ConversationMapper {
             "name" to conversation.name,
             "iconUrl" to conversation.iconUrl,
             "groupAdmins" to conversation.groupAdmins,
+            "nicknames" to conversation.nicknames,
             "lastMessage" to lastMessageMap,
             "updatedAt" to conversation.updatedAt,
             "createdAt" to conversation.createdAt

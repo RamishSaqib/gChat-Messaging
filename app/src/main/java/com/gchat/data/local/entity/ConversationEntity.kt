@@ -18,6 +18,7 @@ data class ConversationEntity(
     val name: String?,
     val iconUrl: String?,
     val groupAdmins: String = "[]", // JSON array of admin user IDs
+    val nicknames: String = "{}", // JSON object of user ID -> nickname
     val lastMessageId: String?,
     val lastMessageText: String?,
     val lastMessageTimestamp: Long,

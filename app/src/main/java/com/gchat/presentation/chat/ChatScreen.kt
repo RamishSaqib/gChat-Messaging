@@ -217,7 +217,10 @@ fun ChatScreen(
                         isOwnMessage = message.senderId == currentUserId,
                         currentUserId = currentUserId ?: "",
                         isGroupChat = conversation?.isGroup() == true,
-                        senderName = participantUsers[message.senderId]?.displayName,
+                        senderName = conversation?.getUserDisplayName(
+                            message.senderId,
+                            participantUsers[message.senderId]
+                        ),
                         participantUsers = participantUsers,
                         onImageClick = { imageUrl ->
                             // Navigate to image viewer (will add this shortly)

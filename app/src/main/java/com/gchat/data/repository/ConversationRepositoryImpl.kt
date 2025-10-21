@@ -351,6 +351,31 @@ class ConversationRepositoryImpl @Inject constructor(
         return removeParticipant(conversationId, userId)
     }
     
+    override suspend fun setNickname(conversationId: String, userId: String, nickname: String?): Result<Unit> {
+        return try {
+            val conversation = getConversation(conversationId).getOrThrow()
+            val updatedNicknames = conversation.nicknames.toMutableMap()
+            
+            if (nickname.isNullOrBlank()) {
+                // Remove nickname if empty or null
+                updatedNicknames.remove(userId)
+            } else {
+                // Set/update nickname
+                updatedNicknames[userId] = nickname
+            }
+            
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf(
+                    "nicknames" to updatedNicknames,
+                    "updatedAt" to System.currentTimeMillis()
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     private suspend fun syncConversationsFromFirestore(userId: String) {
         try {
             firestoreConversationDataSource.observeConversations(userId)

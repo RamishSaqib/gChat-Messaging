@@ -23,5 +23,8 @@ interface ConversationRepository {
     suspend fun removeParticipant(conversationId: String, participantId: String): Result<Unit>
     suspend fun promoteToAdmin(conversationId: String, userId: String): Result<Unit>
     suspend fun leaveGroup(conversationId: String, userId: String): Result<Unit>
+    
+    // Nickname management
+    suspend fun setNickname(conversationId: String, userId: String, nickname: String?): Result<Unit>
 }
 

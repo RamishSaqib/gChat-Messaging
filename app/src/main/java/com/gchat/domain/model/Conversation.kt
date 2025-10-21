@@ -12,6 +12,7 @@ data class Conversation(
     val name: String? = null, // For groups
     val iconUrl: String? = null, // For groups
     val groupAdmins: List<String> = emptyList(), // User IDs of group admins
+    val nicknames: Map<String, String> = emptyMap(), // User ID -> nickname (per-conversation)
     val lastMessage: Message? = null,
     val unreadCount: Int = 0,
     val updatedAt: Long = System.currentTimeMillis(),
@@ -60,6 +61,22 @@ data class Conversation(
      */
     fun getParticipantCount(): Int {
         return participants.size
+    }
+    
+    /**
+     * Get nickname for a user in this conversation
+     * Returns null if no nickname is set
+     */
+    fun getNickname(userId: String): String? {
+        return nicknames[userId]
+    }
+    
+    /**
+     * Get display name for a user (nickname if set, otherwise real name)
+     * Used for showing user names in messages, member lists, etc.
+     */
+    fun getUserDisplayName(userId: String, user: User?): String {
+        return nicknames[userId] ?: user?.displayName ?: "Unknown User"
     }
 }
 

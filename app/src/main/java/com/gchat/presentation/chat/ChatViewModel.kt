@@ -87,22 +87,24 @@ class ChatViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
     
-    // Get display name for the TopBar
-    val otherUserName: StateFlow<String> = flow {
-        val currentUserId = authRepository.getCurrentUserId() ?: ""
-        val conversation = conversationRepository.getConversation(conversationId).getOrNull()
-        
-        if (conversation != null) {
-            val otherUserId = conversation.getOtherParticipantId(currentUserId)
+    // Get display name for the TopBar (with nickname support)
+    val otherUserName: StateFlow<String> = combine(
+        conversation,
+        currentUserId,
+        participantUsers
+    ) { conv, userId, participants ->
+        if (conv != null && userId != null) {
+            val otherUserId = conv.getOtherParticipantId(userId)
             if (otherUserId != null) {
-                val otherUser = userRepository.getUser(otherUserId).getOrNull()
-                emit(otherUser?.displayName ?: "Chat")
+                // DM chat - use nickname if set, otherwise real name
+                val otherUser = participants[otherUserId]
+                conv.getUserDisplayName(otherUserId, otherUser)
             } else {
                 // Group chat - use conversation name
-                emit(conversation.name ?: "Group Chat")
+                conv.name ?: "Group Chat"
             }
         } else {
-            emit("Chat")
+            "Chat"
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, "Chat")
     
@@ -117,17 +119,18 @@ class ChatViewModel @Inject constructor(
     val typingIndicatorText: StateFlow<String> = combine(
         typingRepository.observeTypingIndicators(conversationId),
         participantUsers,
-        currentUserId
-    ) { typingIndicators, participants, userId ->
+        currentUserId,
+        conversation
+    ) { typingIndicators, participants, userId, conv ->
         // Filter out current user (don't show own typing indicator)
         val otherTypers = typingIndicators.filter { it.userId != userId }
         
         if (otherTypers.isEmpty()) {
             ""
         } else {
-            // Get user names for typers
+            // Get user names for typers (using nicknames if set)
             val typerNames = otherTypers.mapNotNull { indicator ->
-                participants[indicator.userId]?.displayName
+                conv?.getUserDisplayName(indicator.userId, participants[indicator.userId])
             }
             
             when (typerNames.size) {

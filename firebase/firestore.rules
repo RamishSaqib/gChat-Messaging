@@ -96,10 +96,11 @@ service cloud.firestore {
       
       // Participants can update conversations (for lastMessage, etc.)
       // Group admins can update group settings (name, icon, add/remove participants)
+      // Participants can update nicknames (setting their own nickname)
       allow update: if isAuthenticated() && 
                        request.auth.uid in resource.data.participants &&
                        (
-                         // Regular updates (lastMessage, updatedAt)
+                         // Regular updates (lastMessage, updatedAt, nicknames)
                          (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['name', 'iconUrl', 'participants', 'groupAdmins'])) ||
                          // Admin updates (group settings)
                          (resource.data.type == 'GROUP' && isGroupAdmin(resource))
