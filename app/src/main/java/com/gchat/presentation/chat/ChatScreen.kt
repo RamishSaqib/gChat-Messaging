@@ -3,6 +3,7 @@ package com.gchat.presentation.chat
 import android.Manifest
 import android.net.Uri
 import android.os.Build
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -57,6 +58,7 @@ fun ChatScreen(
     val otherUserName by viewModel.otherUserName.collectAsState()
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val uploadError by viewModel.uploadError.collectAsState()
+    val typingIndicatorText by viewModel.typingIndicatorText.collectAsState()
     val listState = rememberLazyListState()
     
     var showImagePicker by remember { mutableStateOf(false) }
@@ -170,6 +172,14 @@ fun ChatScreen(
                         }
                     )
                     Spacer(modifier = Modifier.height(8.dp))
+                }
+                
+                // Show typing indicator at the bottom
+                if (typingIndicatorText.isNotBlank()) {
+                    item {
+                        TypingIndicator(text = typingIndicatorText)
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
                 }
             }
         }
@@ -494,6 +504,87 @@ fun ImagePickerBottomSheet(
         
         Spacer(modifier = Modifier.height(32.dp))
     }
+}
+
+@Composable
+fun TypingIndicator(
+    text: String,
+    modifier: Modifier = Modifier
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = 8.dp),
+        horizontalArrangement = Arrangement.Start
+    ) {
+        Surface(
+            shape = RoundedCornerShape(16.dp),
+            color = MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.7f)
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = text,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSecondaryContainer,
+                    fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                // Animated typing dots
+                TypingDots()
+            }
+        }
+    }
+}
+
+@Composable
+private fun TypingDots() {
+    val infiniteTransition = rememberInfiniteTransition(label = "typing")
+    val alpha1 by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot1"
+    )
+    val alpha2 by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 200),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot2"
+    )
+    val alpha3 by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(600, delayMillis = 400),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "dot3"
+    )
+    
+    Row(horizontalArrangement = Arrangement.spacedBy(2.dp)) {
+        TypingDot(alpha = alpha1)
+        TypingDot(alpha = alpha2)
+        TypingDot(alpha = alpha3)
+    }
+}
+
+@Composable
+private fun TypingDot(alpha: Float) {
+    Box(
+        modifier = Modifier
+            .size(6.dp)
+            .clip(CircleShape)
+            .background(MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = alpha))
+    )
 }
 
 private fun formatTime(timestamp: Long): String {

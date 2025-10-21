@@ -9,11 +9,15 @@ import com.gchat.domain.model.MessageType
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.ConversationRepository
 import com.gchat.domain.repository.MediaRepository
+import com.gchat.domain.repository.TypingRepository
 import com.gchat.domain.repository.UserRepository
 import com.gchat.domain.usecase.GetMessagesUseCase
 import com.gchat.domain.usecase.MarkMessageAsReadUseCase
 import com.gchat.domain.usecase.SendMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.FlowPreview
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -30,6 +34,7 @@ class ChatViewModel @Inject constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val mediaRepository: MediaRepository,
+    private val typingRepository: TypingRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -100,8 +105,62 @@ class ChatViewModel @Inject constructor(
         }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, "Chat")
     
+    // Typing indicators
+    private var typingDebounceJob: Job? = null
+    private val TYPING_TIMEOUT_MS = 3000L // Stop typing after 3 seconds of inactivity
+    
+    /**
+     * Observe who is typing in this conversation
+     * Returns a formatted string like "John is typing..." or "John, Sarah are typing..."
+     */
+    val typingIndicatorText: StateFlow<String> = typingRepository.observeTypingIndicators(conversationId)
+        .map { typingIndicators ->
+            val currentUserId = authRepository.getCurrentUserId() ?: ""
+            
+            // Filter out current user (don't show own typing indicator)
+            val otherTypers = typingIndicators.filter { it.userId != currentUserId }
+            
+            if (otherTypers.isEmpty()) {
+                ""
+            } else {
+                // Get user names for typers
+                val typerNames = otherTypers.mapNotNull { indicator ->
+                    participantUsers.value[indicator.userId]?.displayName
+                }
+                
+                when (typerNames.size) {
+                    0 -> ""
+                    1 -> "${typerNames[0]} is typing..."
+                    2 -> "${typerNames[0]} and ${typerNames[1]} are typing..."
+                    else -> "${typerNames[0]}, ${typerNames[1]}, and ${typerNames.size - 2} others are typing..."
+                }
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "")
+    
     fun updateMessageText(text: String) {
         _messageText.value = text
+        
+        // Update typing status
+        val currentUserId = currentUserId.value ?: return
+        val isTyping = text.isNotBlank()
+        
+        // Cancel previous debounce job
+        typingDebounceJob?.cancel()
+        
+        viewModelScope.launch {
+            // Set typing status
+            typingRepository.setTypingStatus(conversationId, currentUserId, isTyping)
+            
+            // If typing, start a debounce timer to clear typing status after inactivity
+            if (isTyping) {
+                typingDebounceJob = launch {
+                    delay(TYPING_TIMEOUT_MS)
+                    // Clear typing status after timeout
+                    typingRepository.setTypingStatus(conversationId, currentUserId, false)
+                }
+            }
+        }
     }
     
     fun sendMessage() {
@@ -112,6 +171,10 @@ class ChatViewModel @Inject constructor(
         
         viewModelScope.launch {
             _sendingState.value = true
+            
+            // Clear typing status when sending message
+            typingDebounceJob?.cancel()
+            typingRepository.setTypingStatus(conversationId, userId, false)
             
             sendMessageUseCase(
                 conversationId = conversationId,

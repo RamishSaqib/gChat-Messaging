@@ -1,15 +1,70 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #6 - Read Receipts | **Status:** 🎉 MVP Complete + Read Receipts!
+> **Last Merged:** PR #6 - Read Receipts | **Status:** 🚧 Working on PR #8 - Typing Indicators
 
 ---
 
 ## 📊 Quick Status
 
 **Completed PRs:** 8 (Merged to main)  
-**Current PR:** None (MVP Phase Complete!)  
-**Current Sprint:** MVP Complete ✅  
+**Current PR:** PR #8 - Typing Indicators (In Progress)  
+**Current Sprint:** Post-MVP Enhancements  
 **Next Up:** AI Translation Phase (Core Feature)
+
+---
+
+## 🚧 PR #8: Typing Indicators (IN PROGRESS)
+
+**Goal:** Implement real-time typing indicators showing who is typing in 1-on-1 and group chats
+
+**Branch:** `feature/pr8-typing-indicators`
+
+**Status:** 🚧 In Progress - Implementation Complete, Testing Pending
+
+**Priority:** Medium (UX Enhancement)
+
+**Time Spent:** ~1 hour
+
+### Feature Tasks
+- [x] Create TypingIndicator domain model (conversationId, userId, isTyping, timestamp)
+- [x] Create FirestoreTypingDataSource for real-time typing updates
+- [x] Create TypingRepository interface and implementation
+- [x] Add TypingRepository binding to DI module
+- [x] Inject TypingRepository into ChatViewModel
+- [x] Implement typing status tracking in updateMessageText()
+- [x] Add debouncing logic (3-second timeout for inactivity)
+- [x] Clear typing status on message send
+- [x] Create typingIndicatorText StateFlow with smart formatting
+- [x] Filter out current user from typing indicators
+
+### UI Components
+- [x] Create TypingIndicator composable with translucent bubble
+- [x] Create TypingDots composable with animated fade effect
+- [x] Create TypingDot composable for individual dot animation
+- [x] Add typing indicator to ChatScreen LazyColumn
+- [x] Collect typingIndicatorText StateFlow in ChatScreen
+- [x] Show typing indicator at bottom of message list
+- [x] Add animation imports (rememberInfiniteTransition, animateFloat)
+
+### Group Chat Formatting
+- [x] Format 1 typer: "John is typing..."
+- [x] Format 2 typers: "John and Sarah are typing..."
+- [x] Format 3+ typers: "John, Sarah, and 2 others are typing..."
+- [x] Fetch user display names from participantUsers map
+
+### Data Layer
+- [x] Firestore rules already support /typing/{userId} subcollection
+- [x] Participants can read and write their own typing status
+- [x] Real-time snapshot listener in FirestoreTypingDataSource
+- [x] Efficient Firestore writes with debouncing
+
+### Testing
+- [ ] Test typing indicator in 1-on-1 chat (Device A types, Device B sees indicator)
+- [ ] Test 3-second debounce (stop typing, indicator disappears after 3s)
+- [ ] Test immediate clear on send (send message, indicator disappears)
+- [ ] Test group chat with multiple typers (show all names)
+- [ ] Test typing indicator auto-scrolls to bottom
+- [ ] Verify Firestore writes are debounced (not excessive)
 
 ---
 

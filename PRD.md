@@ -6,6 +6,61 @@
 
 ## 📋 Pull Request History
 
+### PR #8: Typing Indicators
+**Status:** 🚧 In Progress (feature/pr8-typing-indicators)  
+**Date:** October 21, 2025  
+**Time Spent:** ~1 hour
+
+**Features Implemented:**
+- ✅ Real-time typing indicators in 1-on-1 and group chats
+- ✅ Animated typing dots with smooth fade animation
+- ✅ Debouncing logic (typing stops after 3 seconds of inactivity)
+- ✅ Smart formatting for group chats ("John is typing...", "John and Sarah are typing...", "John, Sarah, and 2 others are typing...")
+- ✅ Automatic typing status cleanup on message send
+- ✅ Efficient Firestore listeners with minimal writes
+
+**UI Design:**
+- Typing indicator appears at the bottom of the message list
+- Translucent gray bubble with italic text
+- Three animated dots that fade in and out sequentially
+- Shows user names for clarity in group chats
+- Does not show your own typing status (filters out current user)
+
+**Technical Implementation:**
+- Created `TypingIndicator` domain model (conversationId, userId, isTyping, timestamp)
+- Created `FirestoreTypingDataSource` for real-time typing updates
+- Created `TypingRepository` and `TypingRepositoryImpl` for typing operations
+- Updated `ChatViewModel` to track and broadcast typing status
+- Added debouncing with 3-second timeout using coroutine Job cancellation
+- `updateMessageText()` sets typing status on text change
+- `sendMessage()` clears typing status immediately
+- Created `TypingIndicator`, `TypingDots`, and `TypingDot` composables
+- Uses `rememberInfiniteTransition` for smooth animated dots
+- Firestore rules already support typing subcollection (read/write by participants)
+
+**How It Works:**
+1. User types → `updateMessageText()` called
+2. Set `isTyping = true` in Firestore `/conversations/{id}/typing/{userId}`
+3. Start 3-second debounce timer
+4. If no typing activity → auto-clear typing status
+5. Other users observe typing indicators via Firestore snapshot listener
+6. `typingIndicatorText` StateFlow formats names ("John is typing...")
+7. UI displays typing indicator at bottom of chat with animated dots
+8. On send message → clear typing status immediately
+
+**Bugs Fixed:**
+- None (new feature)
+
+**Testing Notes:**
+- Open chat on two devices
+- Type on Device A → Device B should see "[Name] is typing..." within 500ms
+- Stop typing → indicator should disappear after 3 seconds
+- Send message → indicator should disappear immediately
+- Group chat: multiple users typing should show all names
+- Typing indicator should auto-scroll to bottom
+
+---
+
 ### PR #6: Read Receipts
 **Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  
