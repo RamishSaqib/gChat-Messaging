@@ -66,18 +66,19 @@ fun ConversationListScreen(
                     containerColor = MaterialTheme.colorScheme.primaryContainer,
                     titleContentColor = MaterialTheme.colorScheme.onPrimaryContainer
                 ),
-                actions = {
-                    // Profile picture button
+                navigationIcon = {
+                    // Profile picture button (on the left)
                     IconButton(onClick = onProfileClick) {
                         ProfilePicture(
                             url = currentUser?.profilePictureUrl,
                             displayName = currentUser?.displayName ?: "User",
-                            size = 32.dp,
+                            size = 40.dp,
                             showOnlineIndicator = false
                         )
                     }
-                    
-                    // Logout button
+                },
+                actions = {
+                    // Logout button (on the right)
                     IconButton(onClick = {
                         viewModel.logout {
                             onLogout()
