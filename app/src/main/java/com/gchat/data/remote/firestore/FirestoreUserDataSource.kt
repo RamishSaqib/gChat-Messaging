@@ -26,7 +26,7 @@ class FirestoreUserDataSource @Inject constructor(
         return try {
             usersCollection
                 .document(user.id)
-                .set(UserMapper.toFirestore(user))
+                .set(UserMapper.toFirestore(user), com.google.firebase.firestore.SetOptions.merge())
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {
