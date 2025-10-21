@@ -27,6 +27,9 @@ class ConversationListViewModel @Inject constructor(
     // Cache for user data flows to observe real-time status changes
     private val userFlowCache = mutableMapOf<String, StateFlow<User?>>()
     
+    // Track conversations being dismissed for immediate UI removal
+    private val _dismissedConversationIds = MutableStateFlow<Set<String>>(emptySet())
+    
     // Current user information
     val currentUser: StateFlow<User?> = flow {
         val userId = authRepository.getCurrentUserId()
@@ -112,10 +115,15 @@ class ConversationListViewModel @Inject constructor(
             }
             
             // Combine all conversation flows and emit as a list
-            combine(conversationFlows) { it.toList() }.collect { conversationsWithUsers ->
-                android.util.Log.d("ConversationListVM", "Emitting ${conversationsWithUsers.size} conversations with users to UI")
-                emit(conversationsWithUsers)
-            }
+            combine(conversationFlows) { it.toList() }
+                .combine(_dismissedConversationIds) { conversations, dismissedIds ->
+                    // Filter out dismissed conversations for immediate UI update
+                    conversations.filter { it.conversation.id !in dismissedIds }
+                }
+                .collect { conversationsWithUsers ->
+                    android.util.Log.d("ConversationListVM", "Emitting ${conversationsWithUsers.size} conversations with users to UI")
+                    emit(conversationsWithUsers)
+                }
         }
     }.stateIn(
         scope = viewModelScope,
@@ -126,14 +134,21 @@ class ConversationListViewModel @Inject constructor(
     fun deleteConversation(conversationId: String, onComplete: (Result<Unit>) -> Unit = {}) {
         viewModelScope.launch {
             android.util.Log.d("ConversationListVM", "Deleting conversation: $conversationId")
+            
+            // Immediately add to dismissed set for instant UI removal
+            _dismissedConversationIds.value = _dismissedConversationIds.value + conversationId
+            
             val result = deleteConversationUseCase(conversationId)
             result.fold(
                 onSuccess = {
                     android.util.Log.d("ConversationListVM", "Conversation deleted successfully")
+                    // Keep it in dismissed set - it will be gone from data source anyway
                     onComplete(Result.success(Unit))
                 },
                 onFailure = { error ->
                     android.util.Log.e("ConversationListVM", "Failed to delete conversation: ${error.message}")
+                    // Remove from dismissed set to show it again if deletion failed
+                    _dismissedConversationIds.value = _dismissedConversationIds.value - conversationId
                     onComplete(Result.failure(error))
                 }
             )

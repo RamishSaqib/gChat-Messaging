@@ -221,15 +221,17 @@ fun ConversationListScreen(
                         key = { it.conversation.id }
                     ) { conversationWithUser ->
                         val dismissState = rememberDismissState(
+                            confirmValueChange = { dismissValue ->
+                                if (dismissValue == DismissValue.DismissedToStart) {
+                                    // Trigger deletion - item will be filtered from UI immediately
+                                    viewModel.deleteConversation(conversationWithUser.conversation.id)
+                                    true
+                                } else {
+                                    false
+                                }
+                            },
                             positionalThreshold = { distance -> distance * 0.25f }
                         )
-                        
-                        // Trigger delete when swiped away
-                        LaunchedEffect(dismissState.currentValue) {
-                            if (dismissState.currentValue == DismissValue.DismissedToStart) {
-                                viewModel.deleteConversation(conversationWithUser.conversation.id)
-                            }
-                        }
                         
                         SwipeToDismiss(
                             state = dismissState,
