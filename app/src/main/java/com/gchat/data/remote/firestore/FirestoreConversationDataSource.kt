@@ -72,7 +72,16 @@ class FirestoreConversationDataSource @Inject constructor(
                     ?.mapNotNull { ConversationMapper.fromFirestore(it) }
                     ?: emptyList()
                 
-                android.util.Log.d("FirestoreConversation", "Snapshot listener emitted ${conversations.size} conversations (hasPendingWrites: ${snapshot?.metadata?.hasPendingWrites()}, fromCache: ${snapshot?.metadata?.isFromCache()})")
+                val hasPendingWrites = snapshot?.metadata?.hasPendingWrites() ?: false
+                val isFromCache = snapshot?.metadata?.isFromCache() ?: false
+                android.util.Log.d("FirestoreConversation", "Snapshot listener emitted ${conversations.size} conversations (hasPendingWrites: $hasPendingWrites, fromCache: $isFromCache)")
+                
+                // Log document changes for debugging
+                snapshot?.documentChanges?.forEach { change ->
+                    android.util.Log.d("FirestoreConversation", "Document change: ${change.type} for conversation ${change.document.id}")
+                }
+                
+                // Always emit, even if from cache - this ensures UI updates quickly
                 trySend(conversations)
             }
         
