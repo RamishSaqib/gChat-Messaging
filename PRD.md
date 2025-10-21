@@ -6,6 +6,38 @@
 
 ## 📋 Pull Request History
 
+### PR #5: Group Chat
+**Status:** 🟡 In Progress  
+**Date Started:** October 20, 2025  
+**Estimated Time:** 4-5 hours
+
+**Planned Features:**
+- Create group conversations with 3+ participants
+- Group name and custom group icon/avatar
+- Group info screen to view members and settings
+- Add/remove participants (admin controls)
+- Sender names displayed in group message bubbles
+- Group admin roles and permissions
+- Leave group functionality
+- Participant count indicator in conversation list
+
+**Technical Implementation:**
+- CreateGroupUseCase for multi-participant conversation creation
+- GroupInfoScreen and GroupInfoViewModel for member management
+- Update ChatScreen to show sender names for group messages
+- Add groupAdmins field to Conversation model
+- Firestore rules for group participant validation (3-50 members)
+- Navigation routes: CreateGroup, GroupInfo
+
+**Target UX:**
+- "New Group" option in conversation list
+- Select participants → Set group name → Add icon (optional) → Create
+- Tap group in chat list → Group info shows all members
+- Admins can add/remove members and edit group details
+- All members can leave group at any time
+
+---
+
 ### PR #4.5: Image Upload UI with Caption Support
 **Status:** ✅ Merged to Main  
 **Date:** October 20, 2025

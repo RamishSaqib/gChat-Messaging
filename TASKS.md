@@ -1,14 +1,78 @@
 # gChat - Development Tasks
 
-> **Current PR:** None - Ready for Next Feature | **Last Merged:** PR #4.5 - Image Upload UI
+> **Current PR:** PR #5 - Group Chat | **Last Merged:** PR #4.5 - Image Upload UI
 
 ---
 
 ## 📊 Quick Status
 
 **Completed PRs:** 5 (All merged to main)  
-**Current Sprint:** Planning Next Features  
-**Next Up:** Group Chat (PR #5) or Push Notifications (PR #6) or AI Translation (PR #7)
+**Current Sprint:** PR #5 - Group Chat Features  
+**Estimated Time:** 4-5 hours
+
+---
+
+## 🚧 PR #5: Group Chat (IN PROGRESS)
+
+**Goal:** Enable group conversations with 3+ participants, group names, avatars, and member management
+
+**Status:** 🟡 In Progress - Feature Branch Created
+
+**Priority:** High
+
+### Backend Tasks
+- [ ] Create `CreateGroupUseCase` for multi-participant conversations
+- [ ] Add group icon upload support to `MediaRepository`
+- [ ] Update `ConversationRepository` to handle group-specific operations
+- [ ] Add `addParticipant()` and `removeParticipant()` functions
+- [ ] Update Firestore rules to validate group participant limits (3-50 members)
+- [ ] Add group admin role validation in security rules
+
+### Data Models
+- [ ] Verify `Conversation` model supports group metadata (already has name, iconUrl, participants)
+- [ ] Add `groupAdmins` field to `ConversationEntity` (list of admin user IDs)
+- [ ] Update `ConversationMapper` to handle group admin field
+
+### UI Components
+- [ ] Create `CreateGroupScreen` with name input and participant selection
+- [ ] Create `CreateGroupViewModel` with state management
+- [ ] Create `GroupInfoScreen` for viewing/editing group details
+- [ ] Create `GroupInfoViewModel` with add/remove participant logic
+- [ ] Create `ParticipantListItem` composable for member display
+- [ ] Update `ChatScreen` to show sender names in group messages
+- [ ] Update `ConversationItem` to display group icon and name
+- [ ] Add "New Group" button/option to `ConversationListScreen`
+
+### Navigation
+- [ ] Add `CreateGroup` route to `Screen` sealed class
+- [ ] Add `GroupInfo` route with conversationId parameter
+- [ ] Update `NavGraph` with new routes
+- [ ] Add navigation from conversation list to create group
+- [ ] Add navigation from chat TopBar to group info (for groups only)
+
+### Group Message UX
+- [ ] Show sender name above/in message bubbles for group chats
+- [ ] Display sender profile picture in group messages
+- [ ] Add participant count indicator in conversation list
+- [ ] Show "You:" prefix for own messages in group preview
+
+### Group Management Features
+- [ ] Implement group creation flow (select participants → set name → create)
+- [ ] Allow group admins to edit group name and icon
+- [ ] Allow admins to add new participants
+- [ ] Allow admins to remove participants
+- [ ] Allow any member to leave group
+- [ ] Show admin badge for group admins in participant list
+
+### Testing Tasks
+- [ ] Test creating group with 3 participants
+- [ ] Test sending messages in group chat
+- [ ] Test sender names display correctly
+- [ ] Test adding participant to existing group
+- [ ] Test removing participant from group
+- [ ] Test leaving group
+- [ ] Test group name and icon updates
+- [ ] Verify security rules prevent unauthorized participant changes
 
 ---
 
