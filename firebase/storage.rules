@@ -36,18 +36,19 @@ service firebase.storage {
       allow delete: if isAuthenticated() && isOwner(userId);
     }
     
-    // Message images
-    match /message_images/{conversationId}/{messageId}/{fileName} {
-      // Users can read message images (conversation participants checked in app)
+    // Chat images (message attachments)
+    match /chat_images/{userId}/{fileName} {
+      // Anyone authenticated can read chat images
       allow read: if isAuthenticated();
       
-      // Users can upload message images
+      // Users can only upload to their own folder
       allow write: if isAuthenticated() && 
+                      isOwner(userId) && 
                       isImage() && 
                       isValidSize();
       
-      // Users can delete their own message images
-      allow delete: if isAuthenticated();
+      // Users can delete their own images
+      allow delete: if isAuthenticated() && isOwner(userId);
     }
     
     // Deny all other access

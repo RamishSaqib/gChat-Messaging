@@ -8,19 +8,24 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageType
@@ -50,6 +55,7 @@ fun ChatScreen(
     val listState = rememberLazyListState()
     
     var showImagePicker by remember { mutableStateOf(false) }
+    var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
     
     // Camera permission
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -57,7 +63,7 @@ fun ChatScreen(
     // Image picker
     val imagePickerLaunchers = rememberImagePickerLaunchers(
         onImageSelected = { uri ->
-            viewModel.sendImageMessage(uri)
+            selectedImageUri = uri
             showImagePicker = false
         }
     )
@@ -98,9 +104,20 @@ fun ChatScreen(
             MessageInput(
                 messageText = messageText,
                 onMessageChange = viewModel::updateMessageText,
-                onSendClick = viewModel::sendMessage,
+                onSendClick = {
+                    selectedImageUri?.let { uri ->
+                        // Send image with caption
+                        viewModel.sendImageMessage(uri, messageText.ifBlank { null })
+                        selectedImageUri = null
+                    } ?: run {
+                        // Send text only
+                        viewModel.sendMessage()
+                    }
+                },
                 onAttachmentClick = { showImagePicker = true },
-                isUploading = uploadProgress != null
+                isUploading = uploadProgress != null,
+                selectedImageUri = selectedImageUri,
+                onClearImage = { selectedImageUri = null }
             )
         }
     ) { paddingValues ->
@@ -233,47 +250,89 @@ fun MessageInput(
     onMessageChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onAttachmentClick: () -> Unit,
-    isUploading: Boolean = false
+    isUploading: Boolean = false,
+    selectedImageUri: Uri? = null,
+    onClearImage: () -> Unit = {}
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
         shadowElevation = 8.dp
     ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            // Attachment button
-            IconButton(
-                onClick = onAttachmentClick,
-                enabled = !isUploading
-            ) {
-                Icon(Icons.Filled.AttachFile, "Attach image")
+        Column {
+            // Image preview (if image selected)
+            selectedImageUri?.let { uri ->
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(8.dp)
+                ) {
+                    AsyncImage(
+                        model = uri,
+                        contentDescription = "Selected image",
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .heightIn(max = 200.dp)
+                            .clip(RoundedCornerShape(12.dp)),
+                        contentScale = ContentScale.Crop
+                    )
+                    
+                    // Remove button
+                    IconButton(
+                        onClick = onClearImage,
+                        modifier = Modifier
+                            .align(Alignment.TopEnd)
+                            .padding(4.dp)
+                            .background(
+                                MaterialTheme.colorScheme.surface.copy(alpha = 0.9f),
+                                shape = CircleShape
+                            )
+                            .size(32.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Filled.Close,
+                            contentDescription = "Remove image",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
             }
             
-            OutlinedTextField(
-                value = messageText,
-                onValueChange = onMessageChange,
-                modifier = Modifier.weight(1f),
-                placeholder = { Text("Type a message...") },
-                maxLines = 4,
-                enabled = !isUploading
-            )
-            
-            Spacer(modifier = Modifier.width(8.dp))
-            
-            if (isUploading) {
-                CircularProgressIndicator(
-                    modifier = Modifier.size(48.dp)
-                )
-            } else {
-                FilledIconButton(
-                    onClick = onSendClick,
-                    enabled = messageText.isNotBlank()
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Attachment button
+                IconButton(
+                    onClick = onAttachmentClick,
+                    enabled = !isUploading && selectedImageUri == null
                 ) {
-                    Icon(Icons.Filled.Send, "Send")
+                    Icon(Icons.Filled.AttachFile, "Attach image")
+                }
+                
+                OutlinedTextField(
+                    value = messageText,
+                    onValueChange = onMessageChange,
+                    modifier = Modifier.weight(1f),
+                    placeholder = { Text(if (selectedImageUri != null) "Add a caption..." else "Type a message...") },
+                    maxLines = 4,
+                    enabled = !isUploading
+                )
+                
+                Spacer(modifier = Modifier.width(8.dp))
+                
+                if (isUploading) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(48.dp)
+                    )
+                } else {
+                    FilledIconButton(
+                        onClick = onSendClick,
+                        enabled = messageText.isNotBlank() || selectedImageUri != null
+                    ) {
+                        Icon(Icons.Filled.Send, "Send")
+                    }
                 }
             }
         }
