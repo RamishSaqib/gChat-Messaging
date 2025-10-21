@@ -67,8 +67,39 @@ class AuthRepositoryImpl @Inject constructor(
                     AuthResult.Success(updatedUser)
                 },
                 onFailure = { error ->
-                    android.util.Log.e("AuthRepository", "User profile not found in Firestore: ${error.message}")
-                    AuthResult.Error("User profile not found. Please contact support or re-register.")
+                    // User profile missing - create basic profile from Firebase Auth data
+                    android.util.Log.w("AuthRepository", "User profile not found in Firestore, creating from Auth data: ${error.message}")
+                    
+                    // Get display name from Firebase Auth profile (set during registration)
+                    val displayName = firebaseUser.displayName ?: "User"
+                    
+                    val newUser = User(
+                        id = firebaseUser.uid,
+                        displayName = displayName,
+                        email = firebaseUser.email,
+                        phoneNumber = firebaseUser.phoneNumber,
+                        profilePictureUrl = firebaseUser.photoUrl?.toString(), // Will be null for email/password users
+                        preferredLanguage = "en",
+                        isOnline = true,
+                        lastSeen = System.currentTimeMillis(),
+                        createdAt = System.currentTimeMillis()
+                    )
+                    
+                    android.util.Log.d("AuthRepository", "Creating profile: displayName=$displayName, email=${newUser.email}")
+                    
+                    // Try to create profile in Firestore
+                    val createResult = firestoreUserDataSource.createUser(newUser)
+                    createResult.fold(
+                        onSuccess = {
+                            android.util.Log.d("AuthRepository", "Profile created successfully")
+                            userDao.insert(UserMapper.toEntity(newUser))
+                            AuthResult.Success(newUser)
+                        },
+                        onFailure = { createError ->
+                            android.util.Log.e("AuthRepository", "Failed to create profile: ${createError.message}")
+                            AuthResult.Error("Failed to create user profile. Please try again.")
+                        }
+                    )
                 }
             )
         } catch (e: Exception) {
