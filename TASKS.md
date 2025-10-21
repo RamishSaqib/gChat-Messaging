@@ -1,22 +1,22 @@
 # gChat - Development Tasks
 
-> **Current PR:** PR #5 - Group Chat | **Last Merged:** PR #4.5 - Image Upload UI
+> **Current PR:** None - Ready for Next Feature | **Last Merged:** PR #5 - Group Chat
 
 ---
 
 ## 📊 Quick Status
 
 **Completed PRs:** 5 (All merged to main)  
-**Current Sprint:** PR #5 - Group Chat Features  
-**Estimated Time:** 4-5 hours
+**Current Sprint:** Planning Next Features  
+**Next Up:** PR #5.5 (Group Privacy), PR #5.6 (GroupInfo), PR #6 (Push Notifications), or PR #7 (AI Translation)
 
 ---
 
-## 🚧 PR #5: Group Chat (IN PROGRESS)
+## ✅ PR #5: Group Chat (MERGED)
 
 **Goal:** Enable group conversations with 3+ participants, group names, avatars, and member management
 
-**Status:** 🟡 In Progress - Core features complete, ready for testing
+**Status:** ✅ Merged to Main
 
 **Priority:** High
 

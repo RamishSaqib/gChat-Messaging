@@ -7,9 +7,9 @@
 ## 📋 Pull Request History
 
 ### PR #5: Group Chat
-**Status:** 🟡 In Progress - Core features complete, ready for testing  
-**Date Started:** October 20, 2025  
-**Time Spent:** ~3 hours so far
+**Status:** ✅ Merged to Main  
+**Date:** October 20, 2025  
+**Time Spent:** ~4 hours
 
 **Features Implemented:**
 - ✅ Create group conversations with 3-50 participants
@@ -31,20 +31,17 @@
 - ChatViewModel exposes conversation and participantUsers for sender display
 - Navigation: CreateGroup route integrated
 
+**Bugs Fixed:**
+- Fixed Room schema export warning (set exportSchema = false)
+- Fixed CreateGroupViewModel coroutine issue (getCurrentUserId in suspend scope)
+- Fixed last message preview not loading initially in conversation list
+
 **Deferred to Future PRs:**
 - GroupInfoScreen (view/edit group, manage members) → PR #5.6 or #6
 - Message history filtering for new members → PR #5.5 (privacy feature)
 - Participant count badge in conversation list
 - Leave group functionality
 - Add/remove participants after creation
-
-**Testing Needed:**
-- [ ] Create group with 3+ participants
-- [ ] Send messages in group chat
-- [ ] Verify sender names display correctly
-- [ ] Test group icon upload
-- [ ] Verify Firestore security rules
-- [ ] Test navigation flow (list → create → chat)
 
 ---
 
