@@ -66,7 +66,7 @@ class FirestoreConversationDataSource @Inject constructor(
                     ?.mapNotNull { ConversationMapper.fromFirestore(it) }
                     ?: emptyList()
                 
-                android.util.Log.d("FirestoreConversation", "Snapshot listener emitted ${conversations.size} conversations (hasPendingWrites: ${snapshot?.metadata?.hasPendingWrites}, fromCache: ${snapshot?.metadata?.isFromCache})")
+                android.util.Log.d("FirestoreConversation", "Snapshot listener emitted ${conversations.size} conversations (hasPendingWrites: ${snapshot?.metadata?.hasPendingWrites()}, fromCache: ${snapshot?.metadata?.isFromCache()})")
                 trySend(conversations)
             }
         
