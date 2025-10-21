@@ -7,34 +7,44 @@
 ## 📋 Pull Request History
 
 ### PR #5: Group Chat
-**Status:** 🟡 In Progress  
+**Status:** 🟡 In Progress - Core features complete, ready for testing  
 **Date Started:** October 20, 2025  
-**Estimated Time:** 4-5 hours
+**Time Spent:** ~3 hours so far
 
-**Planned Features:**
-- Create group conversations with 3+ participants
-- Group name and custom group icon/avatar
-- Group info screen to view members and settings
-- Add/remove participants (admin controls)
-- Sender names displayed in group message bubbles
-- Group admin roles and permissions
+**Features Implemented:**
+- ✅ Create group conversations with 3-50 participants
+- ✅ Group name and custom group icon/avatar upload
+- ✅ Group admin roles (creator is initial admin)
+- ✅ Sender names displayed in group message bubbles
+- ✅ FAB menu with "New Group" option in conversation list
+- ✅ Conversation list correctly displays group name and icon
+- ✅ CreateGroupScreen with participant search and selection
+- ✅ Real-time user search with add/remove participants
+
+**Technical Completed:**
+- CreateGroupUseCase with validation (3-50 participants, creator as admin)
+- CreateGroupScreen and CreateGroupViewModel
+- Updated Conversation model with groupAdmins field
+- Database schema v3 (added groupAdmins to ConversationEntity)
+- Firestore rules: group validation, admin-only updates, participant limits
+- Firebase Storage rules: group_icons path with 5MB limit
+- ChatViewModel exposes conversation and participantUsers for sender display
+- Navigation: CreateGroup route integrated
+
+**Deferred to Future PRs:**
+- GroupInfoScreen (view/edit group, manage members) → PR #5.6 or #6
+- Message history filtering for new members → PR #5.5 (privacy feature)
+- Participant count badge in conversation list
 - Leave group functionality
-- Participant count indicator in conversation list
+- Add/remove participants after creation
 
-**Technical Implementation:**
-- CreateGroupUseCase for multi-participant conversation creation
-- GroupInfoScreen and GroupInfoViewModel for member management
-- Update ChatScreen to show sender names for group messages
-- Add groupAdmins field to Conversation model
-- Firestore rules for group participant validation (3-50 members)
-- Navigation routes: CreateGroup, GroupInfo
-
-**Target UX:**
-- "New Group" option in conversation list
-- Select participants → Set group name → Add icon (optional) → Create
-- Tap group in chat list → Group info shows all members
-- Admins can add/remove members and edit group details
-- All members can leave group at any time
+**Testing Needed:**
+- [ ] Create group with 3+ participants
+- [ ] Send messages in group chat
+- [ ] Verify sender names display correctly
+- [ ] Test group icon upload
+- [ ] Verify Firestore security rules
+- [ ] Test navigation flow (list → create → chat)
 
 ---
 

@@ -16,63 +16,66 @@
 
 **Goal:** Enable group conversations with 3+ participants, group names, avatars, and member management
 
-**Status:** 🟡 In Progress - Feature Branch Created
+**Status:** 🟡 In Progress - Core features complete, ready for testing
 
 **Priority:** High
 
+**Deferred to Future PRs:**
+- GroupInfoScreen (view/edit group details) → Will add in PR #5.5 or PR #6
+- Message history filtering for new group members → PR #5.5: Group Privacy & Message Filtering
+
 ### Backend Tasks
-- [ ] Create `CreateGroupUseCase` for multi-participant conversations
-- [ ] Add group icon upload support to `MediaRepository`
-- [ ] Update `ConversationRepository` to handle group-specific operations
-- [ ] Add `addParticipant()` and `removeParticipant()` functions
-- [ ] Update Firestore rules to validate group participant limits (3-50 members)
-- [ ] Add group admin role validation in security rules
+- [x] Create `CreateGroupUseCase` for multi-participant conversations
+- [x] Add group icon upload support to `MediaRepository` (already existed)
+- [x] Update `ConversationRepository` to handle group-specific operations (uses existing methods)
+- [ ] Add `addParticipant()` and `removeParticipant()` functions (deferred to GroupInfoScreen PR)
+- [x] Update Firestore rules to validate group participant limits (3-50 members)
+- [x] Add group admin role validation in security rules
 
 ### Data Models
-- [ ] Verify `Conversation` model supports group metadata (already has name, iconUrl, participants)
-- [ ] Add `groupAdmins` field to `ConversationEntity` (list of admin user IDs)
-- [ ] Update `ConversationMapper` to handle group admin field
+- [x] Verify `Conversation` model supports group metadata (already has name, iconUrl, participants)
+- [x] Add `groupAdmins` field to `ConversationEntity` (list of admin user IDs)
+- [x] Update `ConversationMapper` to handle group admin field
 
 ### UI Components
-- [ ] Create `CreateGroupScreen` with name input and participant selection
-- [ ] Create `CreateGroupViewModel` with state management
-- [ ] Create `GroupInfoScreen` for viewing/editing group details
-- [ ] Create `GroupInfoViewModel` with add/remove participant logic
-- [ ] Create `ParticipantListItem` composable for member display
-- [ ] Update `ChatScreen` to show sender names in group messages
-- [ ] Update `ConversationItem` to display group icon and name
-- [ ] Add "New Group" button/option to `ConversationListScreen`
+- [x] Create `CreateGroupScreen` with name input and participant selection
+- [x] Create `CreateGroupViewModel` with state management
+- [ ] Create `GroupInfoScreen` for viewing/editing group details (deferred to future PR)
+- [ ] Create `GroupInfoViewModel` with add/remove participant logic (deferred to future PR)
+- [ ] Create `ParticipantListItem` composable for member display (deferred to future PR)
+- [x] Update `ChatScreen` to show sender names in group messages
+- [x] Update `ConversationItem` to display group icon and name (already worked correctly)
+- [x] Add "New Group" button/option to `ConversationListScreen`
 
 ### Navigation
-- [ ] Add `CreateGroup` route to `Screen` sealed class
-- [ ] Add `GroupInfo` route with conversationId parameter
-- [ ] Update `NavGraph` with new routes
-- [ ] Add navigation from conversation list to create group
-- [ ] Add navigation from chat TopBar to group info (for groups only)
+- [x] Add `CreateGroup` route to `Screen` sealed class
+- [x] Add `GroupInfo` route with conversationId parameter
+- [x] Update `NavGraph` with new routes (CreateGroup only, GroupInfo for future)
+- [x] Add navigation from conversation list to create group
+- [ ] Add navigation from chat TopBar to group info (deferred - needs GroupInfoScreen first)
 
 ### Group Message UX
-- [ ] Show sender name above/in message bubbles for group chats
-- [ ] Display sender profile picture in group messages
-- [ ] Add participant count indicator in conversation list
-- [ ] Show "You:" prefix for own messages in group preview
+- [x] Show sender name above/in message bubbles for group chats
+- [ ] Display sender profile picture in group messages (future enhancement)
+- [ ] Add participant count indicator in conversation list (future enhancement)
+- [ ] Show "You:" prefix for own messages in group preview (future enhancement)
 
 ### Group Management Features
-- [ ] Implement group creation flow (select participants → set name → create)
-- [ ] Allow group admins to edit group name and icon
-- [ ] Allow admins to add new participants
-- [ ] Allow admins to remove participants
-- [ ] Allow any member to leave group
-- [ ] Show admin badge for group admins in participant list
+- [x] Implement group creation flow (select participants → set name → create)
+- [ ] Allow group admins to edit group name and icon (deferred to GroupInfoScreen PR)
+- [ ] Allow admins to add new participants (deferred to GroupInfoScreen PR)
+- [ ] Allow admins to remove participants (deferred to GroupInfoScreen PR)
+- [ ] Allow any member to leave group (deferred to GroupInfoScreen PR)
+- [ ] Show admin badge for group admins in participant list (deferred to GroupInfoScreen PR)
 
 ### Testing Tasks
 - [ ] Test creating group with 3 participants
 - [ ] Test sending messages in group chat
 - [ ] Test sender names display correctly
-- [ ] Test adding participant to existing group
-- [ ] Test removing participant from group
-- [ ] Test leaving group
-- [ ] Test group name and icon updates
-- [ ] Verify security rules prevent unauthorized participant changes
+- [ ] Test Firebase security rules (group creation, admin validation)
+- [ ] Test group icon upload to Firebase Storage
+- [ ] Verify conversation list shows group correctly
+- [ ] Test navigation flow (list → create group → chat)
 
 ---
 
@@ -329,23 +332,39 @@ Fixed critical CASCADE delete bug that was deleting all messages, implemented me
 
 ## 🎯 Future PRs (Backlog)
 
-### PR #4: Media Sharing (Images)
-**Priority:** High  
-**Estimated:** 3-4 hours
-- Image picker (camera + gallery)
-- Firebase Storage upload
-- Display images in message bubbles
-- Image viewer with fullscreen
-- Profile picture uploads
+### PR #5.5: Group Privacy & Message Filtering
+**Priority:** High (Privacy Feature)  
+**Estimated:** 2-3 hours  
+**Depends on:** PR #5
 
-### PR #5: Group Chat
-**Priority:** High  
-**Estimated:** 4-5 hours
-- Support 3+ participants
-- Group name and avatar
-- Show sender names in messages
-- Add/remove participants
-- Group-specific UI elements
+**Problem:** Currently, when someone joins an existing group, they can see the entire message history. This is a privacy concern.
+
+**Solution:**
+- Change participants data structure from `List<String>` to `Map<String, Long>` (userId → joinTimestamp)
+- Update Firestore security rules to prevent reading messages before join date
+- Filter messages client-side based on user's join timestamp
+- Update all mappers and conversation logic
+- Add "X joined the group" system messages
+
+**Affected Files:**
+- `Conversation.kt` domain model
+- `ConversationEntity.kt` and `ConversationMapper.kt`
+- Firestore security rules
+- `MessageRepository` query logic
+- `CreateGroupUseCase` and any add participant functions
+
+### PR #5.6 (or #6): GroupInfoScreen & Member Management
+**Priority:** Medium  
+**Estimated:** 3-4 hours  
+**Depends on:** PR #5
+
+- GroupInfoScreen to view/edit group details
+- Add/remove participants (admins only)
+- Edit group name and icon (admins only)
+- Leave group functionality (all members)
+- Show admin badges in participant list
+- Display participant count and list
+- Navigation from chat TopBar (groups only)
 
 ### PR #6: Push Notifications (FCM)
 **Priority:** High  
