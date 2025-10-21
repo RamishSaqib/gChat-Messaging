@@ -57,7 +57,7 @@ class ConversationRepositoryImpl @Inject constructor(
                             mediaUrl = null,
                             timestamp = entity.lastMessageTimestamp,
                             status = com.gchat.domain.model.MessageStatus.SENT,
-                            readBy = emptyList()
+                            readBy = emptyMap()
                         )
                     } else null
                     
@@ -81,7 +81,7 @@ class ConversationRepositoryImpl @Inject constructor(
                             mediaUrl = null,
                             timestamp = it.lastMessageTimestamp,
                             status = com.gchat.domain.model.MessageStatus.SENT,
-                            readBy = emptyList()
+                            readBy = emptyMap()
                         )
                     } else null
                     
@@ -120,7 +120,7 @@ class ConversationRepositoryImpl @Inject constructor(
                                     mediaUrl = null,
                                     timestamp = entity.lastMessageTimestamp,
                                     status = com.gchat.domain.model.MessageStatus.SENT,
-                                    readBy = emptyList()
+                                    readBy = emptyMap()
                                 )
                             } else null
                             
@@ -159,7 +159,7 @@ class ConversationRepositoryImpl @Inject constructor(
                                 mediaUrl = null,
                                 timestamp = localEntity.lastMessageTimestamp,
                                 status = com.gchat.domain.model.MessageStatus.SENT,
-                                readBy = emptyList()
+                                readBy = emptyMap()
                             )
                         } else null
                         
