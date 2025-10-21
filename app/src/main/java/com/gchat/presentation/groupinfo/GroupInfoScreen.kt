@@ -52,7 +52,68 @@ fun GroupInfoScreen(
         }
     )
     
+    GroupInfoContent(
+        groupName = groupName,
+        isEditingName = isEditingName,
+        uploadProgress = uploadProgress,
+        conversation = conversation,
+        participants = participants,
+        currentUserId = currentUserId,
+        isAdmin = isAdmin,
+        error = error,
+        success = success,
+        showMenu = showMenu,
+        showImagePicker = showImagePicker,
+        selectedMember = selectedMember,
+        showMemberOptions = showMemberOptions,
+        showLeaveConfirmation = showLeaveConfirmation,
+        showNicknameDialog = showNicknameDialog,
+        cameraPermissionState = cameraPermissionState,
+        imagePickerLaunchers = imagePickerLaunchers,
+        onNavigateBack = onNavigateBack,
+        onAddMembers = onAddMembers,
+        onShowMenuChange = { showMenu = it },
+        onShowImagePickerChange = { showImagePicker = it },
+        onSelectedMemberChange = { selectedMember = it },
+        onShowMemberOptionsChange = { showMemberOptions = it },
+        onShowLeaveConfirmationChange = { showLeaveConfirmation = it },
+        onShowNicknameDialogChange = { showNicknameDialog = it },
+        viewModel = viewModel
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@Composable
+private fun GroupInfoContent(
+    groupName: String,
+    isEditingName: Boolean,
+    uploadProgress: Float?,
+    conversation: com.gchat.domain.model.Conversation?,
+    participants: List<User>,
+    currentUserId: String?,
+    isAdmin: Boolean,
+    error: String?,
+    success: String?,
+    showMenu: Boolean,
+    showImagePicker: Boolean,
+    selectedMember: User?,
+    showMemberOptions: Boolean,
+    showLeaveConfirmation: Boolean,
+    showNicknameDialog: Boolean,
+    cameraPermissionState: com.google.accompanist.permissions.PermissionState,
+    imagePickerLaunchers: com.gchat.util.ImagePickerLaunchers,
+    onNavigateBack: () -> Unit,
+    onAddMembers: () -> Unit,
+    onShowMenuChange: (Boolean) -> Unit,
+    onShowImagePickerChange: (Boolean) -> Unit,
+    onSelectedMemberChange: (User?) -> Unit,
+    onShowMemberOptionsChange: (Boolean) -> Unit,
+    onShowLeaveConfirmationChange: (Boolean) -> Unit,
+    onShowNicknameDialogChange: (Boolean) -> Unit,
+    viewModel: GroupInfoViewModel
+) {
     val snackbarHostState = remember { SnackbarHostState() }
+    
     LaunchedEffect(error) {
         error?.let {
             snackbarHostState.showSnackbar(it)
@@ -69,39 +130,12 @@ fun GroupInfoScreen(
     Scaffold(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Group Info") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Back")
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { showMenu = true }) {
-                        Icon(Icons.Default.MoreVert, "Menu")
-                    }
-                    DropdownMenu(
-                        expanded = showMenu,
-                        onDismissRequest = { showMenu = false }
-                    ) {
-                        DropdownMenuItem(
-                            text = { Text("Change My Nickname") },
-                            onClick = {
-                                showMenu = false
-                                showNicknameDialog = true
-                            },
-                            leadingIcon = { Icon(Icons.Default.Edit, null) }
-                        )
-                        DropdownMenuItem(
-                            text = { Text("Leave Group") },
-                            onClick = {
-                                showMenu = false
-                                showLeaveConfirmation = true
-                            },
-                            leadingIcon = { Icon(Icons.Default.ExitToApp, null) }
-                        )
-                    }
-                }
+            GroupInfoTopBar(
+                onNavigateBack = onNavigateBack,
+                showMenu = showMenu,
+                onShowMenuChange = onShowMenuChange,
+                onShowNicknameDialog = { onShowNicknameDialogChange(true) },
+                onShowLeaveConfirmation = { onShowLeaveConfirmationChange(true) }
             )
         }
     ) { paddingValues ->
@@ -347,6 +381,51 @@ fun GroupInfoScreen(
             }
         )
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun GroupInfoTopBar(
+    onNavigateBack: () -> Unit,
+    showMenu: Boolean,
+    onShowMenuChange: (Boolean) -> Unit,
+    onShowNicknameDialog: () -> Unit,
+    onShowLeaveConfirmation: () -> Unit
+) {
+    TopAppBar(
+        title = { Text("Group Info") },
+        navigationIcon = {
+            IconButton(onClick = onNavigateBack) {
+                Icon(Icons.Default.ArrowBack, "Back")
+            }
+        },
+        actions = {
+            IconButton(onClick = { onShowMenuChange(true) }) {
+                Icon(Icons.Default.MoreVert, "Menu")
+            }
+            DropdownMenu(
+                expanded = showMenu,
+                onDismissRequest = { onShowMenuChange(false) }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Change My Nickname") },
+                    onClick = {
+                        onShowMenuChange(false)
+                        onShowNicknameDialog()
+                    },
+                    leadingIcon = { Icon(Icons.Default.Edit, null) }
+                )
+                DropdownMenuItem(
+                    text = { Text("Leave Group") },
+                    onClick = {
+                        onShowMenuChange(false)
+                        onShowLeaveConfirmation()
+                    },
+                    leadingIcon = { Icon(Icons.Default.ExitToApp, null) }
+                )
+            }
+        }
+    )
 }
 
 @Composable
