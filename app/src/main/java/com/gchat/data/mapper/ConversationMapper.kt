@@ -56,12 +56,10 @@ object ConversationMapper {
             val participantsList = document.get("participants") as? List<*>
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
             
-            android.util.Log.d("ConversationMapper", "Parsing conversation ${document.id}, lastMessageMap: $lastMessageMap")
-            
             // Parse last message if it exists
             val lastMessage = lastMessageMap?.let {
                 try {
-                    val msg = com.gchat.domain.model.Message(
+                    com.gchat.domain.model.Message(
                         id = it["id"] as? String ?: "",
                         conversationId = document.id,
                         senderId = it["senderId"] as? String ?: "",
@@ -72,10 +70,7 @@ object ConversationMapper {
                         status = com.gchat.domain.model.MessageStatus.SENT,
                         readBy = emptyList()
                     )
-                    android.util.Log.d("ConversationMapper", "Parsed lastMessage: ${msg.text}")
-                    msg
                 } catch (e: Exception) {
-                    android.util.Log.e("ConversationMapper", "Failed to parse lastMessage", e)
                     null
                 }
             }

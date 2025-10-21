@@ -37,18 +37,14 @@ class SendMessageUseCase @Inject constructor(
             
             result.fold(
                 onSuccess = {
-                    android.util.Log.d("SendMessageUseCase", "Message sent successfully, updating lastMessage: '$text'")
                     // Update conversation's last message
-                    val updateResult = conversationRepository.updateLastMessage(
+                    conversationRepository.updateLastMessage(
                         conversationId = conversationId,
                         messageId = message.id,
                         messageText = text,
                         senderId = senderId,
                         timestamp = message.timestamp
                     )
-                    updateResult.onFailure { e ->
-                        android.util.Log.e("SendMessageUseCase", "Failed to update lastMessage", e)
-                    }
                     
                     Result.success(message)
                 },
