@@ -31,13 +31,14 @@ class ConversationRepositoryImpl @Inject constructor(
     private val auth: FirebaseAuth
 ) : ConversationRepository {
     
-    private val scope = CoroutineScope(Dispatchers.IO)
+    private val scope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
+    private var syncJob: kotlinx.coroutines.Job? = null
     
     override fun getConversationsFlow(): Flow<List<Conversation>> {
-        // Start background sync
+        // Start background sync if not already running
         val userId = auth.currentUser?.uid
-        if (userId != null) {
-            scope.launch {
+        if (userId != null && (syncJob == null || syncJob?.isActive == false)) {
+            syncJob = scope.launch {
                 syncConversationsFromFirestore(userId)
             }
         }
@@ -380,13 +381,13 @@ class ConversationRepositoryImpl @Inject constructor(
         try {
             firestoreConversationDataSource.observeConversations(userId)
                 .collect { conversations ->
-                    conversations.forEach { conversation ->
-                        conversationDao.insert(ConversationMapper.toEntity(conversation))
-                    }
+                    // Batch insert all conversations for better performance
+                    val entities = conversations.map { ConversationMapper.toEntity(it) }
+                    conversationDao.insertAll(entities)
                 }
         } catch (e: Exception) {
-            // Ignore errors (e.g., permission denied after logout)
-            // User will see locally cached data
+            // Log error but don't crash - user will see locally cached data
+            println("Error syncing conversations: ${e.message}")
         }
     }
 }
