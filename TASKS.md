@@ -1,14 +1,45 @@
 # gChat - Development Tasks
 
-> **Current PR:** None - Ready for Next Feature | **Last Merged:** PR #5 - Group Chat
+> **Current PR:** None - Ready for Next Feature | **Last Merged:** PR #5.7 - Real-Time Online Presence Detection
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 5 (All merged to main)  
-**Current Sprint:** Planning Next Features  
-**Next Up:** PR #5.5 (Group Privacy), PR #5.6 (GroupInfo), PR #6 (Push Notifications), or PR #7 (AI Translation)
+**Completed PRs:** 6 (All merged to main)  
+**Current Sprint:** MVP Completion - Final Features  
+**Next Up:** PR #6 (Read Receipts) → PR #7 (Push Notifications) → AI Translation Phase
+
+---
+
+## ✅ PR #5.7: Real-Time Online Presence Detection (MERGED)
+
+**Goal:** Implement automatic online/offline status detection with real-time updates across devices
+
+**Status:** ✅ Merged to Main
+
+**Time Spent:** ~45 minutes
+
+### Tasks Completed
+- [x] Add lifecycle-process dependency (androidx.lifecycle:lifecycle-process:2.6.2)
+- [x] Implement ProcessLifecycleOwner observer in GChatApplication
+- [x] Create DefaultLifecycleObserver for app state detection (onStart/onStop)
+- [x] Update online status to true when app comes to foreground
+- [x] Update online status to false when app goes to background
+- [x] Modify UserRepositoryImpl.getUserFlow() to observe Firestore snapshots
+- [x] Add user flow cache in ConversationListViewModel to prevent duplicate listeners
+- [x] Fix visual bug in ProfilePicture.kt (white background covering green indicator)
+- [x] Fix login not updating online status in Firestore and local cache
+- [x] Test status updates on app open/close (~1-2 minute detection)
+
+### Technical Implementation
+- ProcessLifecycleOwner detects app lifecycle events
+- onStart → sets isOnline = true in Firestore + local DB
+- onStop → sets isOnline = false in Firestore + local DB
+- Real-time Firestore snapshot listeners in getUserFlow()
+- ConversationListViewModel combines conversations with real-time user status
+- Efficient caching prevents duplicate listeners for same users
+- Updates propagate to all devices within 1-2 minutes
 
 ---
 

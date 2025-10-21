@@ -6,6 +6,43 @@
 
 ## 📋 Pull Request History
 
+### PR #5.7: Real-Time Online Presence Detection
+**Status:** ✅ Merged to Main  
+**Date:** October 21, 2025  
+**Time Spent:** ~45 minutes
+
+**Features Implemented:**
+- ✅ Automatic online/offline status updates when app opens/closes
+- ✅ Real-time status indicators update across all devices
+- ✅ Green dot appears next to online users in conversation list
+- ✅ Status updates within 1-2 minutes when user disconnects
+- ✅ App lifecycle detection (foreground/background)
+
+**Technical Completed:**
+- Added ProcessLifecycleOwner observer in GChatApplication
+- DefaultLifecycleObserver monitors onStart/onStop lifecycle events
+- Updates online status to true when app comes to foreground
+- Updates online status to false when app goes to background
+- ConversationListViewModel observes real-time user status changes via Firestore
+- UserRepositoryImpl.getUserFlow() now observes Firestore (not just local DB)
+- User flow cache prevents duplicate listeners for same users
+- Added androidx.lifecycle:lifecycle-process:2.6.2 dependency
+
+**Bugs Fixed:**
+- Fixed online indicators not updating when users disconnect
+- Fixed visual bug where white background covered green indicator (replaced .background with .border)
+- Fixed login not updating online status in Firestore and local cache
+
+**How It Works:**
+1. ProcessLifecycleOwner detects app state changes (foreground/background)
+2. When app opens → set isOnline = true in Firestore + local DB
+3. When app closes → set isOnline = false in Firestore + local DB
+4. ConversationListViewModel observes each user via Firestore snapshot listeners
+5. UI updates automatically when any user's status changes
+6. Efficient caching prevents duplicate listeners
+
+---
+
 ### PR #5: Group Chat
 **Status:** ✅ Merged to Main  
 **Date:** October 20, 2025  
