@@ -36,17 +36,20 @@ interface ConversationDao {
     
     @Transaction
     suspend fun upsertAll(conversations: List<ConversationEntity>) {
-        // For each conversation, try to update first (triggers flow), then insert if not exists
-        conversations.forEach { conversation ->
-            val existing = getConversationById(conversation.id)
-            if (existing != null) {
-                // Update always triggers flow observers
-                update(conversation)
+        // Force Room Flow to emit by ensuring updatedAt changes
+        // Use current system time to guarantee the value is different from cached data
+        val now = System.currentTimeMillis()
+        val updatedConversations = conversations.map { conversation ->
+            // Only touch updatedAt if it's within 1 second of now (fresh from Firestore)
+            // This ensures local changes get their timestamp updated while preventing
+            // old cached data from appearing newer than it is
+            if (Math.abs(now - conversation.updatedAt) < 1000) {
+                conversation.copy(updatedAt = now)
             } else {
-                // Insert for new conversations
-                insert(conversation)
+                conversation
             }
         }
+        insertAll(updatedConversations)
     }
     
     @Query("""
