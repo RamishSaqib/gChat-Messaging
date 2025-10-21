@@ -58,15 +58,21 @@ fun ChatScreen(
         }
     }
     
+    val snackbarHostState = remember { SnackbarHostState() }
+    
     // Show error snackbar
     uploadError?.let { error ->
         LaunchedEffect(error) {
-            // TODO: Show snackbar with error
+            snackbarHostState.showSnackbar(
+                message = error,
+                duration = SnackbarDuration.Short
+            )
             viewModel.clearUploadError()
         }
     }
     
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = { Text(otherUserName) },
