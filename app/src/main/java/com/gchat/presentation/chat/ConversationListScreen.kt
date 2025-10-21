@@ -163,7 +163,11 @@ fun ConversationItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = conversation.lastMessage?.text ?: "No messages yet",
+                text = when {
+                    conversation.lastMessage?.text != null -> conversation.lastMessage.text
+                    conversation.lastMessage?.mediaUrl != null -> "📷 Photo"
+                    else -> "No messages yet"
+                },
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,

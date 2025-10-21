@@ -105,7 +105,7 @@ fun MessageBubble(
             color = if (isOwnMessage) {
                 MaterialTheme.colorScheme.primary
             } else {
-                MaterialTheme.colorScheme.surfaceVariant
+                MaterialTheme.colorScheme.secondaryContainer
             },
             modifier = Modifier.widthIn(max = 280.dp)
         ) {
@@ -118,7 +118,7 @@ fun MessageBubble(
                     color = if (isOwnMessage) {
                         MaterialTheme.colorScheme.onPrimary
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant
+                        MaterialTheme.colorScheme.onSecondaryContainer
                     }
                 )
                 
@@ -130,7 +130,7 @@ fun MessageBubble(
                     color = if (isOwnMessage) {
                         MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
                     } else {
-                        MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+                        MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
                     }
                 )
             }
