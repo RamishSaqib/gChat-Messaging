@@ -50,13 +50,22 @@ export const onMessageCreated = onDocumentCreated(
       const sender = senderDoc.data();
       const senderName = sender?.displayName || 'Someone';
 
-      // Get recipient FCM tokens
+      // Get recipient FCM tokens (fetch individually to avoid Firestore 'in' query limits)
       const recipientDocs = await Promise.all(
         recipientIds.map((id: string) => db.collection('users').doc(id).get())
       );
 
       const tokens = recipientDocs
-        .map((doc) => doc.data()?.fcmToken)
+        .map((doc) => {
+          const user = doc.data();
+          if (user?.fcmToken) {
+            console.log(`Found FCM token for user ${doc.id}: ${user.fcmToken.substring(0, 20)}...`);
+            return user.fcmToken;
+          } else {
+            console.log(`No FCM token for user ${doc.id}`);
+            return null;
+          }
+        })
         .filter((token): token is string => token != null && token !== '');
 
       if (tokens.length === 0) {

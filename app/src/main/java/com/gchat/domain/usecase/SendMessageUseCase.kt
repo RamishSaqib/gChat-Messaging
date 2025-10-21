@@ -40,13 +40,18 @@ class SendMessageUseCase @Inject constructor(
             result.fold(
                 onSuccess = {
                     // Update conversation's last message
-                    conversationRepository.updateLastMessage(
+                    val updateResult = conversationRepository.updateLastMessage(
                         conversationId = conversationId,
                         messageId = message.id,
                         messageText = text,
                         senderId = senderId,
                         timestamp = message.timestamp
                     )
+                    
+                    // Log if update fails but don't fail the whole operation
+                    updateResult.onFailure { e ->
+                        android.util.Log.e("SendMessageUseCase", "Failed to update conversation preview: ${e.message}")
+                    }
                     
                     Result.success(message)
                 },
