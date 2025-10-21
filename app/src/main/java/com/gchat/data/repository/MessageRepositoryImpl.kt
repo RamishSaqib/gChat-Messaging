@@ -109,33 +109,36 @@ class MessageRepositoryImpl @Inject constructor(
     }
     
     override suspend fun markMessageAsRead(
-        conversationId: String,
         messageId: String,
-        userId: String
+        conversationId: String,
+        userId: String,
+        readTimestamp: Long
     ): Result<Unit> {
         return try {
             // Update locally
             val message = messageDao.getMessageById(messageId)
             if (message != null) {
-                val readBy = try {
-                    kotlinx.serialization.json.Json.decodeFromString<List<String>>(message.readBy)
-                        .toMutableList()
+                val readByMap = try {
+                    // Parse existing readBy map
+                    kotlinx.serialization.json.Json.decodeFromString<Map<String, Long>>(message.readBy)
+                        .toMutableMap()
                 } catch (_: Exception) {
-                    mutableListOf()
+                    mutableMapOf()
                 }
                 
-                if (!readBy.contains(userId)) {
-                    readBy.add(userId)
+                // Add or update the read timestamp for this user
+                if (!readByMap.containsKey(userId)) {
+                    readByMap[userId] = readTimestamp
                     messageDao.updateReadBy(
                         messageId,
-                        kotlinx.serialization.json.Json.encodeToString<List<String>>(readBy)
+                        kotlinx.serialization.json.Json.encodeToString(readByMap)
                     )
                     messageDao.updateStatus(messageId, MessageStatus.READ.name)
                 }
             }
             
             // Sync to Firestore
-            firestoreMessageDataSource.markMessageAsRead(conversationId, messageId, userId)
+            firestoreMessageDataSource.markMessageAsRead(conversationId, messageId, userId, readTimestamp)
             
             Result.success(Unit)
         } catch (e: Exception) {

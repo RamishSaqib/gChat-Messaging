@@ -124,11 +124,38 @@ class ChatViewModel @Inject constructor(
         }
     }
     
+    /**
+     * Mark a message as read by the current user
+     */
     fun markMessageAsRead(messageId: String) {
         val userId = currentUserId.value ?: return
         
         viewModelScope.launch {
-            markMessageAsReadUseCase(conversationId, messageId, userId)
+            markMessageAsReadUseCase(
+                messageId = messageId,
+                conversationId = conversationId,
+                userId = userId
+            )
+        }
+    }
+    
+    /**
+     * Mark all unread messages in the conversation as read
+     */
+    fun markAllMessagesAsRead() {
+        val userId = currentUserId.value ?: return
+        val unreadMessages = messages.value.filter { message ->
+            message.senderId != userId && !message.isReadBy(userId)
+        }
+        
+        viewModelScope.launch {
+            unreadMessages.forEach { message ->
+                markMessageAsReadUseCase(
+                    messageId = message.id,
+                    conversationId = conversationId,
+                    userId = userId
+                )
+            }
         }
     }
     
