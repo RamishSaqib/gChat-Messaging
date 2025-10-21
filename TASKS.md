@@ -1,22 +1,22 @@
 # gChat - Development Tasks
 
-> **Current PR:** None - Ready for PR #5 | **Last Merged:** PR #4.5 - Image Upload UI
+> **Current PR:** None - Ready for Next Feature | **Last Merged:** PR #4.5 - Image Upload UI
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 5 (4 merged + 4.5 ready)  
+**Completed PRs:** 5 (All merged to main)  
 **Current Sprint:** Planning Next Features  
 **Next Up:** Group Chat (PR #5) or Push Notifications (PR #6) or AI Translation (PR #7)
 
 ---
 
-## ✅ PR #4.5: Image Upload UI with Caption Support (COMPLETED)
+## ✅ PR #4.5: Image Upload UI with Caption Support (MERGED)
 
 **Goal:** Complete the image upload UI with preview, caption support, and polished UX
 
-**Status:** ✅ Complete - Pushed to GitHub, Ready for Merge
+**Status:** ✅ Merged to Main
 
 **Summary:**  
 Implemented complete image upload flow with attachment button, camera/gallery picker, image preview before sending, optional caption support, and upload progress indicator. Users can now send images with text captions in a polished, modern messaging UX.
@@ -60,7 +60,7 @@ Implemented complete image upload flow with attachment button, camera/gallery pi
 
 **Goal:** Enable image sharing infrastructure and fix critical messaging bugs
 
-**Status:** ✅ Complete - Pushed to GitHub
+**Status:** ✅ Merged to Main
 
 **Summary:**  
 Fixed critical CASCADE delete bug that was deleting all messages, implemented media infrastructure (Firebase Storage, image compression, ProfilePicture component, ImageViewer), and improved UX (message ordering, preview text, bubble colors). Image upload UI deferred to future PR.

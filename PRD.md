@@ -7,7 +7,7 @@
 ## 📋 Pull Request History
 
 ### PR #4.5: Image Upload UI with Caption Support
-**Status:** ✅ Ready for Merge  
+**Status:** ✅ Merged to Main  
 **Date:** October 20, 2025
 
 **Features Added:**
@@ -44,7 +44,7 @@
 ---
 
 ### PR #4: Media Sharing & Core Messaging Fixes
-**Status:** ✅ Merged  
+**Status:** ✅ Merged to Main  
 **Date:** October 20, 2025
 
 **Features Added:**
