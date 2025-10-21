@@ -193,7 +193,7 @@ private fun GroupInfoContent(
     // Image Picker Bottom Sheet
     if (showImagePicker) {
         ModalBottomSheet(
-            onDismissRequest = { showImagePicker = false }
+            onDismissRequest = { onShowImagePickerChange(false) }
         ) {
             ImagePickerBottomSheet(
                 onCameraClick = {
@@ -206,7 +206,7 @@ private fun GroupInfoContent(
                 onGalleryClick = {
                     imagePickerLaunchers.launchGallery()
                 },
-                onDismiss = { showImagePicker = false }
+                onDismiss = { onShowImagePickerChange(false) }
                 )
         }
     }
@@ -214,7 +214,7 @@ private fun GroupInfoContent(
     // Member Options Dialog
     if (showMemberOptions && selectedMember != null) {
         AlertDialog(
-            onDismissRequest = { showMemberOptions = false },
+            onDismissRequest = { onShowMemberOptionsChange(false) },
             title = { Text(selectedMember!!.displayName) },
             text = {
                 Column {
@@ -225,7 +225,7 @@ private fun GroupInfoContent(
                                 .fillMaxWidth()
                                 .clickable {
                                     viewModel.promoteToAdmin(selectedMember!!.id)
-                                    showMemberOptions = false
+                                    onShowMemberOptionsChange(false)
                                 }
                                 .padding(16.dp)
                         )
@@ -237,14 +237,14 @@ private fun GroupInfoContent(
                             .fillMaxWidth()
                             .clickable {
                                 viewModel.removeMember(selectedMember!!.id)
-                                showMemberOptions = false
+                                onShowMemberOptionsChange(false)
                             }
                             .padding(16.dp)
                     )
                 }
             },
             confirmButton = {
-                TextButton(onClick = { showMemberOptions = false }) {
+                TextButton(onClick = { onShowMemberOptionsChange(false) }) {
                     Text("Cancel")
                 }
             }
@@ -254,13 +254,13 @@ private fun GroupInfoContent(
     // Leave Group Confirmation
     if (showLeaveConfirmation) {
         AlertDialog(
-            onDismissRequest = { showLeaveConfirmation = false },
+            onDismissRequest = { onShowLeaveConfirmationChange(false) },
             title = { Text("Leave Group?") },
             text = { Text("Are you sure you want to leave this group?") },
             confirmButton = {
                 TextButton(
                     onClick = {
-                        showLeaveConfirmation = false
+                        onShowLeaveConfirmationChange(false)
                         viewModel.leaveGroup {
                             onNavigateBack()
                         }
@@ -273,7 +273,7 @@ private fun GroupInfoContent(
                 }
             },
             dismissButton = {
-                TextButton(onClick = { showLeaveConfirmation = false }) {
+                TextButton(onClick = { onShowLeaveConfirmationChange(false) }) {
                     Text("Cancel")
                 }
             }
@@ -283,11 +283,11 @@ private fun GroupInfoContent(
     // Nickname Dialog (placeholder for now)
     if (showNicknameDialog) {
         AlertDialog(
-            onDismissRequest = { showNicknameDialog = false },
+            onDismissRequest = { onShowNicknameDialogChange(false) },
             title = { Text("Change Nickname") },
             text = { Text("Nickname feature coming soon!") },
             confirmButton = {
-                TextButton(onClick = { showNicknameDialog = false }) {
+                TextButton(onClick = { onShowNicknameDialogChange(false) }) {
                     Text("OK")
                 }
             }
