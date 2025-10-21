@@ -10,11 +10,13 @@ import androidx.lifecycle.ProcessLifecycleOwner
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.UserRepository
 import com.google.firebase.FirebaseApp
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
 /**
@@ -57,7 +59,11 @@ class GChatApplication : Application() {
                 applicationScope.launch {
                     val userId = authRepository.getCurrentUserId()
                     if (userId != null) {
+                        // Update online status
                         userRepository.updateOnlineStatus(userId, true)
+                        
+                        // Update FCM token
+                        updateFcmToken(userId)
                     }
                 }
             }
@@ -72,6 +78,19 @@ class GChatApplication : Application() {
                 }
             }
         })
+    }
+    
+    /**
+     * Get current FCM token and update in Firestore
+     */
+    private suspend fun updateFcmToken(userId: String) {
+        try {
+            val token = FirebaseMessaging.getInstance().token.await()
+            userRepository.updateFcmToken(userId, token)
+        } catch (e: Exception) {
+            // Log error but don't crash
+            println("Failed to update FCM token: ${e.message}")
+        }
     }
 
     private fun createNotificationChannels() {
