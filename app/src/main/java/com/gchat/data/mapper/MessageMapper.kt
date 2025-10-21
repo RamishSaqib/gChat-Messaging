@@ -27,9 +27,10 @@ object MessageMapper {
             timestamp = entity.timestamp,
             status = MessageStatus.valueOf(entity.status),
             readBy = try {
-                json.decodeFromString(entity.readBy)
+                // Parse JSON map of userId -> timestamp
+                json.decodeFromString<Map<String, Long>>(entity.readBy)
             } catch (e: Exception) {
-                emptyList()
+                emptyMap()
             },
             translation = if (entity.translatedText != null && 
                 entity.translationSourceLang != null && 
@@ -64,7 +65,24 @@ object MessageMapper {
     
     fun fromFirestore(document: DocumentSnapshot): Message? {
         return try {
-            val readByList = document.get("readBy") as? List<*>
+            // Try to parse readBy as a map (new format: userId -> timestamp)
+            val readByMap = try {
+                (document.get("readBy") as? Map<*, *>)?.mapNotNull { (key, value) ->
+                    val userId = key as? String
+                    val timestamp = when (value) {
+                        is Long -> value
+                        is Number -> value.toLong()
+                        else -> null
+                    }
+                    if (userId != null && timestamp != null) userId to timestamp else null
+                }?.toMap() ?: emptyMap()
+            } catch (e: Exception) {
+                // Fallback: if it's a list (old format), convert to map with current timestamp
+                val readByList = document.get("readBy") as? List<*>
+                readByList?.mapNotNull { it as? String }
+                    ?.associateWith { System.currentTimeMillis() } ?: emptyMap()
+            }
+            
             Message(
                 id = document.id,
                 conversationId = document.getString("conversationId") ?: return null,
@@ -74,7 +92,7 @@ object MessageMapper {
                 mediaUrl = document.getString("mediaUrl"),
                 timestamp = document.getLong("timestamp") ?: System.currentTimeMillis(),
                 status = MessageStatus.valueOf(document.getString("status") ?: "SENT"),
-                readBy = readByList?.mapNotNull { it as? String } ?: emptyList()
+                readBy = readByMap
             )
         } catch (e: Exception) {
             null

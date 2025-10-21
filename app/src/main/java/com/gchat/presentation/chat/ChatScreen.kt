@@ -28,8 +28,11 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
+import com.gchat.domain.model.MessageStatus
 import com.gchat.domain.model.MessageType
 import com.gchat.presentation.components.ImageMessageBubble
+import com.gchat.presentation.components.ReadByAvatars
+import com.gchat.presentation.components.ReadReceiptCheckmarks
 import com.gchat.util.rememberImagePickerLaunchers
 import com.google.accompanist.permissions.ExperimentalPermissionsApi
 import com.google.accompanist.permissions.isGranted
@@ -75,6 +78,16 @@ fun ChatScreen(
         if (messages.isNotEmpty()) {
             listState.animateScrollToItem(messages.size - 1)
         }
+    }
+    
+    // Mark messages as read when screen is viewed
+    LaunchedEffect(Unit) {
+        viewModel.markAllMessagesAsRead()
+    }
+    
+    // Also mark messages as read when new messages arrive
+    LaunchedEffect(messages.size) {
+        viewModel.markAllMessagesAsRead()
     }
     
     val snackbarHostState = remember { SnackbarHostState() }
@@ -148,8 +161,10 @@ fun ChatScreen(
                     MessageBubble(
                         message = message,
                         isOwnMessage = message.senderId == currentUserId,
+                        currentUserId = currentUserId ?: "",
                         isGroupChat = conversation?.isGroup() == true,
                         senderName = participantUsers[message.senderId]?.displayName,
+                        participantUsers = participantUsers,
                         onImageClick = { imageUrl ->
                             // Navigate to image viewer (will add this shortly)
                         }
@@ -194,10 +209,16 @@ fun ChatScreen(
 fun MessageBubble(
     message: Message,
     isOwnMessage: Boolean,
+    currentUserId: String,
     isGroupChat: Boolean = false,
     senderName: String? = null,
+    participantUsers: Map<String, com.gchat.domain.model.User> = emptyMap(),
     onImageClick: (String) -> Unit
 ) {
+    // Get users who have read this message (excluding the sender)
+    val readByUsers = message.readBy.keys
+        .filter { it != message.senderId }
+        .mapNotNull { userId -> participantUsers[userId] }
     Column(
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -248,15 +269,40 @@ fun MessageBubble(
                         
                         Spacer(modifier = Modifier.height(4.dp))
                         
-                        Text(
-                            text = formatTime(message.timestamp),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = if (isOwnMessage) {
-                                MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
-                            } else {
-                                MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                        // Timestamp and read receipts
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = formatTime(message.timestamp),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (isOwnMessage) {
+                                    MaterialTheme.colorScheme.onPrimary.copy(alpha = 0.7f)
+                                } else {
+                                    MaterialTheme.colorScheme.onSecondaryContainer.copy(alpha = 0.7f)
+                                }
+                            )
+                            
+                            // Show read receipts only for own messages
+                            if (isOwnMessage) {
+                                if (isGroupChat) {
+                                    // Show avatar bubbles for group chats
+                                    if (readByUsers.isNotEmpty()) {
+                                        ReadByAvatars(
+                                            readByUsers = readByUsers,
+                                            maxVisible = 3
+                                        )
+                                    }
+                                } else {
+                                    // Show checkmarks for 1-on-1 chats
+                                    ReadReceiptCheckmarks(
+                                        isRead = message.isReadByAny(),
+                                        isSent = message.status == MessageStatus.SENT || message.status == MessageStatus.READ
+                                    )
+                                }
                             }
-                        )
+                        }
                     }
                 }
             }

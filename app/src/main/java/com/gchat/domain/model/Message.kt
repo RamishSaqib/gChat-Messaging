@@ -14,10 +14,33 @@ data class Message(
     val mediaUrl: String? = null,
     val timestamp: Long = System.currentTimeMillis(),
     val status: MessageStatus = MessageStatus.SENDING,
-    val readBy: List<String> = emptyList(),
+    val readBy: Map<String, Long> = emptyMap(), // userId -> readTimestamp
     val translation: Translation? = null,
     val culturalContext: String? = null
-)
+) {
+    /**
+     * Check if message has been read by a specific user
+     */
+    fun isReadBy(userId: String): Boolean = readBy.containsKey(userId)
+    
+    /**
+     * Get the timestamp when a specific user read the message
+     */
+    fun getReadTimestamp(userId: String): Long? = readBy[userId]
+    
+    /**
+     * Check if message has been read by all participants (excluding sender)
+     */
+    fun isReadByAll(participantIds: List<String>): Boolean {
+        val recipients = participantIds.filter { it != senderId }
+        return recipients.all { readBy.containsKey(it) }
+    }
+    
+    /**
+     * Check if message has been read by at least one recipient
+     */
+    fun isReadByAny(): Boolean = readBy.isNotEmpty()
+}
 
 enum class MessageType {
     TEXT,

@@ -94,20 +94,35 @@ class FirestoreMessageDataSource @Inject constructor(
     suspend fun markMessageAsRead(
         conversationId: String,
         messageId: String,
-        userId: String
+        userId: String,
+        readTimestamp: Long
     ): Result<Unit> {
         return try {
             val messageRef = getMessagesCollection(conversationId).document(messageId)
             
             firestore.runTransaction { transaction ->
                 val snapshot = transaction.get(messageRef)
-                val currentReadBy = (snapshot.get("readBy") as? List<*>)
-                    ?.mapNotNull { it as? String }
-                    ?.toMutableList()
-                    ?: mutableListOf()
                 
-                if (!currentReadBy.contains(userId)) {
-                    currentReadBy.add(userId)
+                // Parse existing readBy map (userId -> timestamp)
+                val currentReadBy = try {
+                    (snapshot.get("readBy") as? Map<*, *>)?.mapNotNull { (key, value) ->
+                        val uid = key as? String
+                        val ts = when (value) {
+                            is Long -> value
+                            is Number -> value.toLong()
+                            else -> null
+                        }
+                        if (uid != null && ts != null) uid to ts else null
+                    }?.toMap()?.toMutableMap() ?: mutableMapOf()
+                } catch (e: Exception) {
+                    // Fallback: handle old list format for backward compatibility
+                    val oldList = (snapshot.get("readBy") as? List<*>)?.mapNotNull { it as? String }
+                    oldList?.associateWith { System.currentTimeMillis() }?.toMutableMap() ?: mutableMapOf()
+                }
+                
+                // Add or update this user's read timestamp
+                if (!currentReadBy.containsKey(userId)) {
+                    currentReadBy[userId] = readTimestamp
                     transaction.update(messageRef, mapOf(
                         "readBy" to currentReadBy,
                         "status" to MessageStatus.READ.name

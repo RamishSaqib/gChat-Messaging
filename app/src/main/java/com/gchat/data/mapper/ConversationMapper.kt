@@ -75,7 +75,7 @@ object ConversationMapper {
                         mediaUrl = null,
                         timestamp = (it["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         status = com.gchat.domain.model.MessageStatus.SENT,
-                        readBy = emptyList()
+                        readBy = emptyMap()
                     )
                 } catch (e: Exception) {
                     null
