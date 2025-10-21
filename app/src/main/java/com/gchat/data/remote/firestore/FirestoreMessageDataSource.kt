@@ -27,45 +27,35 @@ class FirestoreMessageDataSource @Inject constructor(
     
     suspend fun sendMessage(message: Message): Result<Unit> {
         return try {
-            android.util.Log.d("FirestoreMessageDS", "Attempting to send message: ${message.id} to conversation: ${message.conversationId}")
             getMessagesCollection(message.conversationId)
                 .document(message.id)
                 .set(MessageMapper.toFirestore(message))
                 .await()
-            android.util.Log.d("FirestoreMessageDS", "Message sent successfully: ${message.id}")
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("FirestoreMessageDS", "Failed to send message: ${e.javaClass.simpleName} - ${e.message}", e)
             Result.failure(e)
         }
     }
     
     fun observeMessages(conversationId: String, limit: Int = 50): Flow<List<Message>> = callbackFlow {
-        android.util.Log.d("FirestoreMessageDS", "Starting message listener for conversation: $conversationId")
         val listener = getMessagesCollection(conversationId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(limit.toLong())
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    android.util.Log.e("FirestoreMessageDS", "Listener error: ${error.javaClass.simpleName} - ${error.message}", error)
                     close(error)
                     return@addSnapshotListener
                 }
                 
-                android.util.Log.d("FirestoreMessageDS", "Received ${snapshot?.documents?.size ?: 0} messages from listener")
                 val messages = snapshot?.documents
                     ?.mapNotNull { MessageMapper.fromFirestore(it) }
                     ?.reversed() // Reverse to get chronological order
                     ?: emptyList()
                 
-                android.util.Log.d("FirestoreMessageDS", "Emitting ${messages.size} messages to flow")
                 trySend(messages)
             }
         
-        awaitClose { 
-            android.util.Log.d("FirestoreMessageDS", "Removing message listener for conversation: $conversationId")
-            listener.remove() 
-        }
+        awaitClose { listener.remove() }
     }
     
     suspend fun getMessages(conversationId: String, limit: Int = 50): Result<List<Message>> {
