@@ -41,24 +41,31 @@ class FirestoreMessageDataSource @Inject constructor(
     }
     
     fun observeMessages(conversationId: String, limit: Int = 50): Flow<List<Message>> = callbackFlow {
+        android.util.Log.d("FirestoreMessageDS", "Starting message listener for conversation: $conversationId")
         val listener = getMessagesCollection(conversationId)
             .orderBy("timestamp", Query.Direction.DESCENDING)
             .limit(limit.toLong())
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    android.util.Log.e("FirestoreMessageDS", "Listener error: ${error.javaClass.simpleName} - ${error.message}", error)
                     close(error)
                     return@addSnapshotListener
                 }
                 
+                android.util.Log.d("FirestoreMessageDS", "Received ${snapshot?.documents?.size ?: 0} messages from listener")
                 val messages = snapshot?.documents
                     ?.mapNotNull { MessageMapper.fromFirestore(it) }
                     ?.reversed() // Reverse to get chronological order
                     ?: emptyList()
                 
+                android.util.Log.d("FirestoreMessageDS", "Emitting ${messages.size} messages to flow")
                 trySend(messages)
             }
         
-        awaitClose { listener.remove() }
+        awaitClose { 
+            android.util.Log.d("FirestoreMessageDS", "Removing message listener for conversation: $conversationId")
+            listener.remove() 
+        }
     }
     
     suspend fun getMessages(conversationId: String, limit: Int = 50): Result<List<Message>> {
