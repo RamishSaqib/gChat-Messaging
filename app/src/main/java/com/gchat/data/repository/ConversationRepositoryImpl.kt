@@ -46,9 +46,21 @@ class ConversationRepositoryImpl @Inject constructor(
         return conversationDao.getAllConversationsFlow()
             .map { entities ->
                 entities.map { entity ->
-                    val lastMessage = entity.lastMessageId?.let {
-                        messageDao.getMessageById(it)?.let { MessageMapper.toDomain(it) }
-                    }
+                    // Create lastMessage from entity fields (no need to look up in messages table)
+                    val lastMessage = if (entity.lastMessageId != null) {
+                        com.gchat.domain.model.Message(
+                            id = entity.lastMessageId,
+                            conversationId = entity.id,
+                            senderId = entity.lastMessageSenderId ?: "",
+                            type = com.gchat.domain.model.MessageType.TEXT,
+                            text = entity.lastMessageText,
+                            mediaUrl = null,
+                            timestamp = entity.lastMessageTimestamp,
+                            status = com.gchat.domain.model.MessageStatus.SENT,
+                            readBy = emptyList()
+                        )
+                    } else null
+                    
                     ConversationMapper.toDomain(entity, lastMessage)
                 }
             }
@@ -58,9 +70,21 @@ class ConversationRepositoryImpl @Inject constructor(
         return conversationDao.getConversationByIdFlow(conversationId)
             .map { entity ->
                 entity?.let {
-                    val lastMessage = it.lastMessageId?.let { msgId ->
-                        messageDao.getMessageById(msgId)?.let { MessageMapper.toDomain(it) }
-                    }
+                    // Create lastMessage from entity fields (no need to look up in messages table)
+                    val lastMessage = if (it.lastMessageId != null) {
+                        com.gchat.domain.model.Message(
+                            id = it.lastMessageId,
+                            conversationId = it.id,
+                            senderId = it.lastMessageSenderId ?: "",
+                            type = com.gchat.domain.model.MessageType.TEXT,
+                            text = it.lastMessageText,
+                            mediaUrl = null,
+                            timestamp = it.lastMessageTimestamp,
+                            status = com.gchat.domain.model.MessageStatus.SENT,
+                            readBy = emptyList()
+                        )
+                    } else null
+                    
                     ConversationMapper.toDomain(it, lastMessage)
                 }
             }
@@ -85,9 +109,21 @@ class ConversationRepositoryImpl @Inject constructor(
                     // Fallback to local
                     val localConversations = conversationDao.getAllConversations()
                         .map { entity ->
-                            val lastMessage = entity.lastMessageId?.let { msgId ->
-                                messageDao.getMessageById(msgId)?.let { MessageMapper.toDomain(it) }
-                            }
+                            // Create lastMessage from entity fields
+                            val lastMessage = if (entity.lastMessageId != null) {
+                                com.gchat.domain.model.Message(
+                                    id = entity.lastMessageId,
+                                    conversationId = entity.id,
+                                    senderId = entity.lastMessageSenderId ?: "",
+                                    type = com.gchat.domain.model.MessageType.TEXT,
+                                    text = entity.lastMessageText,
+                                    mediaUrl = null,
+                                    timestamp = entity.lastMessageTimestamp,
+                                    status = com.gchat.domain.model.MessageStatus.SENT,
+                                    readBy = emptyList()
+                                )
+                            } else null
+                            
                             ConversationMapper.toDomain(entity, lastMessage)
                         }
                     Result.success(localConversations)
@@ -112,9 +148,21 @@ class ConversationRepositoryImpl @Inject constructor(
                     // Fallback to local
                     val localEntity = conversationDao.getConversationById(conversationId)
                     if (localEntity != null) {
-                        val lastMessage = localEntity.lastMessageId?.let { msgId ->
-                            messageDao.getMessageById(msgId)?.let { MessageMapper.toDomain(it) }
-                        }
+                        // Create lastMessage from entity fields
+                        val lastMessage = if (localEntity.lastMessageId != null) {
+                            com.gchat.domain.model.Message(
+                                id = localEntity.lastMessageId,
+                                conversationId = localEntity.id,
+                                senderId = localEntity.lastMessageSenderId ?: "",
+                                type = com.gchat.domain.model.MessageType.TEXT,
+                                text = localEntity.lastMessageText,
+                                mediaUrl = null,
+                                timestamp = localEntity.lastMessageTimestamp,
+                                status = com.gchat.domain.model.MessageStatus.SENT,
+                                readBy = emptyList()
+                            )
+                        } else null
+                        
                         Result.success(ConversationMapper.toDomain(localEntity, lastMessage))
                     } else {
                         Result.failure(Exception("Conversation not found"))
