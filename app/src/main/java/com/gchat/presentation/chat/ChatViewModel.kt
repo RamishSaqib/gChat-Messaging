@@ -118,7 +118,8 @@ class ChatViewModel @Inject constructor(
             _uploadError.value = null
             
             // Upload image to Firebase Storage
-            mediaRepository.uploadImage(userId, imageUri, "chat_images")
+            val storagePath = "chat_images/$userId/${System.currentTimeMillis()}.jpg"
+            mediaRepository.uploadImage(imageUri, storagePath)
                 .onSuccess { imageUrl ->
                     _uploadProgress.value = 0.8f
                     
