@@ -22,27 +22,50 @@ class ConversationListViewModel @Inject constructor(
     private val userRepository: UserRepository
 ) : ViewModel() {
     
-    // Combine conversations with user data
+    // Cache for user data flows to observe real-time status changes
+    private val userFlowCache = mutableMapOf<String, StateFlow<User?>>()
+    
+    // Combine conversations with real-time user data
     val conversationsWithUsers: StateFlow<List<ConversationWithUser>> = flow {
         val currentUserId = authRepository.getCurrentUserId() ?: ""
         
         getConversationsUseCase().collect { conversations ->
-            val conversationsWithUsers = conversations.map { conversation ->
+            // Create a combined flow that updates when any user status changes
+            val conversationFlows = conversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
-                val otherUser = if (otherUserId != null) {
-                    userRepository.getUser(otherUserId).getOrNull()
-                } else null
                 
-                ConversationWithUser(
-                    conversation = conversation,
-                    otherUser = otherUser
-                )
+                if (otherUserId != null) {
+                    // Get or create cached user flow for real-time updates
+                    val userFlow = userFlowCache.getOrPut(otherUserId) {
+                        userRepository.getUserFlow(otherUserId)
+                            .stateIn(
+                                scope = viewModelScope,
+                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                initialValue = null
+                            )
+                    }
+                    
+                    // Combine conversation with real-time user data
+                    userFlow.map { user ->
+                        ConversationWithUser(
+                            conversation = conversation,
+                            otherUser = user
+                        )
+                    }
+                } else {
+                    // Group conversation or no other user
+                    flowOf(ConversationWithUser(conversation = conversation, otherUser = null))
+                }
             }
-            emit(conversationsWithUsers)
+            
+            // Combine all conversation flows and emit as a list
+            combine(conversationFlows) { it.toList() }.collect { conversationsWithUsers ->
+                emit(conversationsWithUsers)
+            }
         }
     }.stateIn(
         scope = viewModelScope,
-        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000), // Keep alive for 5s during recompositions
+        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
         initialValue = emptyList()
     )
     

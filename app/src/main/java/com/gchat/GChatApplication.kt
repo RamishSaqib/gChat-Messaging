@@ -4,8 +4,18 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.os.Build
+import androidx.lifecycle.DefaultLifecycleObserver
+import androidx.lifecycle.LifecycleOwner
+import androidx.lifecycle.ProcessLifecycleOwner
+import com.gchat.domain.repository.AuthRepository
+import com.gchat.domain.repository.UserRepository
 import com.google.firebase.FirebaseApp
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 /**
  * Application class for gChat
@@ -14,9 +24,18 @@ import dagger.hilt.android.HiltAndroidApp
  * - Hilt dependency injection
  * - Firebase services
  * - Notification channels
+ * - Online presence detection
  */
 @HiltAndroidApp
 class GChatApplication : Application() {
+
+    @Inject
+    lateinit var authRepository: AuthRepository
+    
+    @Inject
+    lateinit var userRepository: UserRepository
+    
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     override fun onCreate() {
         super.onCreate()
@@ -26,6 +45,33 @@ class GChatApplication : Application() {
         
         // Create notification channels
         createNotificationChannels()
+        
+        // Setup presence detection
+        setupPresenceDetection()
+    }
+    
+    private fun setupPresenceDetection() {
+        ProcessLifecycleOwner.get().lifecycle.addObserver(object : DefaultLifecycleObserver {
+            override fun onStart(owner: LifecycleOwner) {
+                // App came to foreground
+                applicationScope.launch {
+                    val userId = authRepository.getCurrentUserId()
+                    if (userId != null) {
+                        userRepository.updateOnlineStatus(userId, true)
+                    }
+                }
+            }
+            
+            override fun onStop(owner: LifecycleOwner) {
+                // App went to background
+                applicationScope.launch {
+                    val userId = authRepository.getCurrentUserId()
+                    if (userId != null) {
+                        userRepository.updateOnlineStatus(userId, false)
+                    }
+                }
+            }
+        })
     }
 
     private fun createNotificationChannels() {

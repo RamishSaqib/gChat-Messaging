@@ -6,7 +6,7 @@ import com.gchat.data.remote.firestore.FirestoreUserDataSource
 import com.gchat.domain.model.User
 import com.gchat.domain.repository.UserRepository
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onEach
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -20,9 +20,14 @@ class UserRepositoryImpl @Inject constructor(
 ) : UserRepository {
     
     override fun getUserFlow(userId: String): Flow<User?> {
-        // Observe from local database
-        return userDao.getUserByIdFlow(userId)
-            .map { entity -> entity?.let { UserMapper.toDomain(it) } }
+        // Observe from Firestore for real-time updates
+        return firestoreUserDataSource.observeUser(userId)
+            .onEach { user ->
+                // Cache locally when updates arrive
+                if (user != null) {
+                    userDao.insert(UserMapper.toEntity(user))
+                }
+            }
     }
     
     override suspend fun getUser(userId: String): Result<User> {
