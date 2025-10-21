@@ -31,6 +31,24 @@ interface ConversationDao {
     @Update
     suspend fun update(conversation: ConversationEntity)
     
+    @Update
+    suspend fun updateAll(conversations: List<ConversationEntity>)
+    
+    @Transaction
+    suspend fun upsertAll(conversations: List<ConversationEntity>) {
+        // For each conversation, try to update first (triggers flow), then insert if not exists
+        conversations.forEach { conversation ->
+            val existing = getConversationById(conversation.id)
+            if (existing != null) {
+                // Update always triggers flow observers
+                update(conversation)
+            } else {
+                // Insert for new conversations
+                insert(conversation)
+            }
+        }
+    }
+    
     @Query("""
         UPDATE conversations 
         SET lastMessageId = :messageId, 

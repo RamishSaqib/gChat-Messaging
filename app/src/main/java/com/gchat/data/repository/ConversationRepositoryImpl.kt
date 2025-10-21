@@ -419,9 +419,10 @@ class ConversationRepositoryImpl @Inject constructor(
             firestoreConversationDataSource.observeConversations(userId)
                 .collect { conversations ->
                     android.util.Log.d("ConversationRepo", "Firestore sync received ${conversations.size} conversations")
-                    // Batch insert all conversations for better performance
+                    // Use upsertAll to ensure Room Flow observers are always triggered
+                    // @Update always triggers flow, @Insert with REPLACE doesn't always trigger
                     val entities = conversations.map { ConversationMapper.toEntity(it) }
-                    conversationDao.insertAll(entities)
+                    conversationDao.upsertAll(entities)
                     android.util.Log.d("ConversationRepo", "Updated local database with ${entities.size} conversations")
                 }
         } catch (e: Exception) {
