@@ -55,8 +55,9 @@ class FirestoreConversationDataSource @Inject constructor(
         val listener = conversationsCollection
             .whereArrayContains("participants", userId)
             .orderBy("updatedAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
+            .addSnapshotListener(com.google.firebase.firestore.MetadataChanges.INCLUDE) { snapshot, error ->
                 if (error != null) {
+                    android.util.Log.e("FirestoreConversation", "Snapshot listener error: ${error.message}", error)
                     close(error)
                     return@addSnapshotListener
                 }
@@ -65,6 +66,7 @@ class FirestoreConversationDataSource @Inject constructor(
                     ?.mapNotNull { ConversationMapper.fromFirestore(it) }
                     ?: emptyList()
                 
+                android.util.Log.d("FirestoreConversation", "Snapshot listener emitted ${conversations.size} conversations (hasPendingWrites: ${snapshot?.metadata?.hasPendingWrites}, fromCache: ${snapshot?.metadata?.isFromCache})")
                 trySend(conversations)
             }
         

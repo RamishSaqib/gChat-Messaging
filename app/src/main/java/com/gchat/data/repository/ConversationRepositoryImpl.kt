@@ -37,9 +37,14 @@ class ConversationRepositoryImpl @Inject constructor(
     override fun getConversationsFlow(): Flow<List<Conversation>> {
         // Start background sync if not already running
         val userId = auth.currentUser?.uid
-        if (userId != null && (syncJob == null || syncJob?.isActive == false)) {
-            syncJob = scope.launch {
-                syncConversationsFromFirestore(userId)
+        if (userId != null) {
+            if (syncJob == null || syncJob?.isActive == false) {
+                android.util.Log.d("ConversationRepo", "Starting new sync job for user: $userId")
+                syncJob = scope.launch {
+                    syncConversationsFromFirestore(userId)
+                }
+            } else {
+                android.util.Log.d("ConversationRepo", "Sync job already active")
             }
         }
         
@@ -403,15 +408,19 @@ class ConversationRepositoryImpl @Inject constructor(
     
     private suspend fun syncConversationsFromFirestore(userId: String) {
         try {
+            android.util.Log.d("ConversationRepo", "Starting Firestore sync for user: $userId")
             firestoreConversationDataSource.observeConversations(userId)
                 .collect { conversations ->
+                    android.util.Log.d("ConversationRepo", "Firestore sync received ${conversations.size} conversations")
                     // Batch insert all conversations for better performance
                     val entities = conversations.map { ConversationMapper.toEntity(it) }
                     conversationDao.insertAll(entities)
+                    android.util.Log.d("ConversationRepo", "Updated local database with ${entities.size} conversations")
                 }
         } catch (e: Exception) {
             // Log error but don't crash - user will see locally cached data
-            println("Error syncing conversations: ${e.message}")
+            android.util.Log.e("ConversationRepo", "Error syncing conversations: ${e.message}", e)
+            e.printStackTrace()
         }
     }
 }
