@@ -2,6 +2,7 @@ package com.gchat.presentation.chat
 
 import android.Manifest
 import android.os.Build
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -41,7 +42,7 @@ import com.google.accompanist.permissions.rememberPermissionState
 import java.text.SimpleDateFormat
 import java.util.*
 
-@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class)
+@OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ConversationListScreen(
     onConversationClick: (String) -> Unit,
