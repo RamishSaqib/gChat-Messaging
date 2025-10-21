@@ -51,10 +51,13 @@ class AuthRepositoryImpl @Inject constructor(
             val result = auth.signInWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user ?: return AuthResult.Error("Login failed")
             
+            android.util.Log.d("AuthRepository", "Login successful for user: ${firebaseUser.uid}")
+            
             // Fetch user from Firestore and cache locally
             val userResult = firestoreUserDataSource.getUser(firebaseUser.uid)
             userResult.fold(
                 onSuccess = { user ->
+                    android.util.Log.d("AuthRepository", "User found in Firestore: ${user.displayName}")
                     // Update online status
                     firestoreUserDataSource.updateOnlineStatus(firebaseUser.uid, true)
                     
@@ -63,23 +66,56 @@ class AuthRepositoryImpl @Inject constructor(
                     userDao.insert(UserMapper.toEntity(updatedUser))
                     AuthResult.Success(updatedUser)
                 },
-                onFailure = { AuthResult.Error(it.message ?: "Failed to fetch user data") }
+                onFailure = { error ->
+                    // User doesn't exist in Firestore, create profile from Firebase Auth data
+                    android.util.Log.w("AuthRepository", "User not found in Firestore, creating profile: ${error.message}")
+                    val newUser = User(
+                        id = firebaseUser.uid,
+                        displayName = firebaseUser.displayName ?: "User",
+                        email = firebaseUser.email,
+                        phoneNumber = firebaseUser.phoneNumber,
+                        profilePictureUrl = firebaseUser.photoUrl?.toString(),
+                        preferredLanguage = "en",
+                        isOnline = true,
+                        lastSeen = System.currentTimeMillis(),
+                        createdAt = System.currentTimeMillis()
+                    )
+                    
+                    val createResult = firestoreUserDataSource.createUser(newUser)
+                    createResult.fold(
+                        onSuccess = {
+                            android.util.Log.d("AuthRepository", "User profile created in Firestore: ${newUser.displayName}")
+                            userDao.insert(UserMapper.toEntity(newUser))
+                            AuthResult.Success(newUser)
+                        },
+                        onFailure = { createError ->
+                            android.util.Log.e("AuthRepository", "Failed to create user profile: ${createError.message}")
+                            AuthResult.Error(createError.message ?: "Failed to create user profile")
+                        }
+                    )
+                }
             )
         } catch (e: Exception) {
+            android.util.Log.e("AuthRepository", "Login failed: ${e.message}", e)
             AuthResult.Error(e.message ?: "Login failed")
         }
     }
     
     override suspend fun register(email: String, password: String, displayName: String): AuthResult {
         return try {
+            android.util.Log.d("AuthRepository", "Starting registration for email: $email, displayName: $displayName")
             val result = auth.createUserWithEmailAndPassword(email, password).await()
             val firebaseUser = result.user ?: return AuthResult.Error("Registration failed")
+            
+            android.util.Log.d("AuthRepository", "Firebase Auth account created: ${firebaseUser.uid}")
             
             // Update display name in Firebase Auth
             val profileUpdates = UserProfileChangeRequest.Builder()
                 .setDisplayName(displayName)
                 .build()
             firebaseUser.updateProfile(profileUpdates).await()
+            
+            android.util.Log.d("AuthRepository", "Firebase Auth profile updated with displayName: $displayName")
             
             // Create user in Firestore
             val user = User(
@@ -93,15 +129,22 @@ class AuthRepositoryImpl @Inject constructor(
                 createdAt = System.currentTimeMillis()
             )
             
+            android.util.Log.d("AuthRepository", "Creating user in Firestore: ${user.id}, ${user.displayName}")
             val createResult = firestoreUserDataSource.createUser(user)
             createResult.fold(
                 onSuccess = {
+                    android.util.Log.d("AuthRepository", "User created in Firestore successfully")
                     userDao.insert(UserMapper.toEntity(user))
+                    android.util.Log.d("AuthRepository", "User cached locally")
                     AuthResult.Success(user)
                 },
-                onFailure = { AuthResult.Error(it.message ?: "Failed to create user profile") }
+                onFailure = { error ->
+                    android.util.Log.e("AuthRepository", "Failed to create user in Firestore: ${error.message}", error)
+                    AuthResult.Error(error.message ?: "Failed to create user profile")
+                }
             )
         } catch (e: Exception) {
+            android.util.Log.e("AuthRepository", "Registration failed: ${e.message}", e)
             AuthResult.Error(e.message ?: "Registration failed")
         }
     }
