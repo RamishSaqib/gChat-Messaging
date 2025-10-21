@@ -156,6 +156,7 @@ fun ConversationListScreen(
                 items(conversationsWithUsers, key = { it.conversation.id }) { conversationWithUser ->
                     ConversationItem(
                         conversationWithUser = conversationWithUser,
+                        currentUserId = viewModel.currentUser.value?.id,
                         onClick = { onConversationClick(conversationWithUser.conversation.id) }
                     )
                     Divider()
@@ -168,10 +169,12 @@ fun ConversationListScreen(
 @Composable
 fun ConversationItem(
     conversationWithUser: ConversationWithUser,
+    currentUserId: String?,
     onClick: () -> Unit
 ) {
     val conversation = conversationWithUser.conversation
     val otherUser = conversationWithUser.otherUser
+    val lastMessageSender = conversationWithUser.lastMessageSender
     
     // Display name: use other user's name for 1-on-1, group name for groups
     val displayName = when {
@@ -228,11 +231,11 @@ fun ConversationItem(
             Spacer(modifier = Modifier.height(4.dp))
             
             Text(
-                text = when {
-                    conversation.lastMessage?.text != null -> conversation.lastMessage.text
-                    conversation.lastMessage?.mediaUrl != null -> "📷 Photo"
-                    else -> "No messages yet"
-                },
+                text = buildLastMessageText(
+                    conversation = conversation,
+                    lastMessageSender = lastMessageSender,
+                    currentUserId = currentUserId
+                ),
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 maxLines = 1,
@@ -257,6 +260,43 @@ fun ConversationItem(
             }
         }
     }
+}
+
+private fun buildLastMessageText(
+    conversation: Conversation,
+    lastMessageSender: User?,
+    currentUserId: String?
+): String {
+    val lastMessage = conversation.lastMessage
+    
+    if (lastMessage == null) {
+        return "No messages yet"
+    }
+    
+    // Get the message content
+    val messageContent = when {
+        lastMessage.text != null -> lastMessage.text
+        lastMessage.mediaUrl != null -> "📷 Photo"
+        else -> "New message"
+    }
+    
+    // For group chats or if there's a sender, add prefix
+    if (conversation.isGroup() || lastMessage.senderId != currentUserId) {
+        val senderPrefix = when {
+            lastMessage.senderId == currentUserId -> "You: "
+            else -> {
+                // Use nickname if set, otherwise use display name
+                val senderName = conversation.getUserDisplayName(
+                    lastMessage.senderId,
+                    lastMessageSender
+                )
+                "$senderName: "
+            }
+        }
+        return "$senderPrefix$messageContent"
+    }
+    
+    return messageContent
 }
 
 private fun formatTimestamp(timestamp: Long): String {

@@ -45,9 +45,10 @@ class ConversationListViewModel @Inject constructor(
             // Create a combined flow that updates when any user status changes
             val conversationFlows = conversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
+                val lastMessageSenderId = conversation.lastMessage?.senderId
                 
                 if (otherUserId != null) {
-                    // Get or create cached user flow for real-time updates
+                    // 1-on-1 chat: Get other user's info
                     val userFlow = userFlowCache.getOrPut(otherUserId) {
                         userRepository.getUserFlow(otherUserId)
                             .stateIn(
@@ -57,16 +58,53 @@ class ConversationListViewModel @Inject constructor(
                             )
                     }
                     
-                    // Combine conversation with real-time user data
-                    userFlow.map { user ->
-                        ConversationWithUser(
-                            conversation = conversation,
-                            otherUser = user
-                        )
+                    // Also get last message sender (could be either user)
+                    if (lastMessageSenderId != null && lastMessageSenderId != currentUserId) {
+                        val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
+                            userRepository.getUserFlow(lastMessageSenderId)
+                                .stateIn(
+                                    scope = viewModelScope,
+                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                    initialValue = null
+                                )
+                        }
+                        combine(userFlow, senderFlow) { user, sender ->
+                            ConversationWithUser(
+                                conversation = conversation,
+                                otherUser = user,
+                                lastMessageSender = sender
+                            )
+                        }
+                    } else {
+                        userFlow.map { user ->
+                            ConversationWithUser(
+                                conversation = conversation,
+                                otherUser = user,
+                                lastMessageSender = null
+                            )
+                        }
                     }
                 } else {
-                    // Group conversation or no other user
-                    flowOf(ConversationWithUser(conversation = conversation, otherUser = null))
+                    // Group conversation: get last message sender
+                    if (lastMessageSenderId != null) {
+                        val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
+                            userRepository.getUserFlow(lastMessageSenderId)
+                                .stateIn(
+                                    scope = viewModelScope,
+                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                    initialValue = null
+                                )
+                        }
+                        senderFlow.map { sender ->
+                            ConversationWithUser(
+                                conversation = conversation,
+                                otherUser = null,
+                                lastMessageSender = sender
+                            )
+                        }
+                    } else {
+                        flowOf(ConversationWithUser(conversation = conversation, otherUser = null, lastMessageSender = null))
+                    }
                 }
             }
             
@@ -94,6 +132,7 @@ class ConversationListViewModel @Inject constructor(
  */
 data class ConversationWithUser(
     val conversation: Conversation,
-    val otherUser: User?
+    val otherUser: User?,
+    val lastMessageSender: User? = null
 )
 
