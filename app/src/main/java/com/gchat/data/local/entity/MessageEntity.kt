@@ -20,9 +20,12 @@ data class MessageEntity(
     @PrimaryKey val id: String,
     val conversationId: String,
     val senderId: String,
-    val type: String, // TEXT, IMAGE, SYSTEM
+    val type: String, // TEXT, IMAGE, AUDIO, SYSTEM
     val text: String?,
     val mediaUrl: String?,
+    val audioDuration: Int?, // Duration in seconds for AUDIO messages
+    val audioWaveform: String?, // JSON array of waveform data
+    val transcription: String?, // AI transcription for AUDIO messages
     val timestamp: Long,
     val status: String, // SENDING, SENT, DELIVERED, READ, FAILED
     val readBy: String, // JSON array of user IDs

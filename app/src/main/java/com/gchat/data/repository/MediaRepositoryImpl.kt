@@ -41,11 +41,42 @@ class MediaRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun uploadAudio(file: File, path: String): Result<String> {
+        return try {
+            // Upload audio file to Firebase Storage with explicit metadata
+            val audioRef = storageRef.child(path)
+            
+            // Set metadata to ensure correct MIME type
+            val metadata = com.google.firebase.storage.StorageMetadata.Builder()
+                .setContentType("audio/mp4") // M4A files use audio/mp4 MIME type
+                .build()
+            
+            audioRef.putFile(Uri.fromFile(file), metadata).await()
+            
+            // Get download URL
+            val downloadUrl = audioRef.downloadUrl.await()
+            Result.success(downloadUrl.toString())
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override suspend fun deleteImage(url: String): Result<Unit> {
         return try {
             // Extract storage path from URL and delete
             val imageRef = storage.getReferenceFromUrl(url)
             imageRef.delete().await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun deleteAudio(url: String): Result<Unit> {
+        return try {
+            // Extract storage path from URL and delete
+            val audioRef = storage.getReferenceFromUrl(url)
+            audioRef.delete().await()
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)

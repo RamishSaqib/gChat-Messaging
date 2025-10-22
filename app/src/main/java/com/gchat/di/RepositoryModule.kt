@@ -1,5 +1,6 @@
 package com.gchat.di
 
+import com.gchat.data.repository.AudioRepositoryImpl
 import com.gchat.data.repository.AuthRepositoryImpl
 import com.gchat.data.repository.ConversationRepositoryImpl
 import com.gchat.data.repository.DataExtractionRepositoryImpl
@@ -8,6 +9,7 @@ import com.gchat.data.repository.MessageRepositoryImpl
 import com.gchat.data.repository.TranslationRepositoryImpl
 import com.gchat.data.repository.TypingRepositoryImpl
 import com.gchat.data.repository.UserRepositoryImpl
+import com.gchat.domain.repository.AudioRepository
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.ConversationRepository
 import com.gchat.domain.repository.DataExtractionRepository
@@ -76,5 +78,11 @@ abstract class RepositoryModule {
     abstract fun bindDataExtractionRepository(
         dataExtractionRepositoryImpl: DataExtractionRepositoryImpl
     ): DataExtractionRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindAudioRepository(
+        audioRepositoryImpl: AudioRepositoryImpl
+    ): AudioRepository
 }
 

@@ -65,6 +65,38 @@ class MessageRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun insertMessage(message: Message): Result<Unit> {
+        return try {
+            // Insert message into local database only (no Firestore sync)
+            messageDao.insert(MessageMapper.toEntity(message))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun syncMessageToRemote(message: Message): Result<Unit> {
+        return try {
+            // Sync message to Firestore only
+            val result = firestoreMessageDataSource.sendMessage(message)
+            
+            result.fold(
+                onSuccess = {
+                    // Update status to SENT in local DB
+                    messageDao.updateStatus(message.id, MessageStatus.SENT.name)
+                },
+                onFailure = {
+                    // Mark as FAILED in local DB
+                    messageDao.updateStatus(message.id, MessageStatus.FAILED.name)
+                }
+            )
+            
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     override suspend fun getMessages(conversationId: String, limit: Int): Result<List<Message>> {
         return try {
             // Try to get from Firestore first
@@ -101,6 +133,24 @@ class MessageRepositoryImpl @Inject constructor(
             
             // Sync to Firestore
             firestoreMessageDataSource.updateMessageStatus(conversationId, messageId, status)
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun updateMessageTranscription(
+        conversationId: String,
+        messageId: String,
+        transcription: String
+    ): Result<Unit> {
+        return try {
+            // Update transcription in local database
+            messageDao.updateTranscription(messageId, transcription)
+            
+            // Update transcription in Firestore
+            firestoreMessageDataSource.updateMessageTranscription(conversationId, messageId, transcription)
             
             Result.success(Unit)
         } catch (e: Exception) {

@@ -24,7 +24,7 @@ import com.gchat.data.local.entity.UserEntity
         MessageEntity::class,
         TranslationEntity::class
     ],
-    version = 9, // v9: Added lastMessageType and lastMessageMediaUrl to ConversationEntity
+    version = 10, // v10: Added audioDuration, audioWaveform, transcription to MessageEntity
     exportSchema = false
 )
 @TypeConverters(Converters::class)

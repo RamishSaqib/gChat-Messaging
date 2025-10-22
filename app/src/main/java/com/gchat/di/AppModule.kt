@@ -35,6 +35,8 @@ object AppModule {
     fun provideFirebaseFirestore(): FirebaseFirestore {
         return FirebaseFirestore.getInstance().apply {
             // Enable offline persistence
+            // Note: These APIs are deprecated but still functional
+            @Suppress("DEPRECATION")
             firestoreSettings = FirebaseFirestoreSettings.Builder()
                 .setPersistenceEnabled(true)
                 .setCacheSizeBytes(FirebaseFirestoreSettings.CACHE_SIZE_UNLIMITED)
@@ -48,7 +50,12 @@ object AppModule {
     
     @Provides
     @Singleton
-    fun provideFirebaseFunctions(): FirebaseFunctions = FirebaseFunctions.getInstance()
+    fun provideFirebaseFunctions(): FirebaseFunctions {
+        return FirebaseFunctions.getInstance().apply {
+            // Use emulator in debug builds if needed
+            // useEmulator("10.0.2.2", 5001)
+        }
+    }
     
     @Provides
     @Singleton

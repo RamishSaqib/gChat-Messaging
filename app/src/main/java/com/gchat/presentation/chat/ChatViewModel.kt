@@ -10,8 +10,11 @@ import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageType
 import com.gchat.domain.model.Translation
 import com.gchat.domain.repository.AuthRepository
+import com.gchat.domain.repository.AudioRepository
 import com.gchat.domain.repository.ConversationRepository
 import com.gchat.domain.repository.MediaRepository
+import com.gchat.domain.repository.PlaybackState
+import com.gchat.domain.repository.RecordingState
 import com.gchat.domain.repository.TranslationRepository
 import com.gchat.domain.repository.TypingRepository
 import com.gchat.domain.repository.UserRepository
@@ -19,7 +22,11 @@ import com.gchat.domain.usecase.ExtractBatchDataUseCase
 import com.gchat.domain.usecase.ExtractDataFromMessageUseCase
 import com.gchat.domain.usecase.GetMessagesUseCase
 import com.gchat.domain.usecase.MarkMessageAsReadUseCase
+import com.gchat.domain.usecase.PlayVoiceMessageUseCase
+import com.gchat.domain.usecase.RecordVoiceMessageUseCase
 import com.gchat.domain.usecase.SendMessageUseCase
+import com.gchat.domain.usecase.SendVoiceMessageUseCase
+import com.gchat.domain.usecase.TranscribeVoiceMessageUseCase
 import com.gchat.domain.usecase.TranslateMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
@@ -40,10 +47,15 @@ class ChatViewModel @Inject constructor(
     private val translateMessageUseCase: TranslateMessageUseCase,
     private val extractDataFromMessageUseCase: ExtractDataFromMessageUseCase,
     private val extractBatchDataUseCase: ExtractBatchDataUseCase,
+    private val recordVoiceMessageUseCase: RecordVoiceMessageUseCase,
+    private val sendVoiceMessageUseCase: SendVoiceMessageUseCase,
+    private val playVoiceMessageUseCase: PlayVoiceMessageUseCase,
+    private val transcribeVoiceMessageUseCase: TranscribeVoiceMessageUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val mediaRepository: MediaRepository,
+    private val audioRepository: AudioRepository,
     private val typingRepository: TypingRepository,
     private val translationRepository: TranslationRepository,
     savedStateHandle: SavedStateHandle
@@ -521,6 +533,205 @@ class ChatViewModel @Inject constructor(
      */
     fun getEntitiesByType(type: com.gchat.domain.model.EntityType): List<ExtractedEntity> {
         return getAllExtractedEntities().filter { it.type == type }
+    }
+    
+    // ============ Voice Message State ============
+    
+    private val _recordingState = MutableStateFlow<RecordingState>(RecordingState.Idle)
+    val recordingState: StateFlow<RecordingState> = _recordingState.asStateFlow()
+    
+    private val _playbackStates = MutableStateFlow<Map<String, PlaybackState>>(emptyMap())
+    val playbackStates: StateFlow<Map<String, PlaybackState>> = _playbackStates.asStateFlow()
+    
+    private val _currentlyPlayingMessageId = MutableStateFlow<String?>(null)
+    val currentlyPlayingMessageId: StateFlow<String?> = _currentlyPlayingMessageId.asStateFlow()
+    
+    private val _playbackSpeed = MutableStateFlow(1.0f)
+    val playbackSpeed: StateFlow<Float> = _playbackSpeed.asStateFlow()
+    
+    private val _transcriptionLoading = MutableStateFlow<Set<String>>(emptySet())
+    val transcriptionLoading: StateFlow<Set<String>> = _transcriptionLoading.asStateFlow()
+    
+    // ============ Voice Message Methods ============
+    
+    /**
+     * Start recording voice message
+     */
+    fun startVoiceRecording() {
+        viewModelScope.launch {
+            recordVoiceMessageUseCase().collect { state ->
+                _recordingState.value = state
+            }
+        }
+    }
+    
+    /**
+     * Stop recording and send voice message
+     */
+    fun stopAndSendVoiceMessage() {
+        val userId = currentUserId.value ?: return
+        
+        viewModelScope.launch {
+            // Stop recording
+            val result = audioRepository.stopRecording()
+            
+            result.onSuccess { recordingResult ->
+                _recordingState.value = RecordingState.Idle
+                
+                // Send voice message
+                val sendResult = sendVoiceMessageUseCase(
+                    conversationId = conversationId,
+                    senderId = userId,
+                    recordingResult = recordingResult
+                )
+                
+                sendResult.onSuccess { message ->
+                    android.util.Log.d("ChatViewModel", "Voice message sent: ${message.id}")
+                    // Note: Transcription is now manual via long-press menu
+                }.onFailure { error ->
+                    android.util.Log.e("ChatViewModel", "Failed to send voice message", error)
+                    _recordingState.value = RecordingState.Error(error.message ?: "Failed to send")
+                }
+            }.onFailure { error ->
+                android.util.Log.e("ChatViewModel", "Failed to stop recording", error)
+                _recordingState.value = RecordingState.Error(error.message ?: "Failed to stop recording")
+            }
+        }
+    }
+    
+    /**
+     * Cancel voice recording
+     */
+    fun cancelVoiceRecording() {
+        viewModelScope.launch {
+            audioRepository.cancelRecording()
+            _recordingState.value = RecordingState.Idle
+        }
+    }
+    
+    /**
+     * Play voice message
+     */
+    fun playVoiceMessage(messageId: String, audioUrl: String) {
+        viewModelScope.launch {
+            // Stop currently playing message if different
+            val currentlyPlaying = _currentlyPlayingMessageId.value
+            if (currentlyPlaying != null && currentlyPlaying != messageId) {
+                stopVoiceMessage(currentlyPlaying)
+            }
+            
+            _currentlyPlayingMessageId.value = messageId
+            
+            android.util.Log.d("ChatViewModel", "Starting to collect playback state for message: $messageId")
+            
+            playVoiceMessageUseCase(audioUrl, _playbackSpeed.value).collect { state ->
+                android.util.Log.d("ChatViewModel", "Received playback state: $state for message: $messageId")
+                
+                // Create a new map to trigger StateFlow emission
+                _playbackStates.value = _playbackStates.value.toMutableMap().apply {
+                    put(messageId, state)
+                }
+                
+                android.util.Log.d("ChatViewModel", "Updated _playbackStates map, new size: ${_playbackStates.value.size}")
+                
+                // Clear currently playing when completed
+                if (state is PlaybackState.Completed) {
+                    _currentlyPlayingMessageId.value = null
+                }
+            }
+        }
+    }
+    
+    /**
+     * Pause voice message playback
+     */
+    fun pauseVoiceMessage(messageId: String) {
+        viewModelScope.launch {
+            playVoiceMessageUseCase.pause()
+            // Update state will be handled by the flow
+        }
+    }
+    
+    /**
+     * Resume voice message playback
+     */
+    fun resumeVoiceMessage(messageId: String) {
+        viewModelScope.launch {
+            playVoiceMessageUseCase.resume()
+            // Update state will be handled by the flow
+        }
+    }
+    
+    /**
+     * Stop voice message playback
+     */
+    fun stopVoiceMessage(messageId: String) {
+        viewModelScope.launch {
+            playVoiceMessageUseCase.stop()
+            _playbackStates.value = _playbackStates.value - messageId
+            if (_currentlyPlayingMessageId.value == messageId) {
+                _currentlyPlayingMessageId.value = null
+            }
+        }
+    }
+    
+    /**
+     * Set playback speed
+     */
+    fun setPlaybackSpeed(speed: Float) {
+        _playbackSpeed.value = speed
+        // Speed change is handled by the AudioPlayer
+    }
+    
+    /**
+     * Request transcription for a voice message
+     */
+    fun requestTranscription(messageId: String, audioUrl: String) {
+        viewModelScope.launch {
+            // Add to loading set (create new set to trigger StateFlow)
+            _transcriptionLoading.value = _transcriptionLoading.value + messageId
+            
+            android.util.Log.d("ChatViewModel", "Requesting transcription for message $messageId")
+            
+            val result = transcribeVoiceMessageUseCase(messageId, audioUrl, conversationId)
+            
+            result.onSuccess { transcriptionResult ->
+                android.util.Log.d("ChatViewModel", "Transcription success: ${transcriptionResult.text}")
+                // Transcription is automatically updated in the message by the use case
+            }.onFailure { error ->
+                android.util.Log.e("ChatViewModel", "Transcription failed", error)
+            }
+            
+            // Remove from loading set (create new set to trigger StateFlow)
+            _transcriptionLoading.value = _transcriptionLoading.value - messageId
+        }
+    }
+    
+    /**
+     * Get playback state for a message
+     */
+    fun getPlaybackState(messageId: String): PlaybackState {
+        return _playbackStates.value[messageId] ?: PlaybackState.Idle
+    }
+    
+    /**
+     * Check if message is transcribing
+     */
+    fun isTranscribing(messageId: String): Boolean {
+        return _transcriptionLoading.value.contains(messageId)
+    }
+    
+    /**
+     * Toggle play/pause for a voice message
+     */
+    fun togglePlayPause(messageId: String, audioUrl: String) {
+        val currentState = getPlaybackState(messageId)
+        
+        when (currentState) {
+            is PlaybackState.Playing -> pauseVoiceMessage(messageId)
+            is PlaybackState.Paused -> resumeVoiceMessage(messageId)
+            else -> playVoiceMessage(messageId, audioUrl)
+        }
     }
 }
 
