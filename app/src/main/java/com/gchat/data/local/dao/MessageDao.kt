@@ -45,6 +45,9 @@ interface MessageDao {
         targetLang: String
     )
     
+    @Query("UPDATE messages SET transcription = :transcription WHERE id = :messageId")
+    suspend fun updateTranscription(messageId: String, transcription: String)
+    
     @Delete
     suspend fun delete(message: MessageEntity)
     

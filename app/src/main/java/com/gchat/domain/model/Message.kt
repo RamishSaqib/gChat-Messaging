@@ -12,6 +12,9 @@ data class Message(
     val type: MessageType = MessageType.TEXT,
     val text: String? = null,
     val mediaUrl: String? = null,
+    val audioDuration: Int? = null, // Duration in seconds
+    val audioWaveform: List<Float>? = null, // Waveform data for visualization
+    val transcription: String? = null, // AI transcription of voice message
     val timestamp: Long = System.currentTimeMillis(),
     val status: MessageStatus = MessageStatus.SENDING,
     val readBy: Map<String, Long> = emptyMap(), // userId -> readTimestamp
@@ -45,6 +48,7 @@ data class Message(
 enum class MessageType {
     TEXT,
     IMAGE,
+    AUDIO,
     SYSTEM // For "User joined", "Group created", etc.
 }
 

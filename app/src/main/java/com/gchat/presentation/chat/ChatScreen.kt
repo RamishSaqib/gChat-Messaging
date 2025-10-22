@@ -22,9 +22,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Translate
@@ -47,6 +49,8 @@ import com.gchat.presentation.components.ImageMessageBubble
 import com.gchat.presentation.components.ProfilePicture
 import com.gchat.presentation.components.ReadByAvatars
 import com.gchat.presentation.components.ReadReceiptCheckmarks
+import com.gchat.presentation.components.VoiceMessageBubble
+import com.gchat.presentation.components.VoiceRecordingSheet
 import com.gchat.presentation.theme.MessageBubbleShapeReceived
 import com.gchat.presentation.theme.MessageBubbleShapeSent
 import com.gchat.util.rememberImagePickerLaunchers
@@ -84,6 +88,17 @@ fun ChatScreen(
     
     // Data extraction state
     val extractedData by viewModel.extractedData.collectAsState()
+    
+    // Voice message state
+    val recordingState by viewModel.recordingState.collectAsState()
+    val playbackSpeed by viewModel.playbackSpeed.collectAsState()
+    val playbackStates by viewModel.playbackStates.collectAsState()
+    val transcriptionLoading by viewModel.transcriptionLoading.collectAsState()
+    
+    var showRecordingSheet by remember { mutableStateOf(false) }
+    
+    // Audio permission
+    val audioPermissionState = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
     
     val listState = rememberLazyListState()
     
@@ -221,6 +236,15 @@ fun ChatScreen(
                     }
                 },
                 onAttachmentClick = { showImagePicker = true },
+                onMicClick = {
+                    // Check and request audio permission
+                    if (audioPermissionState.status.isGranted) {
+                        showRecordingSheet = true
+                        viewModel.startVoiceRecording()
+                    } else {
+                        audioPermissionState.launchPermissionRequest()
+                    }
+                },
                 isUploading = uploadProgress != null,
                 selectedImageUri = selectedImageUri,
                 onClearImage = { selectedImageUri = null }
@@ -294,6 +318,19 @@ fun ChatScreen(
                             },
                             onImageClick = { imageUrl ->
                                 // Navigate to image viewer (will add this shortly)
+                            },
+                            // Voice message parameters
+                            playbackState = playbackStates[message.id] ?: com.gchat.domain.repository.PlaybackState.Idle,
+                            isTranscribing = transcriptionLoading.contains(message.id),
+                            playbackSpeed = playbackSpeed,
+                            onPlayPause = { messageId, audioUrl ->
+                                viewModel.togglePlayPause(messageId, audioUrl)
+                            },
+                            onSpeedChange = { speed ->
+                                viewModel.setPlaybackSpeed(speed)
+                            },
+                            onRequestTranscription = { messageId, audioUrl ->
+                                viewModel.requestTranscription(messageId, audioUrl)
                             }
                         )
                         Spacer(modifier = Modifier.height(if (isGroupedWithPrevious) 2.dp else 12.dp))
@@ -339,6 +376,21 @@ fun ChatScreen(
             // (This will trigger if user grants permission from the dialog)
         }
     }
+    
+    // Voice recording sheet
+    if (showRecordingSheet) {
+        VoiceRecordingSheet(
+            recordingState = recordingState,
+            onCancel = {
+                viewModel.cancelVoiceRecording()
+                showRecordingSheet = false
+            },
+            onSend = {
+                viewModel.stopAndSendVoiceMessage()
+                showRecordingSheet = false
+            }
+        )
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -360,7 +412,14 @@ fun MessageBubble(
     extractedData: com.gchat.domain.model.ExtractedData? = null,
     onExtractClick: () -> Unit = {},
     onEntityAction: (com.gchat.domain.model.ExtractedEntity) -> Unit = {},
-    onImageClick: (String) -> Unit
+    onImageClick: (String) -> Unit,
+    // Voice message parameters
+    playbackState: com.gchat.domain.repository.PlaybackState = com.gchat.domain.repository.PlaybackState.Idle,
+    isTranscribing: Boolean = false,
+    playbackSpeed: Float = 1.0f,
+    onPlayPause: (String, String) -> Unit = { _, _ -> },
+    onSpeedChange: (Float) -> Unit = {},
+    onRequestTranscription: (String, String) -> Unit = { _, _ -> } // messageId, audioUrl
 ) {
     val context = LocalContext.current
     var showLanguageSelector by remember { mutableStateOf(false) }
@@ -398,6 +457,106 @@ fun MessageBubble(
                         isCurrentUser = isOwnMessage,
                         onImageClick = onImageClick
                     )
+                } else if (message.type == MessageType.AUDIO && message.mediaUrl != null) {
+                    // Voice message bubble
+                    var showVoiceMessageActions by remember { mutableStateOf(false) }
+                    
+                    Surface(
+                        shape = if (isOwnMessage) MessageBubbleShapeSent else MessageBubbleShapeReceived,
+                        color = if (isOwnMessage) {
+                            MaterialTheme.colorScheme.primary
+                        } else {
+                            MaterialTheme.colorScheme.secondaryContainer
+                        },
+                        shadowElevation = 0.5.dp,
+                        modifier = Modifier.combinedClickable(
+                            onClick = {},
+                            onLongClick = {
+                                showVoiceMessageActions = true
+                            }
+                        )
+                    ) {
+                        VoiceMessageBubble(
+                            audioDuration = message.audioDuration ?: 0,
+                            audioWaveform = message.audioWaveform,
+                            transcription = message.transcription,
+                            isTranscribing = isTranscribing,
+                            playbackState = playbackState,
+                            onPlayPause = {
+                                onPlayPause(message.id, message.mediaUrl)
+                            },
+                            onSeek = { position ->
+                                // TODO: Implement seek if needed
+                            },
+                            onSpeedChange = onSpeedChange,
+                            currentSpeed = playbackSpeed,
+                            isOwnMessage = isOwnMessage
+                        )
+                    }
+                    
+                    // Voice message actions dialog
+                    if (showVoiceMessageActions) {
+                        AlertDialog(
+                            onDismissRequest = { showVoiceMessageActions = false },
+                            title = { Text("Voice Message") },
+                            text = {
+                                Column {
+                                    // Transcribe option
+                                    if (message.transcription == null && !isTranscribing) {
+                                        TextButton(
+                                            onClick = {
+                                                message.mediaUrl?.let { audioUrl ->
+                                                    onRequestTranscription(message.id, audioUrl)
+                                                }
+                                                showVoiceMessageActions = false
+                                            },
+                                            modifier = Modifier.fillMaxWidth()
+                                        ) {
+                                            Icon(
+                                                imageVector = Icons.Default.Subtitles,
+                                                contentDescription = "Transcribe"
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text("Transcribe Audio")
+                                        }
+                                    }
+                                    
+                                    // Show existing transcription
+                                    if (message.transcription != null) {
+                                        Text(
+                                            text = "Transcription: ${message.transcription}",
+                                            style = MaterialTheme.typography.bodySmall
+                                        )
+                                    }
+                                    
+                                    // Show transcribing status
+                                    if (isTranscribing) {
+                                        Row(
+                                            verticalAlignment = Alignment.CenterVertically,
+                                            modifier = Modifier.padding(vertical = 8.dp)
+                                        ) {
+                                            CircularProgressIndicator(
+                                                modifier = Modifier.size(16.dp),
+                                                strokeWidth = 2.dp
+                                            )
+                                            Spacer(modifier = Modifier.width(8.dp))
+                                            Text(
+                                                text = "Transcribing...",
+                                                style = MaterialTheme.typography.bodySmall
+                                            )
+                                        }
+                                    }
+                                }
+                            },
+                            confirmButton = {
+                                TextButton(
+                                    onClick = { showVoiceMessageActions = false }
+                                ) {
+                                    Text("Close")
+                                }
+                            }
+                        )
+                    }
                 } else {
                     // Regular text message bubble with long-press for translation
                     Surface(
@@ -572,6 +731,7 @@ fun MessageInput(
     onMessageChange: (String) -> Unit,
     onSendClick: () -> Unit,
     onAttachmentClick: () -> Unit,
+    onMicClick: () -> Unit = {},
     isUploading: Boolean = false,
     selectedImageUri: Uri? = null,
     onClearImage: () -> Unit = {}
@@ -675,7 +835,7 @@ fun MessageInput(
                 
                 Spacer(modifier = Modifier.width(8.dp))
                 
-                // Send button with animation
+                // Send or Microphone button with animation
                 if (isUploading) {
                     CircularProgressIndicator(
                         modifier = Modifier
@@ -683,9 +843,10 @@ fun MessageInput(
                             .padding(bottom = 4.dp),
                         strokeWidth = 2.dp
                     )
-                } else {
+                } else if (canSend) {
+                    // Send button when there's text or image
                     AnimatedVisibility(
-                        visible = canSend,
+                        visible = true,
                         enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
                         exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
                         modifier = Modifier.padding(bottom = 4.dp)
@@ -707,6 +868,26 @@ fun MessageInput(
                                     modifier = Modifier.size(18.dp)
                                 )
                             }
+                        }
+                    }
+                } else {
+                    // Microphone button when no text
+                    AnimatedVisibility(
+                        visible = true,
+                        enter = scaleIn(animationSpec = tween(200)) + fadeIn(),
+                        exit = scaleOut(animationSpec = tween(200)) + fadeOut(),
+                        modifier = Modifier.padding(bottom = 4.dp)
+                    ) {
+                        IconButton(
+                            onClick = onMicClick,
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Filled.Mic,
+                                contentDescription = "Record voice message",
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(24.dp)
+                            )
                         }
                     }
                 }

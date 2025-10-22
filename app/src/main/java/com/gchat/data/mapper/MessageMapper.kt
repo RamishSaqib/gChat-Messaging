@@ -24,6 +24,14 @@ object MessageMapper {
             type = MessageType.valueOf(entity.type),
             text = entity.text,
             mediaUrl = entity.mediaUrl,
+            audioDuration = entity.audioDuration,
+            audioWaveform = try {
+                // Parse JSON array of waveform data
+                entity.audioWaveform?.let { json.decodeFromString<List<Float>>(it) }
+            } catch (e: Exception) {
+                null
+            },
+            transcription = entity.transcription,
             timestamp = entity.timestamp,
             status = MessageStatus.valueOf(entity.status),
             readBy = try {
@@ -45,6 +53,9 @@ object MessageMapper {
             type = domain.type.name,
             text = domain.text,
             mediaUrl = domain.mediaUrl,
+            audioDuration = domain.audioDuration,
+            audioWaveform = domain.audioWaveform?.let { json.encodeToString(it) },
+            transcription = domain.transcription,
             timestamp = domain.timestamp,
             status = domain.status.name,
             readBy = json.encodeToString(domain.readBy),
@@ -82,6 +93,20 @@ object MessageMapper {
                 type = MessageType.valueOf(document.getString("type") ?: "TEXT"),
                 text = document.getString("text"),
                 mediaUrl = document.getString("mediaUrl"),
+                audioDuration = document.getLong("audioDuration")?.toInt(),
+                audioWaveform = try {
+                    (document.get("audioWaveform") as? List<*>)?.mapNotNull { 
+                        when (it) {
+                            is Double -> it.toFloat()
+                            is Float -> it
+                            is Number -> it.toFloat()
+                            else -> null
+                        }
+                    }
+                } catch (e: Exception) {
+                    null
+                },
+                transcription = document.getString("transcription"),
                 timestamp = document.getLong("timestamp") ?: System.currentTimeMillis(),
                 status = MessageStatus.valueOf(document.getString("status") ?: "SENT"),
                 readBy = readByMap
@@ -98,6 +123,9 @@ object MessageMapper {
             "type" to message.type.name,
             "text" to message.text,
             "mediaUrl" to message.mediaUrl,
+            "audioDuration" to message.audioDuration,
+            "audioWaveform" to message.audioWaveform,
+            "transcription" to message.transcription,
             "timestamp" to message.timestamp,
             "status" to message.status.name,
             "readBy" to message.readBy

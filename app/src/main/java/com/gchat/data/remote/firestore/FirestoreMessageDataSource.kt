@@ -143,6 +143,27 @@ class FirestoreMessageDataSource @Inject constructor(
         }
     }
     
+    suspend fun updateMessageTranscription(
+        conversationId: String,
+        messageId: String,
+        transcription: String
+    ): Result<Unit> {
+        return try {
+            // Update the message in Firestore directly with conversationId
+            firestore
+                .collection("conversations")
+                .document(conversationId)
+                .collection("messages")
+                .document(messageId)
+                .update("transcription", transcription)
+                .await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     suspend fun deleteMessage(conversationId: String, messageId: String): Result<Unit> {
         return try {
             getMessagesCollection(conversationId)

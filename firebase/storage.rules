@@ -16,9 +16,18 @@ service firebase.storage {
       return request.resource.contentType.matches('image/.*');
     }
     
+    function isAudio() {
+      return request.resource.contentType.matches('audio/.*');
+    }
+    
     function isValidSize() {
       // Max 5MB for images
       return request.resource.size < 5 * 1024 * 1024;
+    }
+    
+    function isValidAudioSize() {
+      // Max 10MB for audio (approx 10 minutes)
+      return request.resource.size < 10 * 1024 * 1024;
     }
     
     // Profile pictures
@@ -65,6 +74,22 @@ service firebase.storage {
               // Anyone authenticated can delete group icons
               // (Used during group deletion or icon updates)
               allow delete: if isAuthenticated();
+            }
+            
+            // Voice messages (audio files)
+            match /voice_messages/{userId}/{fileName} {
+              // Anyone authenticated can read voice messages
+              allow read: if isAuthenticated();
+              
+              // Users can only upload to their own folder
+              // Supported formats: m4a, mp3, wav, ogg
+              allow write: if isAuthenticated() && 
+                              isOwner(userId) && 
+                              isAudio() && 
+                              isValidAudioSize();
+              
+              // Users can delete their own voice messages
+              allow delete: if isAuthenticated() && isOwner(userId);
             }
             
             // Deny all other access

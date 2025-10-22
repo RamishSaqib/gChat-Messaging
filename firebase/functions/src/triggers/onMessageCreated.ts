@@ -80,6 +80,8 @@ export const onMessageCreated = onDocumentCreated(
 
       const notificationBody = message.type === 'IMAGE'
         ? '📷 Sent an image'
+        : message.type === 'AUDIO'
+        ? '🎤 Voice message'
         : message.text || 'New message';
 
       console.log(`Sending notification from ${senderName} (${message.senderId}) with message: ${notificationBody}`);

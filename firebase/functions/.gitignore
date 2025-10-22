@@ -103,3 +103,6 @@ dist
 
 # macOS
 .DS_Store
+
+# Plan files
+.cursor/plans/
