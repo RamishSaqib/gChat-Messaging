@@ -418,6 +418,7 @@ private fun buildLastMessageText(
     }
     
     // Get the message content
+    android.util.Log.d("ConversationPreview", "lastMessage - text: '${lastMessage.text}', mediaUrl: '${lastMessage.mediaUrl}', type: ${lastMessage.type}")
     val messageContent = when {
         lastMessage.text != null && lastMessage.text.isNotBlank() -> lastMessage.text
         lastMessage.mediaUrl != null -> "📷 Image"
