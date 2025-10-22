@@ -4,6 +4,8 @@ import android.net.Uri
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.gchat.domain.model.ExtractedData
+import com.gchat.domain.model.ExtractedEntity
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageType
 import com.gchat.domain.model.Translation
@@ -13,6 +15,8 @@ import com.gchat.domain.repository.MediaRepository
 import com.gchat.domain.repository.TranslationRepository
 import com.gchat.domain.repository.TypingRepository
 import com.gchat.domain.repository.UserRepository
+import com.gchat.domain.usecase.ExtractBatchDataUseCase
+import com.gchat.domain.usecase.ExtractDataFromMessageUseCase
 import com.gchat.domain.usecase.GetMessagesUseCase
 import com.gchat.domain.usecase.MarkMessageAsReadUseCase
 import com.gchat.domain.usecase.SendMessageUseCase
@@ -34,6 +38,8 @@ class ChatViewModel @Inject constructor(
     private val getMessagesUseCase: GetMessagesUseCase,
     private val markMessageAsReadUseCase: MarkMessageAsReadUseCase,
     private val translateMessageUseCase: TranslateMessageUseCase,
+    private val extractDataFromMessageUseCase: ExtractDataFromMessageUseCase,
+    private val extractBatchDataUseCase: ExtractBatchDataUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -369,6 +375,154 @@ class ChatViewModel @Inject constructor(
      */
     fun getTranslationError(messageId: String): String? {
         return _translationErrors.value[messageId]
+    }
+    
+    // ===== Data Extraction State =====
+    
+    private val _extractedData = MutableStateFlow<Map<String, ExtractedData>>(emptyMap())
+    val extractedData: StateFlow<Map<String, ExtractedData>> = _extractedData.asStateFlow()
+    
+    private val _extractionLoading = MutableStateFlow<Set<String>>(emptySet())
+    val extractionLoading: StateFlow<Set<String>> = _extractionLoading.asStateFlow()
+    
+    private val _extractionErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val extractionErrors: StateFlow<Map<String, String>> = _extractionErrors.asStateFlow()
+    
+    private val _batchExtractionLoading = MutableStateFlow(false)
+    val batchExtractionLoading: StateFlow<Boolean> = _batchExtractionLoading.asStateFlow()
+    
+    /**
+     * Extract intelligent data from a single message
+     */
+    fun extractFromMessage(message: Message) {
+        if (message.text.isNullOrBlank()) {
+            android.util.Log.d("ChatViewModel", "Cannot extract from empty message")
+            return
+        }
+        
+        viewModelScope.launch {
+            val messageId = message.id
+            
+            // Add to loading set
+            _extractionLoading.value = _extractionLoading.value + messageId
+            
+            // Clear any previous error
+            _extractionErrors.value = _extractionErrors.value - messageId
+            
+            android.util.Log.d("ChatViewModel", "Extracting data from message $messageId")
+            
+            // Call extraction use case
+            extractDataFromMessageUseCase(
+                messageId = messageId,
+                text = message.text,
+                conversationId = conversationId
+            ).fold(
+                onSuccess = { extracted ->
+                    android.util.Log.d("ChatViewModel", "Extraction success: ${extracted.entities.size} entities")
+                    // Only store if entities were found
+                    if (extracted.hasEntities()) {
+                        _extractedData.value = _extractedData.value + (messageId to extracted)
+                    }
+                    // Remove from loading
+                    _extractionLoading.value = _extractionLoading.value - messageId
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Extraction failed: ${error.message}")
+                    // Add error
+                    _extractionErrors.value = _extractionErrors.value + (messageId to (error.message ?: "Extraction failed"))
+                    // Remove from loading
+                    _extractionLoading.value = _extractionLoading.value - messageId
+                }
+            )
+        }
+    }
+    
+    /**
+     * Extract data from multiple messages (batch)
+     */
+    fun extractFromBatch(messages: List<Message>) {
+        if (messages.isEmpty()) return
+        
+        viewModelScope.launch {
+            _batchExtractionLoading.value = true
+            
+            android.util.Log.d("ChatViewModel", "Batch extracting from ${messages.size} messages")
+            
+            // Filter to only text messages and prepare pairs
+            val messagePairs = messages
+                .filter { !it.text.isNullOrBlank() }
+                .map { it.id to it.text!! }
+            
+            if (messagePairs.isEmpty()) {
+                _batchExtractionLoading.value = false
+                return@launch
+            }
+            
+            // Call batch extraction use case
+            extractBatchDataUseCase(
+                messages = messagePairs,
+                conversationId = conversationId
+            ).fold(
+                onSuccess = { batchResult ->
+                    android.util.Log.d("ChatViewModel", "Batch extraction success: ${batchResult.totalEntities} total entities")
+                    
+                    // Add all extracted data to the map
+                    val newData = batchResult.results
+                        .filter { it.hasEntities() }
+                        .associateBy { it.messageId }
+                    
+                    _extractedData.value = _extractedData.value + newData
+                    
+                    _batchExtractionLoading.value = false
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Batch extraction failed: ${error.message}")
+                    _batchExtractionLoading.value = false
+                }
+            )
+        }
+    }
+    
+    /**
+     * Get extracted data for a specific message
+     */
+    fun getExtractedData(messageId: String): ExtractedData? {
+        return _extractedData.value[messageId]
+    }
+    
+    /**
+     * Check if message has extracted data
+     */
+    fun hasExtractedData(messageId: String): Boolean {
+        return _extractedData.value.containsKey(messageId)
+    }
+    
+    /**
+     * Check if message is being extracted
+     */
+    fun isExtracting(messageId: String): Boolean {
+        return messageId in _extractionLoading.value
+    }
+    
+    /**
+     * Get extraction error for a message
+     */
+    fun getExtractionError(messageId: String): String? {
+        return _extractionErrors.value[messageId]
+    }
+    
+    /**
+     * Get all extracted entities from all messages
+     */
+    fun getAllExtractedEntities(): List<ExtractedEntity> {
+        return _extractedData.value.values.flatMap { it.entities }
+    }
+    
+    /**
+     * Get all entities by type
+     */
+    fun getEntitiesByType(type: com.gchat.domain.model.EntityType): List<ExtractedEntity> {
+        return getAllExtractedEntities().filter { it.type == type }
     }
 }
 
