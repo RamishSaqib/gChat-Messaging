@@ -71,6 +71,10 @@ class ConversationListViewModel @Inject constructor(
                     // 1-on-1 chat: Get other user's info
                     val userFlow = userFlowCache.getOrPut(otherUserId) {
                         userRepository.getUserFlow(otherUserId)
+                            .scan<User?, User?>(null) { previous, current ->
+                                // Keep previous value if current is null (user went offline)
+                                current ?: previous
+                            }
                             .stateIn(
                                 scope = viewModelScope,
                                 started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
@@ -82,6 +86,10 @@ class ConversationListViewModel @Inject constructor(
                     if (lastMessageSenderId != null && lastMessageSenderId != currentUserId) {
                         val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
                             userRepository.getUserFlow(lastMessageSenderId)
+                                .scan<User?, User?>(null) { previous, current ->
+                                    // Keep previous value if current is null (user went offline)
+                                    current ?: previous
+                                }
                                 .stateIn(
                                     scope = viewModelScope,
                                     started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
@@ -109,6 +117,10 @@ class ConversationListViewModel @Inject constructor(
                     if (lastMessageSenderId != null) {
                         val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
                             userRepository.getUserFlow(lastMessageSenderId)
+                                .scan<User?, User?>(null) { previous, current ->
+                                    // Keep previous value if current is null (user went offline)
+                                    current ?: previous
+                                }
                                 .stateIn(
                                     scope = viewModelScope,
                                     started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
