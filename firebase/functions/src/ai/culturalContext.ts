@@ -5,11 +5,7 @@
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { OpenAI } from 'openai';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from '../utils/openai';
 
 interface CulturalContextRequest {
   text: string;

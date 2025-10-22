@@ -6,9 +6,23 @@
 
 import { OpenAI } from 'openai';
 
-// Initialize OpenAI client with API key from environment
-export const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
+// Lazy-initialize OpenAI client to avoid errors during deployment
+let _openai: OpenAI | null = null;
+
+export function getOpenAI(): OpenAI {
+  if (!_openai) {
+    _openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY,
+    });
+  }
+  return _openai;
+}
+
+// Export for backward compatibility
+export const openai = new Proxy({} as OpenAI, {
+  get(target, prop) {
+    return (getOpenAI() as any)[prop];
+  }
 });
 
 // Default models

@@ -5,12 +5,8 @@
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { OpenAI } from 'openai';
 import { getFirestore } from 'firebase-admin/firestore';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+import { openai } from '../utils/openai';
 
 const db = getFirestore();
 
