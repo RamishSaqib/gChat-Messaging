@@ -146,18 +146,27 @@ service cloud.firestore {
       }
     }
     
-    // ===== AI Translations Collection (Future) =====
+    // ===== AI Translations Collection =====
     
     match /translations/{translationId} {
-      // Users can only read their own translations
-      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      // All authenticated users can read translations (shared cache)
+      // Translations are not sensitive - they're just language conversions
+      allow read: if isAuthenticated();
       
-      // Users can create translations
-      allow create: if isAuthenticated() && 
-                       request.resource.data.userId == request.auth.uid;
+      // Only Cloud Functions can write translations (enforced server-side)
+      // Client creates translations by calling translateMessage Cloud Function
+      allow create, update, delete: if false;
+    }
+    
+    // ===== Rate Limiting Collection (Internal) =====
+    
+    match /rateLimits/{userId} {
+      // Only accessible by Cloud Functions for rate limiting
+      allow read, write: if false;
       
-      // No updates or deletes (translations are immutable cache)
-      allow update, delete: if false;
+      match /features/{featureName} {
+        allow read, write: if false;
+      }
     }
     
     // ===== Deny All Other Access =====
