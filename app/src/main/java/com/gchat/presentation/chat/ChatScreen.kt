@@ -40,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageStatus
 import com.gchat.domain.model.MessageType
+import com.gchat.domain.model.Translation
 import com.gchat.presentation.components.ImageMessageBubble
 import com.gchat.presentation.components.ProfilePicture
 import com.gchat.presentation.components.ReadByAvatars
@@ -322,6 +323,7 @@ fun ChatScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,

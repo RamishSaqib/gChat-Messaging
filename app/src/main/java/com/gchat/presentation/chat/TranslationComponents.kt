@@ -73,7 +73,7 @@ fun LanguageSelectorDialog(
                         }
                     }
                     if (code != Translation.SUPPORTED_LANGUAGES.keys.last()) {
-                        HorizontalDivider()
+                        androidx.compose.material3.Divider()
                     }
                 }
             }
