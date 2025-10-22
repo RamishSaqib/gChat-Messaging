@@ -5,10 +5,12 @@ import androidx.room.Room
 import com.gchat.data.local.AppDatabase
 import com.gchat.data.local.dao.ConversationDao
 import com.gchat.data.local.dao.MessageDao
+import com.gchat.data.local.dao.TranslationDao
 import com.gchat.data.local.dao.UserDao
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
+import com.google.firebase.functions.FirebaseFunctions
 import com.google.firebase.storage.FirebaseStorage
 import dagger.Module
 import dagger.Provides
@@ -46,6 +48,10 @@ object AppModule {
     
     @Provides
     @Singleton
+    fun provideFirebaseFunctions(): FirebaseFunctions = FirebaseFunctions.getInstance()
+    
+    @Provides
+    @Singleton
     fun provideAppDatabase(@ApplicationContext context: Context): AppDatabase {
         return Room.databaseBuilder(
             context,
@@ -67,5 +73,9 @@ object AppModule {
     @Provides
     @Singleton
     fun provideMessageDao(database: AppDatabase): MessageDao = database.messageDao()
+    
+    @Provides
+    @Singleton
+    fun provideTranslationDao(database: AppDatabase): TranslationDao = database.translationDao()
 }
 
