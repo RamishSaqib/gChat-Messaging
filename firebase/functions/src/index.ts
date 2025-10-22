@@ -13,6 +13,7 @@ admin.initializeApp();
 export { translateMessage, detectLanguage } from './ai/translation';
 export { generateSmartReplies } from './ai/smartReply';
 export { getCulturalContext, adjustFormality } from './ai/culturalContext';
+export { extractIntelligentData, extractBatchData } from './ai/dataExtraction';
 export { onMessageCreated } from './triggers/onMessageCreated';
 
 // Health check function
