@@ -28,7 +28,7 @@ interface FormalityAdjustmentRequest {
  */
 export const getCulturalContext = onCall<CulturalContextRequest>(
   {
-    memory: '256MB',
+    memory: '256MiB',
     timeoutSeconds: 30,
     region: 'us-central1',
   },
@@ -101,7 +101,7 @@ Example output:
  */
 export const adjustFormality = onCall<FormalityAdjustmentRequest>(
   {
-    memory: '256MB',
+    memory: '256MiB',
     timeoutSeconds: 30,
     region: 'us-central1',
   },

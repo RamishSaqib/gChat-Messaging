@@ -25,7 +25,7 @@ interface SmartReplyRequest {
  */
 export const generateSmartReplies = onCall<SmartReplyRequest>(
   {
-    memory: '512MB',
+    memory: '512MiB',
     timeoutSeconds: 60,
     region: 'us-central1',
   },

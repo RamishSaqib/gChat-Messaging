@@ -4,7 +4,7 @@
  * Prevents abuse of AI features
  */
 
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 import { HttpsError } from 'firebase-functions/v2/https';
 
 const db = getFirestore();

@@ -6,7 +6,7 @@
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
 import { openai, MODELS, CONFIGS } from '../utils/openai';
-import { getCachedTranslation, cacheTranslation, generateCacheKey } from '../utils/cache';
+import { getCachedTranslation, cacheTranslation } from '../utils/cache';
 import { checkRateLimit } from '../utils/rateLimit';
 
 interface TranslationRequest {
@@ -24,7 +24,7 @@ interface LanguageDetectionRequest {
  */
 export const translateMessage = onCall<TranslationRequest>(
   {
-    memory: '512MB',
+    memory: '512MiB',
     timeoutSeconds: 60,
     region: 'us-central1',
   },
@@ -159,7 +159,7 @@ If multiple languages are present, return the primary language. Do not return an
  */
 export const detectLanguage = onCall<LanguageDetectionRequest>(
   {
-    memory: '256MB',
+    memory: '256MiB',
     timeoutSeconds: 30,
     region: 'us-central1',
   },
