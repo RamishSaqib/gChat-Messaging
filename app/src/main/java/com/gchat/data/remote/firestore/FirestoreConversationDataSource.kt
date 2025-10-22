@@ -150,6 +150,7 @@ class FirestoreConversationDataSource @Inject constructor(
         senderId: String,
         timestamp: Long
     ): Result<Unit> {
+        android.util.Log.d("FirestoreConvDS", "updateLastMessage - type: $messageType, mediaUrl: $mediaUrl, text: $messageText")
         return updateConversation(
             conversationId,
             mapOf(
