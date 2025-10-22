@@ -49,9 +49,15 @@ class ConversationListViewModel @Inject constructor(
             android.util.Log.d("ConversationListVM", "UseCase emitted ${conversations.size} conversations")
             
             // Filter: only show conversations that are not deleted by current user
-            // AND (have messages OR current user is the creator)
+            // Conversation is "deleted" if deletion timestamp > last message timestamp
+            // This allows chat to automatically reappear when new message arrives
             val visibleConversations = conversations.filter { conversation ->
-                val isDeleted = conversation.deletedAt.containsKey(currentUserId)
+                val deletionTimestamp = conversation.deletedAt[currentUserId]
+                val lastMessageTimestamp = conversation.lastMessage?.timestamp ?: 0L
+                
+                // If user deleted the chat, only show if there's a newer message
+                val isDeleted = deletionTimestamp != null && lastMessageTimestamp <= deletionTimestamp
+                
                 !isDeleted && (conversation.lastMessage != null || conversation.creatorId == currentUserId)
             }
             android.util.Log.d("ConversationListVM", "Filtered to ${visibleConversations.size} visible conversations")

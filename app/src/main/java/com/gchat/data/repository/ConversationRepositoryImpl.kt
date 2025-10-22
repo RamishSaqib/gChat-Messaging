@@ -209,24 +209,9 @@ class ConversationRepositoryImpl @Inject constructor(
         timestamp: Long
     ): Result<Unit> {
         return try {
-            // Check if conversation has any deleted users - if so, clear deletedAt when new message arrives
-            val conversation = conversationDao.getConversationById(conversationId)
-            if (conversation != null) {
-                val deletedAtMap = try {
-                    kotlinx.serialization.json.Json.decodeFromString<Map<String, Long>>(conversation.deletedAt)
-                } catch (e: Exception) {
-                    emptyMap()
-                }
-                
-                if (deletedAtMap.isNotEmpty()) {
-                    android.util.Log.d("ConversationRepo", "Clearing deletedAt for conversation $conversationId due to new message")
-                    // Clear deletedAt in Firestore - conversation reappears for users who deleted it
-                    firestoreConversationDataSource.updateConversation(
-                        conversationId,
-                        mapOf("deletedAt" to emptyMap<String, Long>())
-                    )
-                }
-            }
+            // Don't clear deletedAt - keep deletion timestamps for message filtering
+            // Conversation will automatically reappear when lastMessageTimestamp > deletionTimestamp
+            // ChatViewModel will filter messages based on deletion timestamp
             
             // Update locally
             conversationDao.updateLastMessage(
@@ -257,25 +242,22 @@ class ConversationRepositoryImpl @Inject constructor(
             val currentUserId = auth.currentUser?.uid
                 ?: return Result.failure(Exception("User not authenticated"))
             
-            android.util.Log.d("ConversationRepo", "Deleting conversation $conversationId for user $currentUserId")
+            android.util.Log.d("ConversationRepo", "Marking conversation $conversationId as deleted for user $currentUserId")
             
-            // Delete locally first (immediate UI update)
-            val conversation = conversationDao.getConversationById(conversationId)
-            if (conversation != null) {
-                conversationDao.delete(conversation)
-                messageDao.deleteByConversation(conversationId)
-                android.util.Log.d("ConversationRepo", "Deleted conversation locally")
-            }
+            // Don't delete locally - keep conversation and messages in database
+            // The ViewModel will filter it out based on deletedAt field
+            // ChatViewModel will filter messages by timestamp when chat reappears
             
-            // Remove user from Firestore conversation (or delete if last participant)
+            // Set deletion timestamp in Firestore
             val firestoreResult = firestoreConversationDataSource.removeUserFromConversation(conversationId, currentUserId)
             firestoreResult.onFailure { error ->
-                android.util.Log.w("ConversationRepo", "Failed to remove from Firestore: ${error.message}, but local delete succeeded")
+                android.util.Log.w("ConversationRepo", "Failed to set deletion timestamp in Firestore: ${error.message}")
             }
             
+            android.util.Log.d("ConversationRepo", "Deletion timestamp set in Firestore, conversation will be filtered from UI")
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("ConversationRepo", "Failed to delete conversation: ${e.message}", e)
+            android.util.Log.e("ConversationRepo", "Failed to mark conversation as deleted: ${e.message}", e)
             Result.failure(e)
         }
     }
