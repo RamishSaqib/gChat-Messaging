@@ -76,23 +76,38 @@ export const extractIntelligentData = onCall<DataExtractionRequest>(
 
       console.log(`Extracting data from text (user: ${request.auth.uid})`);
 
+      // Get current date for context
+      const now = new Date();
+      const todayStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const currentTime = now.toISOString();
+
       // Call OpenAI with function calling to extract entities
       const completion = await openai.chat.completions.create({
         model: MODELS.DATA_EXTRACTION || 'gpt-4-turbo-preview',
         messages: [
           {
             role: 'system',
-            content: `You are an intelligent data extraction assistant. Analyze the provided text and extract any relevant entities:
+            content: `You are an intelligent data extraction assistant. 
+
+IMPORTANT: Today's date is ${todayStr} and current time is ${currentTime}.
+
+Analyze the provided text and extract any relevant entities:
 - Action items (tasks, todos, things to do)
-- Dates and times (meetings, events, deadlines, appointments)
+- Dates and times (meetings, events, deadlines, appointments) - MUST be calculated relative to TODAY (${todayStr})
 - Contact information (names with email addresses or phone numbers)
 - Locations (addresses, places, venues)
+
+For DATE_TIME entities:
+- "tomorrow at 3pm" = tomorrow's date at 15:00 (not a hardcoded date)
+- "next Monday" = the upcoming Monday from today
+- Always provide dateTime as ISO 8601 format in UTC
+- Calculate actual dates based on today: ${todayStr}
 
 For each entity, provide:
 1. The exact text from the message
 2. The entity type
 3. Confidence score (0.0 to 1.0)
-4. Structured metadata
+4. Structured metadata with CALCULATED dates/times
 
 Be conservative - only extract entities you're confident about. If there are no entities, return an empty array.`,
           },
@@ -139,9 +154,9 @@ Be conservative - only extract entities you're confident about. If there are no 
                           assignedTo: { type: 'string' },
                           dueDate: { type: 'string' },
                           // Date/time fields
-                          dateTime: { type: 'string' },
+                          dateTime: { type: 'string', description: 'ISO 8601 format datetime (e.g., 2024-10-23T15:00:00Z)' },
                           isRange: { type: 'boolean' },
-                          endDateTime: { type: 'string' },
+                          endDateTime: { type: 'string', description: 'ISO 8601 format datetime for range end' },
                           description: { type: 'string' },
                           // Contact fields
                           name: { type: 'string' },

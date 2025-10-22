@@ -136,10 +136,25 @@ object EntityIntentHandler {
         if (resolvedActivity == null) {
             android.util.Log.d("EntityIntentHandler", "Trying to open calendar app directly")
             
-            // Try Google Calendar package
-            val calendarIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.calendar")
+            // Try multiple calendar package names
+            val calendarPackages = listOf(
+                "com.google.android.calendar",
+                "com.android.calendar",
+                "com.samsung.android.calendar",
+                "com.oneplus.calendar"
+            )
+            
+            var calendarIntent: Intent? = null
+            for (packageName in calendarPackages) {
+                calendarIntent = context.packageManager.getLaunchIntentForPackage(packageName)
+                if (calendarIntent != null) {
+                    android.util.Log.d("EntityIntentHandler", "Found calendar package: $packageName")
+                    break
+                }
+            }
+            
             if (calendarIntent != null) {
-                android.util.Log.d("EntityIntentHandler", "Found Google Calendar, launching...")
+                android.util.Log.d("EntityIntentHandler", "Launching calendar app...")
                 try {
                     context.startActivity(calendarIntent)
                     Toast.makeText(context, "Opened Calendar - please add event manually: ${entity.text}", Toast.LENGTH_LONG).show()
