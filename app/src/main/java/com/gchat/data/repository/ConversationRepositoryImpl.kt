@@ -62,9 +62,17 @@ class ConversationRepositoryImpl @Inject constructor(
                             id = entity.lastMessageId,
                             conversationId = entity.id,
                             senderId = entity.lastMessageSenderId ?: "",
-                            type = com.gchat.domain.model.MessageType.TEXT,
+                            type = try {
+                                if (entity.lastMessageType != null) {
+                                    com.gchat.domain.model.MessageType.valueOf(entity.lastMessageType)
+                                } else {
+                                    com.gchat.domain.model.MessageType.TEXT
+                                }
+                            } catch (e: Exception) {
+                                com.gchat.domain.model.MessageType.TEXT
+                            },
                             text = entity.lastMessageText,
-                            mediaUrl = null,
+                            mediaUrl = entity.lastMessageMediaUrl,
                             timestamp = entity.lastMessageTimestamp,
                             status = com.gchat.domain.model.MessageStatus.SENT,
                             readBy = emptyMap()
@@ -89,9 +97,17 @@ class ConversationRepositoryImpl @Inject constructor(
                             id = it.lastMessageId,
                             conversationId = it.id,
                             senderId = it.lastMessageSenderId ?: "",
-                            type = com.gchat.domain.model.MessageType.TEXT,
+                            type = try {
+                                if (it.lastMessageType != null) {
+                                    com.gchat.domain.model.MessageType.valueOf(it.lastMessageType)
+                                } else {
+                                    com.gchat.domain.model.MessageType.TEXT
+                                }
+                            } catch (e: Exception) {
+                                com.gchat.domain.model.MessageType.TEXT
+                            },
                             text = it.lastMessageText,
-                            mediaUrl = null,
+                            mediaUrl = it.lastMessageMediaUrl,
                             timestamp = it.lastMessageTimestamp,
                             status = com.gchat.domain.model.MessageStatus.SENT,
                             readBy = emptyMap()
@@ -128,9 +144,17 @@ class ConversationRepositoryImpl @Inject constructor(
                                     id = entity.lastMessageId,
                                     conversationId = entity.id,
                                     senderId = entity.lastMessageSenderId ?: "",
-                                    type = com.gchat.domain.model.MessageType.TEXT,
+                                    type = try {
+                                        if (entity.lastMessageType != null) {
+                                            com.gchat.domain.model.MessageType.valueOf(entity.lastMessageType)
+                                        } else {
+                                            com.gchat.domain.model.MessageType.TEXT
+                                        }
+                                    } catch (e: Exception) {
+                                        com.gchat.domain.model.MessageType.TEXT
+                                    },
                                     text = entity.lastMessageText,
-                                    mediaUrl = null,
+                                    mediaUrl = entity.lastMessageMediaUrl,
                                     timestamp = entity.lastMessageTimestamp,
                                     status = com.gchat.domain.model.MessageStatus.SENT,
                                     readBy = emptyMap()
@@ -167,9 +191,17 @@ class ConversationRepositoryImpl @Inject constructor(
                                 id = localEntity.lastMessageId,
                                 conversationId = localEntity.id,
                                 senderId = localEntity.lastMessageSenderId ?: "",
-                                type = com.gchat.domain.model.MessageType.TEXT,
+                                type = try {
+                                    if (localEntity.lastMessageType != null) {
+                                        com.gchat.domain.model.MessageType.valueOf(localEntity.lastMessageType)
+                                    } else {
+                                        com.gchat.domain.model.MessageType.TEXT
+                                    }
+                                } catch (e: Exception) {
+                                    com.gchat.domain.model.MessageType.TEXT
+                                },
                                 text = localEntity.lastMessageText,
-                                mediaUrl = null,
+                                mediaUrl = localEntity.lastMessageMediaUrl,
                                 timestamp = localEntity.lastMessageTimestamp,
                                 status = com.gchat.domain.model.MessageStatus.SENT,
                                 readBy = emptyMap()
@@ -205,6 +237,8 @@ class ConversationRepositoryImpl @Inject constructor(
         conversationId: String,
         messageId: String,
         messageText: String?,
+        messageType: String?,
+        mediaUrl: String?,
         senderId: String,
         timestamp: Long
     ): Result<Unit> {
@@ -218,6 +252,8 @@ class ConversationRepositoryImpl @Inject constructor(
                 conversationId,
                 messageId,
                 messageText,
+                messageType,
+                mediaUrl,
                 senderId,
                 timestamp
             )
@@ -227,6 +263,8 @@ class ConversationRepositoryImpl @Inject constructor(
                 conversationId,
                 messageId,
                 messageText,
+                messageType,
+                mediaUrl,
                 senderId,
                 timestamp
             )

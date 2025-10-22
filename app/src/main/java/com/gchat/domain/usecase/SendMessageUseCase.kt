@@ -43,7 +43,9 @@ class SendMessageUseCase @Inject constructor(
                     val updateResult = conversationRepository.updateLastMessage(
                         conversationId = conversationId,
                         messageId = message.id,
-                        messageText = text,
+                        messageText = message.text,
+                        messageType = message.type.name,
+                        mediaUrl = message.mediaUrl,
                         senderId = senderId,
                         timestamp = message.timestamp
                     )

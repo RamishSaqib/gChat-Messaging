@@ -60,6 +60,8 @@ object ConversationMapper {
             nicknames = json.encodeToString(domain.nicknames),
             lastMessageId = domain.lastMessage?.id,
             lastMessageText = domain.lastMessage?.text,
+            lastMessageType = domain.lastMessage?.type?.name,
+            lastMessageMediaUrl = domain.lastMessage?.mediaUrl,
             lastMessageTimestamp = domain.lastMessage?.timestamp ?: domain.updatedAt,
             lastMessageSenderId = domain.lastMessage?.senderId,
             unreadCount = domain.unreadCount,
@@ -81,13 +83,26 @@ object ConversationMapper {
             // Parse last message if it exists
             val lastMessage = lastMessageMap?.let {
                 try {
+                    val typeString = it["type"] as? String
+                    val mediaUrlString = it["mediaUrl"] as? String
+                    android.util.Log.d("ConversationMapper", "fromFirestore lastMessage - type: $typeString, mediaUrl: $mediaUrlString, text: ${it["text"]}")
+                    val messageType = try {
+                        if (typeString != null) {
+                            com.gchat.domain.model.MessageType.valueOf(typeString)
+                        } else {
+                            com.gchat.domain.model.MessageType.TEXT
+                        }
+                    } catch (e: Exception) {
+                        com.gchat.domain.model.MessageType.TEXT
+                    }
+                    
                     com.gchat.domain.model.Message(
                         id = it["id"] as? String ?: "",
                         conversationId = document.id,
                         senderId = it["senderId"] as? String ?: "",
-                        type = com.gchat.domain.model.MessageType.TEXT, // Default type for preview
+                        type = messageType,
                         text = it["text"] as? String,
-                        mediaUrl = null,
+                        mediaUrl = mediaUrlString,
                         timestamp = (it["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         status = com.gchat.domain.model.MessageStatus.SENT,
                         readBy = emptyMap()
@@ -130,6 +145,8 @@ object ConversationMapper {
                 "id" to it.id,
                 "senderId" to it.senderId,
                 "text" to it.text,
+                "type" to it.type.name,
+                "mediaUrl" to it.mediaUrl,
                 "timestamp" to it.timestamp
             )
         }

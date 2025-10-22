@@ -122,7 +122,6 @@ crashlytics.properties
 crashlytics-build.properties
 fabric.properties
 .github-safety-checklist.md
-MVP_CHECKLIST.md
 MVP_BUILD_SUMMARY.md
 PROJECT_SUMMARY.md
 ARCHITECTURE.md

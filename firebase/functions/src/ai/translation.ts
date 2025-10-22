@@ -5,14 +5,9 @@
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { OpenAI } from 'openai';
-import { getFirestore } from 'firebase-admin/firestore';
-
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
-
-const db = getFirestore();
+import { openai, MODELS, CONFIGS } from '../utils/openai';
+import { getCachedTranslation, cacheTranslation } from '../utils/cache';
+import { checkRateLimit } from '../utils/rateLimit';
 
 interface TranslationRequest {
   text: string;
@@ -29,7 +24,7 @@ interface LanguageDetectionRequest {
  */
 export const translateMessage = onCall<TranslationRequest>(
   {
-    memory: '512MB',
+    memory: '512MiB',
     timeoutSeconds: 60,
     region: 'us-central1',
   },
@@ -51,24 +46,29 @@ export const translateMessage = onCall<TranslationRequest>(
     }
 
     try {
-      // Check cache first
-      const cacheKey = `${text}_${targetLanguage}`;
-      const cacheRef = db.collection('translations').doc(cacheKey);
-      const cached = await cacheRef.get();
+      // Check rate limit
+      await checkRateLimit(request.auth.uid, 'translation', {
+        maxRequests: 100,
+        windowMinutes: 60,
+      });
 
-      if (cached.exists) {
-        const cacheData = cached.data();
+      // Check cache first
+      const cached = await getCachedTranslation(text, targetLanguage);
+      if (cached) {
+        console.log('Cache hit for translation');
         return {
-          translatedText: cacheData?.translatedText,
-          sourceLanguage: cacheData?.sourceLanguage,
-          targetLanguage: cacheData?.targetLanguage,
+          translatedText: cached.translatedText,
+          sourceLanguage: cached.sourceLanguage,
+          targetLanguage: cached.targetLanguage,
           cached: true,
         };
       }
 
+      console.log(`Translating text to ${targetLanguage}...`);
+
       // Call OpenAI for translation
       const completion = await openai.chat.completions.create({
-        model: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
+        model: MODELS.TRANSLATION,
         messages: [
           {
             role: 'system',
@@ -81,41 +81,85 @@ Do not add explanations or notes - only return the translated text.`,
             content: text,
           },
         ],
-        temperature: 0.3, // Lower temperature for consistency
-        max_tokens: 2000,
+        temperature: CONFIGS.TRANSLATION.temperature,
+        max_tokens: CONFIGS.TRANSLATION.maxTokens,
       });
 
       const translatedText = completion.choices[0].message.content || '';
 
+      // Detect source language if not provided
+      let detectedSourceLanguage = sourceLanguage || 'auto';
+      if (!sourceLanguage && text.length > 5) {
+        // Use GPT to detect language
+        const langDetection = await detectLanguageInternal(text);
+        detectedSourceLanguage = langDetection;
+      }
+
       // Cache the translation
-      await cacheRef.set({
-        originalText: text,
+      await cacheTranslation(
+        text,
         translatedText,
-        sourceLanguage: sourceLanguage || 'auto',
+        detectedSourceLanguage,
         targetLanguage,
-        cachedAt: admin.firestore.FieldValue.serverTimestamp(),
-        userId: request.auth.uid,
-      });
+        request.auth.uid
+      );
+
+      console.log('Translation completed successfully');
 
       return {
         translatedText,
-        sourceLanguage: sourceLanguage || 'auto',
+        sourceLanguage: detectedSourceLanguage,
         targetLanguage,
         cached: false,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Translation error:', error);
-      throw new HttpsError('internal', 'Translation failed');
+      
+      // Re-throw rate limit errors
+      if (error.code === 'resource-exhausted') {
+        throw error;
+      }
+      
+      throw new HttpsError('internal', `Translation failed: ${error.message}`);
     }
   }
 );
 
 /**
- * Detect the language of a message
+ * Internal helper for language detection (used by translation)
+ */
+async function detectLanguageInternal(text: string): Promise<string> {
+  try {
+    const completion = await openai.chat.completions.create({
+      model: MODELS.TRANSLATION,
+      messages: [
+        {
+          role: 'system',
+          content: `Detect the language of the following text. Return ONLY the ISO 639-1 language code (e.g., "en", "es", "fr", "ja", "zh", "ar"). 
+If multiple languages are present, return the primary language. Do not return anything except the 2-letter code.`,
+        },
+        {
+          role: 'user',
+          content: text,
+        },
+      ],
+      temperature: CONFIGS.LANGUAGE_DETECTION.temperature,
+      max_tokens: CONFIGS.LANGUAGE_DETECTION.maxTokens,
+    });
+
+    return completion.choices[0].message.content?.trim().toLowerCase() || 'en';
+  } catch (error) {
+    console.error('Language detection error:', error);
+    return 'auto';
+  }
+}
+
+/**
+ * Detect the language of a message (public API)
  */
 export const detectLanguage = onCall<LanguageDetectionRequest>(
   {
-    memory: '256MB',
+    memory: '256MiB',
     timeoutSeconds: 30,
     region: 'us-central1',
   },
@@ -131,35 +175,28 @@ export const detectLanguage = onCall<LanguageDetectionRequest>(
     }
 
     try {
-      const completion = await openai.chat.completions.create({
-        model: 'gpt-4-turbo-preview',
-        messages: [
-          {
-            role: 'system',
-            content: `Detect the language of the following text. Return ONLY the ISO 639-1 language code (e.g., "en", "es", "fr", "ja", "zh", "ar"). 
-If multiple languages are present, return the primary language. Do not return anything except the 2-letter code.`,
-          },
-          {
-            role: 'user',
-            content: text,
-          },
-        ],
-        temperature: 0.1,
-        max_tokens: 10,
+      // Check rate limit
+      await checkRateLimit(request.auth.uid, 'languageDetection', {
+        maxRequests: 200,
+        windowMinutes: 60,
       });
 
-      const languageCode = completion.choices[0].message.content?.trim().toLowerCase() || 'en';
+      const languageCode = await detectLanguageInternal(text);
 
       return {
         languageCode,
         text,
       };
-    } catch (error) {
+    } catch (error: any) {
       console.error('Language detection error:', error);
+      
+      // Re-throw rate limit errors
+      if (error.code === 'resource-exhausted') {
+        throw error;
+      }
+      
       throw new HttpsError('internal', 'Language detection failed');
     }
   }
 );
-
-import * as admin from 'firebase-admin';
 

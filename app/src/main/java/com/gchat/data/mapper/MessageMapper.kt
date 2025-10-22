@@ -32,15 +32,7 @@ object MessageMapper {
             } catch (e: Exception) {
                 emptyMap()
             },
-            translation = if (entity.translatedText != null && 
-                entity.translationSourceLang != null && 
-                entity.translationTargetLang != null) {
-                Translation(
-                    translatedText = entity.translatedText,
-                    sourceLanguage = entity.translationSourceLang,
-                    targetLanguage = entity.translationTargetLang
-                )
-            } else null,
+            translation = null, // Translations are now cached separately in TranslationEntity
             culturalContext = entity.culturalContext
         )
     }

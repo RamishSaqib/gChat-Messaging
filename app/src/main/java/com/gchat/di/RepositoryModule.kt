@@ -4,12 +4,14 @@ import com.gchat.data.repository.AuthRepositoryImpl
 import com.gchat.data.repository.ConversationRepositoryImpl
 import com.gchat.data.repository.MediaRepositoryImpl
 import com.gchat.data.repository.MessageRepositoryImpl
+import com.gchat.data.repository.TranslationRepositoryImpl
 import com.gchat.data.repository.TypingRepositoryImpl
 import com.gchat.data.repository.UserRepositoryImpl
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.ConversationRepository
 import com.gchat.domain.repository.MediaRepository
 import com.gchat.domain.repository.MessageRepository
+import com.gchat.domain.repository.TranslationRepository
 import com.gchat.domain.repository.TypingRepository
 import com.gchat.domain.repository.UserRepository
 import dagger.Binds
@@ -60,5 +62,11 @@ abstract class RepositoryModule {
     abstract fun bindTypingRepository(
         typingRepositoryImpl: TypingRepositoryImpl
     ): TypingRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindTranslationRepository(
+        translationRepositoryImpl: TranslationRepositoryImpl
+    ): TranslationRepository
 }
 

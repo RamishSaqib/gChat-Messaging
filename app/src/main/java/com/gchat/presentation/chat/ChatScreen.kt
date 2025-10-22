@@ -9,8 +9,10 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -38,6 +40,7 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageStatus
 import com.gchat.domain.model.MessageType
+import com.gchat.domain.model.Translation
 import com.gchat.presentation.components.ImageMessageBubble
 import com.gchat.presentation.components.ProfilePicture
 import com.gchat.presentation.components.ReadByAvatars
@@ -71,6 +74,12 @@ fun ChatScreen(
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val uploadError by viewModel.uploadError.collectAsState()
     val typingIndicatorText by viewModel.typingIndicatorText.collectAsState()
+    
+    // Translation state
+    val translations by viewModel.translations.collectAsState()
+    val translationLoading by viewModel.translationLoading.collectAsState()
+    val translationErrors by viewModel.translationErrors.collectAsState()
+    
     val listState = rememberLazyListState()
     
     var showImagePicker by remember { mutableStateOf(false) }
@@ -259,6 +268,18 @@ fun ChatScreen(
                             ),
                             participantUsers = participantUsers,
                             isGroupedWithPrevious = isGroupedWithPrevious,
+                            translation = translations[message.id],
+                            isTranslating = message.id in translationLoading,
+                            translationError = translationErrors[message.id],
+                            onTranslateClick = { targetLanguage ->
+                                viewModel.translateMessage(message, targetLanguage)
+                            },
+                            onRemoveTranslation = {
+                                viewModel.removeTranslation(message.id)
+                            },
+                            onRetryTranslation = { targetLanguage ->
+                                viewModel.retryTranslation(message, targetLanguage)
+                            },
                             onImageClick = { imageUrl ->
                                 // Navigate to image viewer (will add this shortly)
                             }
@@ -308,6 +329,7 @@ fun ChatScreen(
     }
 }
 
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MessageBubble(
     message: Message,
@@ -317,8 +339,16 @@ fun MessageBubble(
     senderName: String? = null,
     participantUsers: Map<String, com.gchat.domain.model.User> = emptyMap(),
     isGroupedWithPrevious: Boolean = false,
+    translation: Translation? = null,
+    isTranslating: Boolean = false,
+    translationError: String? = null,
+    onTranslateClick: (String) -> Unit = {},
+    onRemoveTranslation: () -> Unit = {},
+    onRetryTranslation: (String) -> Unit = {},
     onImageClick: (String) -> Unit
 ) {
+    var showLanguageSelector by remember { mutableStateOf(false) }
+    var showContextMenu by remember { mutableStateOf(false) }
     // Get users who have read this message (excluding the sender)
     val readByUsers = message.readBy.keys
         .filter { it != message.senderId }
@@ -352,7 +382,7 @@ fun MessageBubble(
                         onImageClick = onImageClick
                     )
                 } else {
-                    // Regular text message bubble
+                    // Regular text message bubble with long-press for translation
                     Surface(
                         shape = if (isOwnMessage) MessageBubbleShapeSent else MessageBubbleShapeReceived,
                         color = if (isOwnMessage) {
@@ -361,7 +391,14 @@ fun MessageBubble(
                             MaterialTheme.colorScheme.secondaryContainer
                         },
                         shadowElevation = 0.5.dp,
-                        modifier = Modifier.widthIn(max = 300.dp)
+                        modifier = Modifier
+                            .widthIn(max = 300.dp)
+                            .combinedClickable(
+                                onClick = {},
+                                onLongClick = {
+                                    showLanguageSelector = true
+                                }
+                            )
                     ) {
                         Text(
                             text = message.text ?: "",
@@ -372,6 +409,29 @@ fun MessageBubble(
                                 MaterialTheme.colorScheme.onSecondaryContainer
                             },
                             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                        )
+                    }
+                }
+                
+                // Show translation loading, error, or result
+                when {
+                    isTranslating -> {
+                        TranslationLoading(isOwnMessage = isOwnMessage)
+                    }
+                    translationError != null -> {
+                        TranslationError(
+                            error = translationError,
+                            isOwnMessage = isOwnMessage,
+                            onRetry = {
+                                showLanguageSelector = true
+                            }
+                        )
+                    }
+                    translation != null -> {
+                        TranslationDisplay(
+                            translation = translation,
+                            isOwnMessage = isOwnMessage,
+                            onRemove = onRemoveTranslation
                         )
                     }
                 }
@@ -415,6 +475,17 @@ fun MessageBubble(
                 }
             }
         }
+    }
+    
+    // Language selector dialog
+    if (showLanguageSelector) {
+        LanguageSelectorDialog(
+            currentLanguage = "en", // TODO: Get from user preferences
+            onLanguageSelected = { languageCode ->
+                onTranslateClick(languageCode)
+            },
+            onDismiss = { showLanguageSelector = false }
+        )
     }
 }
 
