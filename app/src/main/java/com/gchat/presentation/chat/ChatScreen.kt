@@ -80,6 +80,9 @@ fun ChatScreen(
     val translationLoading by viewModel.translationLoading.collectAsState()
     val translationErrors by viewModel.translationErrors.collectAsState()
     
+    // Data extraction state
+    val extractedData by viewModel.extractedData.collectAsState()
+    
     val listState = rememberLazyListState()
     
     var showImagePicker by remember { mutableStateOf(false) }
@@ -280,6 +283,13 @@ fun ChatScreen(
                             onRetryTranslation = { targetLanguage ->
                                 viewModel.retryTranslation(message, targetLanguage)
                             },
+                            extractedData = extractedData[message.id],
+                            onExtractClick = {
+                                viewModel.extractFromMessage(message)
+                            },
+                            onEntityAction = { entity ->
+                                com.gchat.util.EntityIntentHandler.handleEntityAction(context, entity)
+                            },
                             onImageClick = { imageUrl ->
                                 // Navigate to image viewer (will add this shortly)
                             }
@@ -345,8 +355,12 @@ fun MessageBubble(
     onTranslateClick: (String) -> Unit = {},
     onRemoveTranslation: () -> Unit = {},
     onRetryTranslation: (String) -> Unit = {},
+    extractedData: com.gchat.domain.model.ExtractedData? = null,
+    onExtractClick: () -> Unit = {},
+    onEntityAction: (com.gchat.domain.model.ExtractedEntity) -> Unit = {},
     onImageClick: (String) -> Unit
 ) {
+    val context = LocalContext.current
     var showLanguageSelector by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) }
     // Get users who have read this message (excluding the sender)
@@ -432,6 +446,19 @@ fun MessageBubble(
                             translation = translation,
                             isOwnMessage = isOwnMessage,
                             onRemove = onRemoveTranslation
+                        )
+                    }
+                }
+                
+                // Show extracted smart chips
+                extractedData?.let { data ->
+                    if (data.hasEntities()) {
+                        SmartChipGroup(
+                            entities = data.entities,
+                            onActionClick = { entity ->
+                                onEntityAction(entity)
+                            },
+                            modifier = Modifier.padding(top = 4.dp)
                         )
                     }
                 }
