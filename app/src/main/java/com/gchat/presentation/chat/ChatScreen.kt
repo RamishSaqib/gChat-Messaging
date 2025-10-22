@@ -22,10 +22,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Send
+import androidx.compose.material.icons.filled.Translate
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -363,6 +365,7 @@ fun MessageBubble(
     val context = LocalContext.current
     var showLanguageSelector by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) }
+    var showMessageActions by remember { mutableStateOf(false) }
     // Get users who have read this message (excluding the sender)
     val readByUsers = message.readBy.keys
         .filter { it != message.senderId }
@@ -410,7 +413,7 @@ fun MessageBubble(
                             .combinedClickable(
                                 onClick = {},
                                 onLongClick = {
-                                    showLanguageSelector = true
+                                    showMessageActions = true
                                 }
                             )
                     ) {
@@ -502,6 +505,53 @@ fun MessageBubble(
                 }
             }
         }
+    }
+    
+    // Message actions dialog (Translate or Extract)
+    if (showMessageActions) {
+        AlertDialog(
+            onDismissRequest = { showMessageActions = false },
+            title = { Text("Message Actions") },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text("Choose an action for this message:")
+                }
+            },
+            confirmButton = {
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Button(
+                        onClick = {
+                            showMessageActions = false
+                            showLanguageSelector = true
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Translate")
+                    }
+                    Button(
+                        onClick = {
+                            showMessageActions = false
+                            onExtractClick()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.AutoAwesome, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Extract Data")
+                    }
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showMessageActions = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
     
     // Language selector dialog
