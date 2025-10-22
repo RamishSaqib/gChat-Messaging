@@ -4,7 +4,6 @@ import com.gchat.data.remote.firebase.FirebaseDataExtractionDataSource
 import com.gchat.domain.model.BatchExtractionResult
 import com.gchat.domain.model.ExtractedData
 import com.gchat.domain.repository.DataExtractionRepository
-import com.gchat.util.Resource
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -17,26 +16,26 @@ class DataExtractionRepositoryImpl @Inject constructor(
         messageId: String,
         text: String,
         conversationId: String?
-    ): Resource<ExtractedData> {
+    ): Result<ExtractedData> {
         return try {
             val extractedData = firebaseDataSource.extractFromMessage(messageId, text, conversationId)
-            Resource.Success(extractedData)
+            Result.success(extractedData)
         } catch (e: Exception) {
             e.printStackTrace()
-            Resource.Error(e.message ?: "Failed to extract data from message")
+            Result.failure(e)
         }
     }
     
     override suspend fun extractFromBatch(
         messages: List<Pair<String, String>>,
         conversationId: String
-    ): Resource<BatchExtractionResult> {
+    ): Result<BatchExtractionResult> {
         return try {
             val result = firebaseDataSource.extractFromBatch(messages, conversationId)
-            Resource.Success(result)
+            Result.success(result)
         } catch (e: Exception) {
             e.printStackTrace()
-            Resource.Error(e.message ?: "Failed to extract data from messages")
+            Result.failure(e)
         }
     }
 }

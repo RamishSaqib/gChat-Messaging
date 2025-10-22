@@ -412,28 +412,27 @@ class ChatViewModel @Inject constructor(
             android.util.Log.d("ChatViewModel", "Extracting data from message $messageId")
             
             // Call extraction use case
-            extractDataFromMessageUseCase(
+            val result = extractDataFromMessageUseCase(
                 messageId = messageId,
                 text = message.text,
                 conversationId = conversationId
-            ).fold(
-                onSuccess = { extracted ->
-                    android.util.Log.d("ChatViewModel", "Extraction success: ${extracted.entities.size} entities")
-                    // Only store if entities were found
-                    if (extracted.hasEntities()) {
-                        _extractedData.value = _extractedData.value + (messageId to extracted)
-                    }
-                    // Remove from loading
-                    _extractionLoading.value = _extractionLoading.value - messageId
-                },
-                onFailure = { error ->
-                    android.util.Log.e("ChatViewModel", "Extraction failed: ${error.message}")
-                    // Add error
-                    _extractionErrors.value = _extractionErrors.value + (messageId to (error.message ?: "Extraction failed"))
-                    // Remove from loading
-                    _extractionLoading.value = _extractionLoading.value - messageId
-                }
             )
+            
+            result.onSuccess { extracted ->
+                android.util.Log.d("ChatViewModel", "Extraction success: ${extracted.entities.size} entities")
+                // Only store if entities were found
+                if (extracted.hasEntities()) {
+                    _extractedData.value = _extractedData.value + (messageId to extracted)
+                }
+                // Remove from loading
+                _extractionLoading.value = _extractionLoading.value - messageId
+            }.onFailure { error ->
+                android.util.Log.e("ChatViewModel", "Extraction failed: ${error.message}")
+                // Add error
+                _extractionErrors.value = _extractionErrors.value + (messageId to (error.message ?: "Extraction failed"))
+                // Remove from loading
+                _extractionLoading.value = _extractionLoading.value - messageId
+            }
         }
     }
     
@@ -459,27 +458,26 @@ class ChatViewModel @Inject constructor(
             }
             
             // Call batch extraction use case
-            extractBatchDataUseCase(
+            val result = extractBatchDataUseCase(
                 messages = messagePairs,
                 conversationId = conversationId
-            ).fold(
-                onSuccess = { batchResult ->
-                    android.util.Log.d("ChatViewModel", "Batch extraction success: ${batchResult.totalEntities} total entities")
-                    
-                    // Add all extracted data to the map
-                    val newData = batchResult.results
-                        .filter { it.hasEntities() }
-                        .associateBy { it.messageId }
-                    
-                    _extractedData.value = _extractedData.value + newData
-                    
-                    _batchExtractionLoading.value = false
-                },
-                onFailure = { error ->
-                    android.util.Log.e("ChatViewModel", "Batch extraction failed: ${error.message}")
-                    _batchExtractionLoading.value = false
-                }
             )
+            
+            result.onSuccess { batchResult ->
+                android.util.Log.d("ChatViewModel", "Batch extraction success: ${batchResult.totalEntities} total entities")
+                
+                // Add all extracted data to the map
+                val newData = batchResult.results
+                    .filter { it.hasEntities() }
+                    .associateBy { it.messageId }
+                
+                _extractedData.value = _extractedData.value + newData
+                
+                _batchExtractionLoading.value = false
+            }.onFailure { error ->
+                android.util.Log.e("ChatViewModel", "Batch extraction failed: ${error.message}")
+                _batchExtractionLoading.value = false
+            }
         }
     }
     

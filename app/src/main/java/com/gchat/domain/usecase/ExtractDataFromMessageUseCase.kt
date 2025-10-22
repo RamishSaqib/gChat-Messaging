@@ -2,7 +2,6 @@ package com.gchat.domain.usecase
 
 import com.gchat.domain.model.ExtractedData
 import com.gchat.domain.repository.DataExtractionRepository
-import com.gchat.util.Resource
 import javax.inject.Inject
 
 /**
@@ -15,7 +14,7 @@ class ExtractDataFromMessageUseCase @Inject constructor(
         messageId: String,
         text: String,
         conversationId: String? = null
-    ): Resource<ExtractedData> {
+    ): Result<ExtractedData> {
         return dataExtractionRepository.extractFromMessage(messageId, text, conversationId)
     }
 }

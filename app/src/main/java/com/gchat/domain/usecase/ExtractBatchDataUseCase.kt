@@ -2,7 +2,6 @@ package com.gchat.domain.usecase
 
 import com.gchat.domain.model.BatchExtractionResult
 import com.gchat.domain.repository.DataExtractionRepository
-import com.gchat.util.Resource
 import javax.inject.Inject
 
 /**
@@ -14,7 +13,7 @@ class ExtractBatchDataUseCase @Inject constructor(
     suspend operator fun invoke(
         messages: List<Pair<String, String>>, // Pair<messageId, text>
         conversationId: String
-    ): Resource<BatchExtractionResult> {
+    ): Result<BatchExtractionResult> {
         return dataExtractionRepository.extractFromBatch(messages, conversationId)
     }
 }
