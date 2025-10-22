@@ -52,8 +52,9 @@ service cloud.firestore {
       let hasRequiredFields = request.resource.data.keys().hasAll(['conversationId', 'senderId', 'type', 'timestamp', 'status']);
       let isSender = request.resource.data.senderId == request.auth.uid;
       
-      // Text validation (optional field, but if present must be valid)
+      // Text validation (optional field: can be missing, null, or a valid string)
       let textValid = !request.resource.data.keys().hasAny(['text']) || 
+                      request.resource.data.text == null ||
                       (request.resource.data.text is string && request.resource.data.text.size() <= 10000);
       
       return hasRequiredFields && isSender && textValid;

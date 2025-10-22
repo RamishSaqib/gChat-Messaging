@@ -419,8 +419,8 @@ private fun buildLastMessageText(
     
     // Get the message content
     val messageContent = when {
-        lastMessage.text != null -> lastMessage.text
-        lastMessage.mediaUrl != null -> "📷 Photo"
+        lastMessage.text != null && lastMessage.text.isNotBlank() -> lastMessage.text
+        lastMessage.mediaUrl != null -> "📷 Image"
         else -> "New message"
     }
     
