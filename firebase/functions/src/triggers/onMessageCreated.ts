@@ -82,6 +82,8 @@ export const onMessageCreated = onDocumentCreated(
         ? '📷 Sent an image'
         : message.text || 'New message';
 
+      console.log(`Sending notification from ${senderName} (${message.senderId}) with message: ${notificationBody}`);
+
       // Send multicast notification
       const response = await messaging.sendEachForMulticast({
         tokens,
@@ -90,6 +92,10 @@ export const onMessageCreated = onDocumentCreated(
           conversationId,
           messageId,
           senderId: message.senderId,
+          senderName: senderName,
+          messageText: notificationBody,
+          isGroup: conversation.type === 'GROUP' ? 'true' : 'false',
+          groupName: conversation.name || '',
         },
         notification: {
           title: notificationTitle,
