@@ -6,6 +6,39 @@
 
 ## 📋 Pull Request History
 
+### PR #11: Online Status Accuracy Fix
+**Status:** ✅ Merged to `main`  
+**Date:** October 22, 2025  
+**Time Spent:** ~1 hour
+
+**Problem Fixed:**
+When emulators/apps were force-killed, the `onStop()` lifecycle callback never fired, leaving users with `isOnline = true` in Firestore indefinitely. This caused all users to appear online even when they weren't running the app.
+
+**Solution Implemented:**
+- Added 60-second heartbeat mechanism to update `lastSeen` timestamp while app is in foreground
+- Created `isActuallyOnline()` helper function that validates both `isOnline = true` AND `lastSeen` within 2 minutes
+- Updated all 7 UI locations to use `isActuallyOnline()` instead of raw `isOnline` flag
+- Changed registration to set `isOnline = false` (app lifecycle sets true on launch)
+
+**Technical Details:**
+- `GChatApplication.kt`: Added `heartbeatJob` coroutine with 60-second delay loop
+- `User.kt`: Added `isActuallyOnline()` with 2-minute timestamp validation
+- Updated: ConversationListScreen, ChatScreen, DMInfoScreen, GroupInfoScreen, NewConversationScreen
+- `AuthRepositoryImpl.kt`: Set `isOnline = false` for new user registration (email & Google Sign-In)
+
+**Behavior:**
+- App running: Heartbeat keeps `lastSeen` fresh, user shows online
+- Force-kill: After 2 minutes of no heartbeat, user auto-appears offline
+- Proper close: `onStop()` sets `isOnline = false` immediately
+- Reopen: `onStart()` sets `isOnline = true` and restarts heartbeat
+
+**Bugs Fixed:**
+- Fixed stale online status after force-kill
+- Fixed new users defaulting to online before first app launch
+- Fixed online indicators not updating within 2 minutes of inactivity
+
+---
+
 ### PR #10: Nickname System
 **Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  

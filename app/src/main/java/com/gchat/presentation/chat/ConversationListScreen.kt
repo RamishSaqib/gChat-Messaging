@@ -329,7 +329,7 @@ fun ConversationItem(
                 displayName = displayName,
                 size = 60.dp,
                 showOnlineIndicator = true,
-                isOnline = otherUser?.isOnline ?: false
+                isOnline = otherUser?.isActuallyOnline() ?: false
             )
             
             Spacer(modifier = Modifier.width(16.dp))

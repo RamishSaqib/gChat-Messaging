@@ -1,15 +1,81 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #10 - Nickname System | **Status:** 🎉 All MVP + Core UX Features Complete!
+> **Last Merged:** PR #11 - Online Status Accuracy Fix | **Status:** 🎉 All MVP + Core UX Features Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 10 (Merged to main)  
+**Completed PRs:** 11 (Merged to main)  
 **Current PR:** None  
 **Current Sprint:** MVP + Core UX Features Complete ✅  
 **Next Up:** AI Translation Phase (Primary Selling Point!)
+
+---
+
+## ✅ PR #11: Online Status Accuracy Fix (MERGED ✅)
+
+**Goal:** Fix online indicators showing stale "online" status for force-killed users
+
+**Branch:** `feature/pr11-online-status-fix` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (Bug Fix)
+
+**Time Spent:** ~1 hour
+
+### Problem
+When emulators/apps were force-killed, the `onStop()` lifecycle callback never fired, leaving users with `isOnline = true` in Firestore indefinitely. Other users would see them as online even though they weren't running the app.
+
+### Solution Implemented
+Implemented heartbeat-based presence detection with client-side validation:
+1. Added 60-second heartbeat to update `lastSeen` while app is in foreground
+2. Created `isActuallyOnline()` helper that checks BOTH `isOnline = true` AND `lastSeen` within 2 minutes
+3. Updated all UI to use `isActuallyOnline()` instead of raw `isOnline` flag
+4. Changed registration to set `isOnline = false` (app lifecycle sets it true on first launch)
+
+### Core Changes
+- [x] Add heartbeat mechanism to GChatApplication (updates every 60 seconds)
+- [x] Add `isActuallyOnline()` helper function to User model
+- [x] Update ConversationListScreen to use new logic
+- [x] Update ChatScreen to use new logic
+- [x] Update DMInfoScreen to use new logic
+- [x] Update GroupInfoScreen to use new logic
+- [x] Update NewConversationScreen to use new logic
+- [x] Fix registration to set `isOnline = false` for new users
+- [x] Fix Google Sign-In to set `isOnline = false` for new users
+
+### Technical Implementation
+- Added `heartbeatJob` coroutine that runs while app is in foreground
+- Heartbeat updates `lastSeen` timestamp every 60 seconds via `updateOnlineStatus()`
+- `isActuallyOnline()` returns true only if `isOnline = true` AND `lastSeen > currentTime - 2 minutes`
+- Cancelled heartbeat in `onStop()` lifecycle callback
+- Updated 7 locations in presentation layer to use `isActuallyOnline()`
+
+### Files Modified
+- `GChatApplication.kt` - Added heartbeat mechanism
+- `User.kt` - Added `isActuallyOnline()` helper
+- `ConversationListScreen.kt` - Use `isActuallyOnline()`
+- `ChatScreen.kt` - Use `isActuallyOnline()`
+- `DMInfoScreen.kt` - Use `isActuallyOnline()` (3 locations)
+- `GroupInfoScreen.kt` - Use `isActuallyOnline()`
+- `NewConversationScreen.kt` - Use `isActuallyOnline()`
+- `AuthRepositoryImpl.kt` - Set `isOnline = false` for new users (2 locations)
+
+### Expected Behavior After Fix
+1. **App Running:** Heartbeat updates `lastSeen` every 60 seconds, user shows as online
+2. **Force Kill:** After 2 minutes of no heartbeat, user automatically appears offline to others
+3. **Proper Close:** `onStop()` sets `isOnline = false` immediately
+4. **Reopen App:** `onStart()` sets `isOnline = true` and restarts heartbeat
+
+### Testing
+- [x] Test force-kill scenario (user appears offline after 2 minutes)
+- [x] Test proper app close (user appears offline immediately)
+- [x] Test app reopen (user appears online immediately)
+- [x] Test heartbeat updates lastSeen every 60 seconds
+- [x] Test new user registration (starts offline, becomes online on first launch)
+- [x] Verify all UI locations show correct online status
 
 ---
 

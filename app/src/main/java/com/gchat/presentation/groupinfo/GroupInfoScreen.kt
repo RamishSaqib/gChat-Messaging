@@ -543,7 +543,7 @@ fun MemberItem(
                 displayName = member.displayName,
                 size = 40.dp,
                 showOnlineIndicator = true,
-                isOnline = member.isOnline
+                isOnline = member.isActuallyOnline()
             )
         },
         modifier = Modifier.clickable(enabled = canManage, onClick = onClick)

@@ -14,7 +14,9 @@ import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
@@ -38,6 +40,7 @@ class GChatApplication : Application() {
     lateinit var userRepository: UserRepository
     
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
+    private var heartbeatJob: Job? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -64,6 +67,9 @@ class GChatApplication : Application() {
                         
                         // Update FCM token
                         updateFcmToken(userId)
+                        
+                        // Start heartbeat to keep lastSeen fresh
+                        startHeartbeat(userId)
                     }
                 }
             }
@@ -71,6 +77,10 @@ class GChatApplication : Application() {
             override fun onStop(owner: LifecycleOwner) {
                 // App went to background
                 applicationScope.launch {
+                    // Cancel heartbeat
+                    heartbeatJob?.cancel()
+                    heartbeatJob = null
+                    
                     val userId = authRepository.getCurrentUserId()
                     if (userId != null) {
                         userRepository.updateOnlineStatus(userId, false)
@@ -78,6 +88,26 @@ class GChatApplication : Application() {
                 }
             }
         })
+    }
+    
+    /**
+     * Start periodic heartbeat to update lastSeen timestamp
+     * This ensures users appear offline after 2 minutes of force-kill
+     */
+    private fun startHeartbeat(userId: String) {
+        heartbeatJob?.cancel() // Cancel any existing heartbeat
+        heartbeatJob = applicationScope.launch {
+            while (true) {
+                delay(60_000) // Update every 60 seconds
+                try {
+                    // Just update lastSeen timestamp (isOnline stays true)
+                    userRepository.updateOnlineStatus(userId, true)
+                    android.util.Log.d("GChatApp", "Heartbeat: Updated lastSeen for user $userId")
+                } catch (e: Exception) {
+                    android.util.Log.e("GChatApp", "Heartbeat failed: ${e.message}")
+                }
+            }
+        }
     }
     
     /**

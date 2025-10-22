@@ -153,14 +153,14 @@ class AuthRepositoryImpl @Inject constructor(
             
             android.util.Log.d("AuthRepository", "Firebase Auth profile updated with displayName: $displayName")
             
-            // Create user in Firestore
+            // Create user in Firestore (isOnline = false, will be set to true by app lifecycle)
             val user = User(
                 id = firebaseUser.uid,
                 displayName = displayName,
                 email = email,
                 phoneNumber = null,
                 preferredLanguage = "en",
-                isOnline = true,
+                isOnline = false,
                 lastSeen = System.currentTimeMillis(),
                 createdAt = System.currentTimeMillis()
             )
@@ -204,7 +204,7 @@ class AuthRepositoryImpl @Inject constructor(
                     AuthResult.Success(updatedUser)
                 },
                 onFailure = {
-                    // User doesn't exist, create new user
+                    // User doesn't exist, create new user (isOnline = false, will be set to true by app lifecycle)
                     val newUser = User(
                         id = firebaseUser.uid,
                         displayName = firebaseUser.displayName ?: "User",
@@ -212,7 +212,7 @@ class AuthRepositoryImpl @Inject constructor(
                         phoneNumber = firebaseUser.phoneNumber,
                         profilePictureUrl = firebaseUser.photoUrl?.toString(),
                         preferredLanguage = "en",
-                        isOnline = true,
+                        isOnline = false,
                         lastSeen = System.currentTimeMillis(),
                         createdAt = System.currentTimeMillis()
                     )

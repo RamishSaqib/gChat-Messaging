@@ -187,7 +187,7 @@ fun DMInfoScreen(
                 displayName = otherUser?.displayName ?: "User",
                 size = 120.dp,
                 showOnlineIndicator = true,
-                isOnline = otherUser?.isOnline ?: false
+                isOnline = otherUser?.isActuallyOnline() ?: false
             )
             
             Spacer(modifier = Modifier.height(16.dp))
@@ -221,7 +221,7 @@ fun DMInfoScreen(
                         .size(8.dp)
                         .padding(end = 4.dp)
                 ) {
-                    if (otherUser?.isOnline == true) {
+                    if (otherUser?.isActuallyOnline() == true) {
                         Surface(
                             modifier = Modifier.fillMaxSize(),
                             shape = MaterialTheme.shapes.small,
@@ -230,7 +230,7 @@ fun DMInfoScreen(
                     }
                 }
                 Text(
-                    text = if (otherUser?.isOnline == true) "Online" else "Offline",
+                    text = if (otherUser?.isActuallyOnline() == true) "Online" else "Offline",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
