@@ -228,6 +228,7 @@ fun ConversationListScreen(
                         conversationsWithUsers,
                         key = { it.conversation.id }
                     ) { conversationWithUser ->
+                        // Use lastMessageTimestamp as key to reset dismiss state when conversation reappears with new message
                         val dismissState = rememberDismissState(
                             confirmValueChange = { dismissValue ->
                                 if (dismissValue == DismissValue.DismissedToStart) {
@@ -240,6 +241,13 @@ fun ConversationListScreen(
                             },
                             positionalThreshold = { distance -> distance * 0.25f }
                         )
+                        
+                        // Reset dismiss state when conversation reappears (new message after deletion)
+                        LaunchedEffect(conversationWithUser.conversation.lastMessage?.timestamp) {
+                            if (dismissState.currentValue != DismissValue.Default) {
+                                dismissState.reset()
+                            }
+                        }
                         
                         SwipeToDismiss(
                             state = dismissState,
