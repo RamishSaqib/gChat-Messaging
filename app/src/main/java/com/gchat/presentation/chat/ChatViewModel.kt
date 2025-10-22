@@ -6,14 +6,17 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.gchat.domain.model.Message
 import com.gchat.domain.model.MessageType
+import com.gchat.domain.model.Translation
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.ConversationRepository
 import com.gchat.domain.repository.MediaRepository
+import com.gchat.domain.repository.TranslationRepository
 import com.gchat.domain.repository.TypingRepository
 import com.gchat.domain.repository.UserRepository
 import com.gchat.domain.usecase.GetMessagesUseCase
 import com.gchat.domain.usecase.MarkMessageAsReadUseCase
 import com.gchat.domain.usecase.SendMessageUseCase
+import com.gchat.domain.usecase.TranslateMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -30,11 +33,13 @@ class ChatViewModel @Inject constructor(
     private val sendMessageUseCase: SendMessageUseCase,
     private val getMessagesUseCase: GetMessagesUseCase,
     private val markMessageAsReadUseCase: MarkMessageAsReadUseCase,
+    private val translateMessageUseCase: TranslateMessageUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val mediaRepository: MediaRepository,
     private val typingRepository: TypingRepository,
+    private val translationRepository: TranslationRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -277,6 +282,93 @@ class ChatViewModel @Inject constructor(
     
     fun clearUploadError() {
         _uploadError.value = null
+    }
+    
+    // ===== Translation State =====
+    
+    private val _translations = MutableStateFlow<Map<String, Translation>>(emptyMap())
+    val translations: StateFlow<Map<String, Translation>> = _translations.asStateFlow()
+    
+    private val _translationLoading = MutableStateFlow<Set<String>>(emptySet())
+    val translationLoading: StateFlow<Set<String>> = _translationLoading.asStateFlow()
+    
+    private val _translationErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val translationErrors: StateFlow<Map<String, String>> = _translationErrors.asStateFlow()
+    
+    /**
+     * Translate a message to the target language
+     */
+    fun translateMessage(message: Message, targetLanguage: String) {
+        viewModelScope.launch {
+            val messageId = message.id
+            
+            // Add to loading set
+            _translationLoading.value = _translationLoading.value + messageId
+            
+            // Clear any previous error
+            _translationErrors.value = _translationErrors.value - messageId
+            
+            android.util.Log.d("ChatViewModel", "Translating message $messageId to $targetLanguage")
+            
+            // Call translation use case
+            translateMessageUseCase(
+                messageId = messageId,
+                text = message.text ?: "",
+                targetLanguage = targetLanguage,
+                sourceLanguage = null // Auto-detect
+            ).fold(
+                onSuccess = { translation ->
+                    android.util.Log.d("ChatViewModel", "Translation success: ${translation.translatedText}")
+                    // Add to translations map
+                    _translations.value = _translations.value + (messageId to translation)
+                    // Remove from loading
+                    _translationLoading.value = _translationLoading.value - messageId
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Translation failed", error)
+                    // Add error
+                    _translationErrors.value = _translationErrors.value + (messageId to (error.message ?: "Translation failed"))
+                    // Remove from loading
+                    _translationLoading.value = _translationLoading.value - messageId
+                }
+            )
+        }
+    }
+    
+    /**
+     * Remove translation for a message (hide translation)
+     */
+    fun removeTranslation(messageId: String) {
+        _translations.value = _translations.value - messageId
+        _translationErrors.value = _translationErrors.value - messageId
+    }
+    
+    /**
+     * Retry failed translation
+     */
+    fun retryTranslation(message: Message, targetLanguage: String) {
+        translateMessage(message, targetLanguage)
+    }
+    
+    /**
+     * Get translation for a specific message
+     */
+    fun getTranslation(messageId: String): Translation? {
+        return _translations.value[messageId]
+    }
+    
+    /**
+     * Check if message is being translated
+     */
+    fun isTranslating(messageId: String): Boolean {
+        return messageId in _translationLoading.value
+    }
+    
+    /**
+     * Get translation error for a message
+     */
+    fun getTranslationError(messageId: String): String? {
+        return _translationErrors.value[messageId]
     }
 }
 
