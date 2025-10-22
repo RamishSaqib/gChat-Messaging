@@ -18,16 +18,29 @@ object EntityIntentHandler {
      * Handle entity action by launching appropriate intent
      */
     fun handleEntityAction(context: Context, entity: ExtractedEntity) {
+        android.util.Log.d("EntityIntentHandler", "handleEntityAction called for entity type: ${entity.type}")
         try {
             when (entity) {
-                is ExtractedEntity.ActionItem -> handleActionItem(context, entity)
-                is ExtractedEntity.DateTime -> handleDateTime(context, entity)
-                is ExtractedEntity.Contact -> handleContact(context, entity)
-                is ExtractedEntity.Location -> handleLocation(context, entity)
+                is ExtractedEntity.ActionItem -> {
+                    android.util.Log.d("EntityIntentHandler", "Handling ActionItem: ${entity.task}")
+                    handleActionItem(context, entity)
+                }
+                is ExtractedEntity.DateTime -> {
+                    android.util.Log.d("EntityIntentHandler", "Handling DateTime: ${entity.dateTime}")
+                    handleDateTime(context, entity)
+                }
+                is ExtractedEntity.Contact -> {
+                    android.util.Log.d("EntityIntentHandler", "Handling Contact: ${entity.name}")
+                    handleContact(context, entity)
+                }
+                is ExtractedEntity.Location -> {
+                    android.util.Log.d("EntityIntentHandler", "Handling Location: ${entity.address}")
+                    handleLocation(context, entity)
+                }
             }
         } catch (e: Exception) {
-            android.util.Log.e("EntityIntentHandler", "Failed to handle entity action", e)
-            Toast.makeText(context, "No app available to handle this action", Toast.LENGTH_SHORT).show()
+            android.util.Log.e("EntityIntentHandler", "Failed to handle entity action: ${e.message}", e)
+            Toast.makeText(context, "Error: ${e.message}", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -73,6 +86,8 @@ object EntityIntentHandler {
      * Handle date/time - add to calendar
      */
     private fun handleDateTime(context: Context, entity: ExtractedEntity.DateTime) {
+        android.util.Log.d("EntityIntentHandler", "Creating calendar intent for time: ${entity.dateTime}")
+        
         val intent = Intent(Intent.ACTION_INSERT).apply {
             data = CalendarContract.Events.CONTENT_URI
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, entity.dateTime)
@@ -86,13 +101,23 @@ object EntityIntentHandler {
             
             entity.description?.let {
                 putExtra(CalendarContract.Events.TITLE, it)
-            }
+            } ?: putExtra(CalendarContract.Events.TITLE, "Event")
         }
         
-        if (intent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(intent)
+        val resolvedActivity = intent.resolveActivity(context.packageManager)
+        android.util.Log.d("EntityIntentHandler", "Calendar intent resolves to: $resolvedActivity")
+        
+        if (resolvedActivity != null) {
+            try {
+                context.startActivity(intent)
+                android.util.Log.d("EntityIntentHandler", "Calendar intent launched successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("EntityIntentHandler", "Failed to launch calendar: ${e.message}", e)
+                Toast.makeText(context, "Failed to open calendar: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         } else {
-            Toast.makeText(context, "No calendar app found", Toast.LENGTH_SHORT).show()
+            android.util.Log.w("EntityIntentHandler", "No calendar app found on device")
+            Toast.makeText(context, "No calendar app installed. Please install Google Calendar from Play Store.", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -100,28 +125,43 @@ object EntityIntentHandler {
      * Handle contact - add to contacts
      */
     private fun handleContact(context: Context, entity: ExtractedEntity.Contact) {
+        android.util.Log.d("EntityIntentHandler", "Creating contact intent for: ${entity.name ?: "Unknown"}")
+        
         val intent = Intent(Intent.ACTION_INSERT).apply {
             type = ContactsContract.Contacts.CONTENT_TYPE
             
             entity.name?.let {
                 putExtra(ContactsContract.Intents.Insert.NAME, it)
+                android.util.Log.d("EntityIntentHandler", "  - Name: $it")
             }
             
             entity.email?.let {
                 putExtra(ContactsContract.Intents.Insert.EMAIL, it)
                 putExtra(ContactsContract.Intents.Insert.EMAIL_TYPE, ContactsContract.CommonDataKinds.Email.TYPE_WORK)
+                android.util.Log.d("EntityIntentHandler", "  - Email: $it")
             }
             
             entity.phone?.let {
                 putExtra(ContactsContract.Intents.Insert.PHONE, it)
                 putExtra(ContactsContract.Intents.Insert.PHONE_TYPE, ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE)
+                android.util.Log.d("EntityIntentHandler", "  - Phone: $it")
             }
         }
         
-        if (intent.resolveActivity(context.packageManager) != null) {
-            context.startActivity(intent)
+        val resolvedActivity = intent.resolveActivity(context.packageManager)
+        android.util.Log.d("EntityIntentHandler", "Contacts intent resolves to: $resolvedActivity")
+        
+        if (resolvedActivity != null) {
+            try {
+                context.startActivity(intent)
+                android.util.Log.d("EntityIntentHandler", "Contacts intent launched successfully")
+            } catch (e: Exception) {
+                android.util.Log.e("EntityIntentHandler", "Failed to launch contacts: ${e.message}", e)
+                Toast.makeText(context, "Failed to open contacts: ${e.message}", Toast.LENGTH_LONG).show()
+            }
         } else {
-            Toast.makeText(context, "No contacts app found", Toast.LENGTH_SHORT).show()
+            android.util.Log.w("EntityIntentHandler", "No contacts app found on device")
+            Toast.makeText(context, "No contacts app installed. Emulator may not have Contacts pre-installed.", Toast.LENGTH_LONG).show()
         }
     }
     
