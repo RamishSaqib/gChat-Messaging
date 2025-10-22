@@ -21,6 +21,8 @@ data class ConversationEntity(
     val nicknames: String = "{}", // JSON object of user ID -> nickname
     val lastMessageId: String?,
     val lastMessageText: String?,
+    val lastMessageType: String?,
+    val lastMessageMediaUrl: String?,
     val lastMessageTimestamp: Long,
     val lastMessageSenderId: String?,
     val unreadCount: Int,

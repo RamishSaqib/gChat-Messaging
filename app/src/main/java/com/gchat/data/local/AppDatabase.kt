@@ -24,7 +24,7 @@ import com.gchat.data.local.entity.UserEntity
         MessageEntity::class,
         TranslationEntity::class
     ],
-    version = 8, // v8: Added TranslationEntity for AI translation cache
+    version = 9, // v9: Added lastMessageType and lastMessageMediaUrl to ConversationEntity
     exportSchema = false
 )
 @TypeConverters(Converters::class)
