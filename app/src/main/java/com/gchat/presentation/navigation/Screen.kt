@@ -6,7 +6,11 @@ package com.gchat.presentation.navigation
 sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
-    object ConversationList : Screen("conversations")
+    object ConversationList : Screen("conversations?conversationId={conversationId}") {
+        fun createRoute(conversationId: String? = null) = 
+            if (conversationId != null) "conversations?conversationId=$conversationId" 
+            else "conversations"
+    }
     object Profile : Screen("profile")
     object NewConversation : Screen("new_conversation")
     object CreateGroup : Screen("create_group")

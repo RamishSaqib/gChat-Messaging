@@ -52,13 +52,6 @@ class ChatViewModel @Inject constructor(
     private val _uploadError = MutableStateFlow<String?>(null)
     val uploadError: StateFlow<String?> = _uploadError.asStateFlow()
     
-    val messages: StateFlow<List<Message>> = getMessagesUseCase(conversationId)
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000), // Keep alive for 5s during recompositions
-            initialValue = emptyList()
-        )
-    
     val currentUserId: StateFlow<String?> = flow {
         emit(authRepository.getCurrentUserId())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -69,6 +62,26 @@ class ChatViewModel @Inject constructor(
             .onSuccess { emit(it) }
             .onFailure { emit(null) }
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    
+    // Filter messages to only show those after user's deletion timestamp (for fresh history)
+    val messages: StateFlow<List<Message>> = combine(
+        getMessagesUseCase(conversationId),
+        conversation,
+        currentUserId
+    ) { allMessages, conv, userId ->
+        if (conv == null || userId == null) {
+            allMessages
+        } else {
+            // Get user's deletion timestamp (0 if never deleted)
+            val userDeletedAt = conv.deletedAt[userId] ?: 0L
+            // Only show messages sent after the deletion timestamp
+            allMessages.filter { message -> message.timestamp > userDeletedAt }
+        }
+    }.stateIn(
+        scope = viewModelScope,
+        started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+        initialValue = emptyList()
+    )
     
     // Get participants for all chats (userId -> User)
     // Used for displaying sender names in group chats and typing indicators in all chats

@@ -189,9 +189,10 @@ class FirestoreConversationDataSource @Inject constructor(
                 return Result.success(Unit)
             }
             
-            // Add user to deletedBy array without removing from participants
-            android.util.Log.d("FirestoreConversation", "Adding user $userId to deletedBy for conversation $conversationId")
-            docRef.update("deletedBy", com.google.firebase.firestore.FieldValue.arrayUnion(userId)).await()
+            // Set deletion timestamp for user in deletedAt map without removing from participants
+            val deletionTimestamp = System.currentTimeMillis()
+            android.util.Log.d("FirestoreConversation", "Setting deletion timestamp $deletionTimestamp for user $userId in conversation $conversationId")
+            docRef.update("deletedAt.$userId", deletionTimestamp).await()
             
             Result.success(Unit)
         } catch (e: Exception) {

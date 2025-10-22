@@ -53,19 +53,16 @@ class MainActivity : ComponentActivity() {
                             val openChat = latestIntent?.getBooleanExtra("openChat", false) ?: false
                             
                             if (openChat && conversationId != null) {
-                                // Navigate to specific conversation from notification
-                                navController.navigate(Screen.ConversationList.route) {
+                                // Navigate to conversation list with conversationId to auto-open chat
+                                navController.navigate(Screen.ConversationList.createRoute(conversationId)) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
-                                // Wait for conversation list screen to load before navigating to chat
-                                kotlinx.coroutines.delay(300)
-                                navController.navigate(Screen.Chat.createRoute(conversationId))
                                 
                                 // Clear the intent flags so we don't navigate again
                                 latestIntent = Intent()
                             } else if (latestIntent != null) {
                                 // Regular navigation to conversation list
-                                navController.navigate(Screen.ConversationList.route) {
+                                navController.navigate(Screen.ConversationList.createRoute()) {
                                     popUpTo(Screen.Login.route) { inclusive = true }
                                 }
                             }

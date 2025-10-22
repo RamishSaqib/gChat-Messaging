@@ -45,6 +45,7 @@ import java.util.*
 @OptIn(ExperimentalMaterial3Api::class, ExperimentalPermissionsApi::class, ExperimentalFoundationApi::class)
 @Composable
 fun ConversationListScreen(
+    pendingConversationId: String? = null,
     onConversationClick: (String) -> Unit,
     onNewConversationClick: () -> Unit,
     onNewGroupClick: () -> Unit,
@@ -55,6 +56,13 @@ fun ConversationListScreen(
     val conversationsWithUsers by viewModel.conversationsWithUsers.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
     var showFabMenu by remember { mutableStateOf(false) }
+    
+    // Handle navigation from notification
+    LaunchedEffect(pendingConversationId) {
+        if (pendingConversationId != null) {
+            onConversationClick(pendingConversationId)
+        }
+    }
     
     // Request notification permission for Android 13+ (API 33+)
     if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {

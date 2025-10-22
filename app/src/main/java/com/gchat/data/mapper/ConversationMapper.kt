@@ -41,10 +41,10 @@ object ConversationMapper {
             createdAt = entity.createdAt,
             autoTranslateEnabled = entity.autoTranslateEnabled,
             creatorId = entity.creatorId,
-            deletedBy = try {
-                json.decodeFromString(entity.deletedBy)
+            deletedAt = try {
+                json.decodeFromString<Map<String, Long>>(entity.deletedAt)
             } catch (e: Exception) {
-                emptyList()
+                emptyMap()
             }
         )
     }
@@ -67,7 +67,7 @@ object ConversationMapper {
             createdAt = domain.createdAt,
             autoTranslateEnabled = domain.autoTranslateEnabled,
             creatorId = domain.creatorId,
-            deletedBy = json.encodeToString(domain.deletedBy)
+            deletedAt = json.encodeToString(domain.deletedAt)
         )
     }
     
@@ -97,7 +97,7 @@ object ConversationMapper {
                 }
             }
             
-            val deletedByList = document.get("deletedBy") as? List<*>
+            val deletedAtMap = document.get("deletedAt") as? Map<*, *>
             
             Conversation(
                 id = document.id,
@@ -115,7 +115,9 @@ object ConversationMapper {
                 createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
                 autoTranslateEnabled = false, // User preference, stored locally
                 creatorId = document.getString("creatorId"),
-                deletedBy = deletedByList?.mapNotNull { it as? String } ?: emptyList()
+                deletedAt = deletedAtMap?.mapNotNull { (k, v) ->
+                    (k as? String)?.let { key -> (v as? Number)?.toLong()?.let { value -> key to value } }
+                }?.toMap() ?: emptyMap()
             )
         } catch (e: Exception) {
             null
@@ -143,7 +145,7 @@ object ConversationMapper {
             "updatedAt" to conversation.updatedAt,
             "createdAt" to conversation.createdAt,
             "creatorId" to conversation.creatorId,
-            "deletedBy" to conversation.deletedBy
+            "deletedAt" to conversation.deletedAt
         )
     }
 }

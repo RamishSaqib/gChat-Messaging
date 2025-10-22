@@ -36,7 +36,7 @@ fun NavGraph(
         composable(Screen.Login.route) {
             LoginScreen(
                 onLoginSuccess = {
-                    navController.navigate(Screen.ConversationList.route) {
+                    navController.navigate(Screen.ConversationList.createRoute()) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
@@ -49,7 +49,7 @@ fun NavGraph(
         composable(Screen.Register.route) {
             RegisterScreen(
                 onRegisterSuccess = {
-                    navController.navigate(Screen.ConversationList.route) {
+                    navController.navigate(Screen.ConversationList.createRoute()) {
                         popUpTo(Screen.Register.route) { inclusive = true }
                     }
                 },
@@ -60,8 +60,19 @@ fun NavGraph(
         }
         
         // Main app screens
-        composable(Screen.ConversationList.route) {
+        composable(
+            route = Screen.ConversationList.route,
+            arguments = listOf(
+                navArgument("conversationId") { 
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) {
+            val pendingConversationId = it.arguments?.getString("conversationId")
             ConversationListScreen(
+                pendingConversationId = pendingConversationId,
                 onConversationClick = { conversationId ->
                     navController.navigate(Screen.Chat.createRoute(conversationId))
                 },
@@ -102,7 +113,7 @@ fun NavGraph(
                 onConversationCreated = { conversationId ->
                     // Navigate to the chat screen and remove new conversation from back stack
                     navController.navigate(Screen.Chat.createRoute(conversationId)) {
-                        popUpTo(Screen.ConversationList.route)
+                        popUpTo(Screen.ConversationList.createRoute())
                     }
                 }
             )
@@ -116,7 +127,7 @@ fun NavGraph(
                 onGroupCreated = { conversationId ->
                     // Navigate to the chat screen and remove create group from back stack
                     navController.navigate(Screen.Chat.createRoute(conversationId)) {
-                        popUpTo(Screen.ConversationList.route)
+                        popUpTo(Screen.ConversationList.createRoute())
                     }
                 }
             )

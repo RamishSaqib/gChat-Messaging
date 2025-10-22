@@ -21,7 +21,7 @@ import com.gchat.data.local.entity.UserEntity
         ConversationEntity::class,
         MessageEntity::class
     ],
-    version = 6, // v6: Added deletedBy field to ConversationEntity for per-user deletion
+    version = 7, // v7: Changed deletedBy to deletedAt with timestamps for fresh message history
     exportSchema = false
 )
 @TypeConverters(Converters::class)

@@ -28,6 +28,6 @@ data class ConversationEntity(
     val createdAt: Long,
     val autoTranslateEnabled: Boolean,
     val creatorId: String? = null, // ID of user who created the conversation
-    val deletedBy: String = "[]" // JSON array of user IDs who deleted this conversation
+    val deletedAt: String = "{}" // JSON map of userId -> deletion timestamp
 )
 
