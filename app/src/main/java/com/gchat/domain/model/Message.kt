@@ -56,10 +56,3 @@ enum class MessageStatus {
     FAILED      // Failed to send
 }
 
-data class Translation(
-    val translatedText: String,
-    val sourceLanguage: String,
-    val targetLanguage: String,
-    val cachedAt: Long = System.currentTimeMillis()
-)
-
