@@ -43,7 +43,7 @@ class SendMessageUseCase @Inject constructor(
                     val updateResult = conversationRepository.updateLastMessage(
                         conversationId = conversationId,
                         messageId = message.id,
-                        messageText = text,
+                        messageText = message.text,
                         senderId = senderId,
                         timestamp = message.timestamp
                     )
