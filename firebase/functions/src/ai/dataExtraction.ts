@@ -32,57 +32,6 @@ interface ExtractedEntity {
 }
 
 /**
- * Action item entity
- */
-interface ActionItemEntity extends ExtractedEntity {
-  type: EntityType.ACTION_ITEM;
-  metadata: {
-    task: string;
-    priority?: 'low' | 'medium' | 'high';
-    assignedTo?: string;
-    dueDate?: string;
-  };
-}
-
-/**
- * Date/time entity
- */
-interface DateTimeEntity extends ExtractedEntity {
-  type: EntityType.DATE_TIME;
-  metadata: {
-    dateTime: string; // ISO 8601 format
-    isRange: boolean;
-    endDateTime?: string;
-    description?: string;
-  };
-}
-
-/**
- * Contact entity
- */
-interface ContactEntity extends ExtractedEntity {
-  type: EntityType.CONTACT;
-  metadata: {
-    name?: string;
-    email?: string;
-    phone?: string;
-  };
-}
-
-/**
- * Location entity
- */
-interface LocationEntity extends ExtractedEntity {
-  type: EntityType.LOCATION;
-  metadata: {
-    address: string;
-    latitude?: number;
-    longitude?: number;
-    placeName?: string;
-  };
-}
-
-/**
  * Response structure
  */
 interface DataExtractionResponse {
