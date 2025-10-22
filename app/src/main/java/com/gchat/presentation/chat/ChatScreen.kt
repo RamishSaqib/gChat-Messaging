@@ -74,6 +74,12 @@ fun ChatScreen(
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val uploadError by viewModel.uploadError.collectAsState()
     val typingIndicatorText by viewModel.typingIndicatorText.collectAsState()
+    
+    // Translation state
+    val translations by viewModel.translations.collectAsState()
+    val translationLoading by viewModel.translationLoading.collectAsState()
+    val translationErrors by viewModel.translationErrors.collectAsState()
+    
     val listState = rememberLazyListState()
     
     var showImagePicker by remember { mutableStateOf(false) }
@@ -262,9 +268,9 @@ fun ChatScreen(
                             ),
                             participantUsers = participantUsers,
                             isGroupedWithPrevious = isGroupedWithPrevious,
-                            translation = viewModel.getTranslation(message.id),
-                            isTranslating = viewModel.isTranslating(message.id),
-                            translationError = viewModel.getTranslationError(message.id),
+                            translation = translations[message.id],
+                            isTranslating = message.id in translationLoading,
+                            translationError = translationErrors[message.id],
                             onTranslateClick = { targetLanguage ->
                                 viewModel.translateMessage(message, targetLanguage)
                             },
