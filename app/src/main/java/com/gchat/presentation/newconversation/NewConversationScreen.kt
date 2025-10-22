@@ -165,7 +165,7 @@ fun UserListItem(
             }
             
             // Online indicator
-            if (user.isOnline) {
+            if (user.isActuallyOnline()) {
                 Surface(
                     modifier = Modifier.size(12.dp),
                     shape = MaterialTheme.shapes.extraLarge,

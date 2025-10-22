@@ -155,7 +155,7 @@ fun ChatScreen(
                                 
                                 // Online status (only for 1-on-1 chats)
                                 val isOnline = if (!isGroup && otherUserId != null) {
-                                    participantUsers[otherUserId]?.isOnline ?: false
+                                    participantUsers[otherUserId]?.isActuallyOnline() ?: false
                                 } else {
                                     false
                                 }
