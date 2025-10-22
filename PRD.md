@@ -39,6 +39,111 @@ When emulators/apps were force-killed, the `onStop()` lifecycle callback never f
 
 ---
 
+### PR #13: Inline Translation UI
+**Status:** ✅ Merged to `main`  
+**Date:** October 22, 2025  
+**Time Spent:** ~4 hours
+
+**Features Implemented:**
+- ✅ Long-press message to show translation menu
+- ✅ Language selector dialog with 20+ supported languages
+- ✅ Inline translation display below original message
+- ✅ Translation loading indicator
+- ✅ Error handling with retry button
+- ✅ Hide translation button to dismiss
+- ✅ Translation caching in Firestore (30-day TTL)
+- ✅ Local Room database cache for offline access
+- ✅ Rate limiting (100 translations/hour, 200 language detections/hour)
+- ✅ Works for both sent and received messages
+
+**Technical Implementation:**
+- **Backend (Firebase Functions):**
+  - `translateMessage` Cloud Function with OpenAI GPT-4
+  - Automatic source language detection
+  - SHA-256 cache key generation
+  - Rate limiting with Firestore tracking
+  - Environment-based configuration (model, TTL, rate limits)
+  
+- **Android App:**
+  - `Translation` domain model with 20+ language support
+  - `TranslationRepository` with dual caching (Firestore + Room)
+  - Room database v9 migration for translation cache
+  - `TranslateMessageUseCase` for clean architecture
+  - UI components: `LanguageSelectorDialog`, `TranslationDisplay`, `TranslationLoading`, `TranslationError`
+  - Long-press gesture detection in `MessageBubble`
+  - ViewModel state management for translations, loading, and errors
+
+**Database Changes:**
+- Room v8 → v9: Added `TranslationEntity` table
+- Room v9 → v10: Added `lastMessageType` and `lastMessageMediaUrl` to `ConversationEntity`
+- Firestore: Added `translations` collection for caching
+- Firestore: Added `rateLimits/{userId}/features/{featureName}` for rate tracking
+
+**Firestore Rules:**
+- `translations` collection: Read for authenticated users, write only via Cloud Functions
+- `rateLimits` collection: Internal only (Cloud Functions)
+
+**Critical Bugs Fixed:**
+1. **Image Messages Not Syncing**
+   - Root cause: Firestore rules rejected `text = null` for image-only messages
+   - Fix: Updated `isValidMessage()` to allow `text == null || text is string`
+   
+2. **Conversation Preview Showing "New Message"**
+   - Root cause: Repository hardcoded `type=TEXT` and `mediaUrl=null` when reading from Room
+   - Fix: Read `entity.lastMessageType` and `entity.lastMessageMediaUrl` in 4 locations
+   
+3. **Translation Loading Not Showing**
+   - Root cause: UI wasn't collecting translation state flows from ViewModel
+   - Fix: Added `collectAsState()` for `translations`, `translationLoading`, `translationErrors`
+
+4. **Image-Only Message Sync Failure**
+   - Root cause: `SendMessageUseCase` passed empty string `""` instead of `message.text` (null)
+   - Fix: Pass `message.text` to ensure consistency between message and conversation preview
+
+**Behavior:**
+- User long-presses any text message → Language selector appears
+- Select target language → Loading indicator shows → Translation appears below message
+- Translation cached locally and in Firestore for 30 days
+- Second translation of same message loads instantly from cache
+- Image messages do NOT show translation menu (long-press ignored)
+- Rate limit exceeded → Error message with friendly explanation
+- Translation error → Retry button to attempt again
+
+---
+
+### PR #12: Backend Infrastructure & Translation API
+**Status:** ✅ Merged to `main`  
+**Date:** October 22, 2025  
+**Time Spent:** ~2 hours
+
+**Features Implemented:**
+- ✅ OpenAI GPT-4 integration for Cloud Functions
+- ✅ `translateMessage` callable function
+- ✅ `detectLanguage` callable function
+- ✅ Translation caching with SHA-256 keys
+- ✅ Rate limiting infrastructure
+- ✅ Centralized OpenAI client and configuration
+- ✅ Environment variable management
+
+**Technical Implementation:**
+- `firebase/functions/src/utils/openai.ts`: Centralized OpenAI client
+- `firebase/functions/src/utils/cache.ts`: Firestore caching utilities
+- `firebase/functions/src/utils/rateLimit.ts`: Rate limiting with time windows
+- `firebase/functions/src/ai/translation.ts`: Translation and language detection
+- Updated `firestore.rules` for `translations` and `rateLimits` collections
+- Documentation: `AI_SETUP.md` and `ENV_SETUP.md`
+
+**Environment Variables:**
+```
+OPENAI_API_KEY=sk-...
+OPENAI_MODEL=gpt-4-turbo-preview
+TRANSLATION_CACHE_TTL_DAYS=30
+MAX_REQUESTS_PER_HOUR=100
+MAX_LANGUAGE_DETECTION_PER_HOUR=200
+```
+
+---
+
 ### PR #10: Nickname System
 **Status:** ✅ Merged to `main`  
 **Date:** October 21, 2025  

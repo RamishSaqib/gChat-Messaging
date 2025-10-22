@@ -1,15 +1,149 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #11 - Online Status Accuracy Fix | **Status:** 🎉 All MVP + Core UX Features Complete!
+> **Last Merged:** PR #13 - Inline Translation UI | **Status:** 🎉 First AI Feature Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 11 (Merged to main)  
+**Completed PRs:** 13 (Merged to main)  
 **Current PR:** None  
-**Current Sprint:** MVP + Core UX Features Complete ✅  
-**Next Up:** AI Translation Phase (Primary Selling Point!)
+**Current Sprint:** AI Translation MVP Complete ✅  
+**Next Up:** Additional AI Features (Smart Replies, Cultural Context, etc.)
+
+---
+
+## ✅ PR #13: Inline Translation UI (MERGED ✅)
+
+**Goal:** Implement inline message translation with caching and rate limiting
+
+**Branch:** `feature/pr13-inline-translation` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (First AI Feature - Primary Selling Point)
+
+**Time Spent:** ~4 hours
+
+### Features Implemented
+- [x] Long-press message to show translation menu
+- [x] Language selector dialog with 20+ languages
+- [x] Inline translation display below original message
+- [x] Translation loading indicator
+- [x] Error handling with retry button
+- [x] Hide translation button to dismiss
+- [x] Translation caching in Firestore (30-day TTL)
+- [x] Local Room database cache for offline access
+- [x] Rate limiting (100 translations/hour, 200 language detections/hour)
+- [x] Works for both sent and received messages
+
+### Technical Implementation
+
+**Backend (Firebase Functions):**
+- [x] `translateMessage` Cloud Function with OpenAI GPT-4
+- [x] Automatic source language detection
+- [x] SHA-256 cache key generation
+- [x] Rate limiting with Firestore tracking
+- [x] Environment-based configuration
+
+**Android App:**
+- [x] `Translation` domain model with 20+ language support
+- [x] `TranslationRepository` with dual caching (Firestore + Room)
+- [x] Room database v9 migration for translation cache
+- [x] `TranslateMessageUseCase` for clean architecture
+- [x] UI components: `LanguageSelectorDialog`, `TranslationDisplay`, `TranslationLoading`, `TranslationError`
+- [x] Long-press gesture detection in `MessageBubble`
+- [x] ViewModel state management for translations, loading, and errors
+
+### Files Created
+- `app/src/main/java/com/gchat/domain/model/Translation.kt`
+- `app/src/main/java/com/gchat/domain/repository/TranslationRepository.kt`
+- `app/src/main/java/com/gchat/domain/usecase/TranslateMessageUseCase.kt`
+- `app/src/main/java/com/gchat/data/local/entity/TranslationEntity.kt`
+- `app/src/main/java/com/gchat/data/local/dao/TranslationDao.kt`
+- `app/src/main/java/com/gchat/data/mapper/TranslationMapper.kt`
+- `app/src/main/java/com/gchat/data/remote/firebase/FirebaseTranslationDataSource.kt`
+- `app/src/main/java/com/gchat/data/repository/TranslationRepositoryImpl.kt`
+- `app/src/main/java/com/gchat/presentation/chat/TranslationComponents.kt`
+
+### Files Modified
+- `app/src/main/java/com/gchat/data/local/AppDatabase.kt` (v8 → v9, v9 → v10)
+- `app/src/main/java/com/gchat/data/local/entity/ConversationEntity.kt` (added type/mediaUrl)
+- `app/src/main/java/com/gchat/data/local/dao/ConversationDao.kt` (update SQL)
+- `app/src/main/java/com/gchat/data/repository/ConversationRepositoryImpl.kt` (read type/mediaUrl from entity)
+- `app/src/main/java/com/gchat/data/mapper/ConversationMapper.kt` (map type/mediaUrl)
+- `app/src/main/java/com/gchat/data/remote/firestore/FirestoreConversationDataSource.kt` (save type/mediaUrl)
+- `app/src/main/java/com/gchat/domain/repository/ConversationRepository.kt` (add params)
+- `app/src/main/java/com/gchat/domain/usecase/SendMessageUseCase.kt` (pass type/mediaUrl)
+- `app/src/main/java/com/gchat/presentation/chat/ChatScreen.kt` (translation UI)
+- `app/src/main/java/com/gchat/presentation/chat/ChatViewModel.kt` (translation state)
+- `app/src/main/java/com/gchat/presentation/chat/ConversationListScreen.kt` (preview text)
+- `app/src/main/java/com/gchat/di/RepositoryModule.kt` (bind TranslationRepository)
+- `app/src/main/java/com/gchat/di/AppModule.kt` (provide TranslationDao)
+- `firebase/firestore.rules` (allow text=null, add translations/rateLimits rules)
+
+### Critical Bugs Fixed
+1. **Image Messages Not Syncing** - Firestore rules rejected `text = null`, fixed validation
+2. **Conversation Preview Showing "New Message"** - Repository hardcoded type/mediaUrl, now reads from entity
+3. **Translation Loading Not Showing** - UI wasn't collecting state flows, added `collectAsState()`
+4. **Image-Only Message Sync Failure** - UseCase passed empty string instead of null, fixed
+
+### Testing
+- [x] Long-press text message shows language selector
+- [x] Select language triggers translation
+- [x] Loading indicator appears during translation
+- [x] Translation displays below original message
+- [x] Hide button removes translation
+- [x] Retry button works on error
+- [x] Translation caches (instant second time)
+- [x] Rate limiting shows friendly error
+- [x] Both sender and receiver messages translate
+- [x] Image messages don't show translation menu
+- [x] Conversation preview shows "📷 Image" for image-only messages
+
+---
+
+## ✅ PR #12: Backend Infrastructure & Translation API (MERGED ✅)
+
+**Goal:** Set up OpenAI integration and translation backend
+
+**Branch:** `feature/pr12-translation-backend` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (Required for PR #13)
+
+**Time Spent:** ~2 hours
+
+### Features Implemented
+- [x] OpenAI GPT-4 integration
+- [x] `translateMessage` callable function
+- [x] `detectLanguage` callable function
+- [x] Translation caching with SHA-256 keys
+- [x] Rate limiting infrastructure
+- [x] Centralized OpenAI client
+- [x] Environment variable management
+
+### Files Created
+- `firebase/functions/src/utils/openai.ts` - OpenAI client and config
+- `firebase/functions/src/utils/cache.ts` - Translation caching
+- `firebase/functions/src/utils/rateLimit.ts` - Rate limiting
+- `firebase/functions/AI_SETUP.md` - Setup documentation
+- `firebase/functions/ENV_SETUP.md` - Environment variables
+
+### Files Modified
+- `firebase/functions/src/ai/translation.ts` - Refactored with new utilities
+- `firebase/functions/src/index.ts` - Export new functions
+- `firebase/functions/package.json` - Added OpenAI dependency
+- `firebase/firestore.rules` - Added translations and rateLimits rules
+
+### Testing
+- [x] Translation API called from Android
+- [x] Cache working (instant second request)
+- [x] Rate limiting triggers at 100/hour
+- [x] Language detection working
+- [x] Firestore rules allow authenticated reads
+- [x] Cloud Functions deployed successfully
 
 ---
 
