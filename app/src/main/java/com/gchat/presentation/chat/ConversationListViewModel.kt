@@ -131,6 +131,13 @@ class ConversationListViewModel @Inject constructor(
             // Combine all conversation flows and emit as a list
             combine(conversationFlows) { it.toList() }
                 .combine(_dismissedConversationIds) { conversations, dismissedIds ->
+                    // Clear dismissed IDs for conversations that have reappeared (new message after deletion)
+                    val visibleConversationIds = conversations.map { it.conversation.id }.toSet()
+                    val staleDismissedIds = dismissedIds - visibleConversationIds
+                    if (staleDismissedIds != dismissedIds) {
+                        _dismissedConversationIds.value = staleDismissedIds
+                    }
+                    
                     // Filter out dismissed conversations for immediate UI update
                     conversations.filter { it.conversation.id !in dismissedIds }
                 }
