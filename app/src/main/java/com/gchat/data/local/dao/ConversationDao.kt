@@ -56,6 +56,8 @@ interface ConversationDao {
         UPDATE conversations 
         SET lastMessageId = :messageId, 
             lastMessageText = :messageText,
+            lastMessageType = :messageType,
+            lastMessageMediaUrl = :mediaUrl,
             lastMessageTimestamp = :timestamp,
             lastMessageSenderId = :senderId,
             updatedAt = :timestamp
@@ -65,6 +67,8 @@ interface ConversationDao {
         conversationId: String,
         messageId: String,
         messageText: String?,
+        messageType: String?,
+        mediaUrl: String?,
         senderId: String,
         timestamp: Long
     )

@@ -205,6 +205,8 @@ class ConversationRepositoryImpl @Inject constructor(
         conversationId: String,
         messageId: String,
         messageText: String?,
+        messageType: String?,
+        mediaUrl: String?,
         senderId: String,
         timestamp: Long
     ): Result<Unit> {
@@ -218,6 +220,8 @@ class ConversationRepositoryImpl @Inject constructor(
                 conversationId,
                 messageId,
                 messageText,
+                messageType,
+                mediaUrl,
                 senderId,
                 timestamp
             )
@@ -227,6 +231,8 @@ class ConversationRepositoryImpl @Inject constructor(
                 conversationId,
                 messageId,
                 messageText,
+                messageType,
+                mediaUrl,
                 senderId,
                 timestamp
             )

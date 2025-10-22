@@ -145,6 +145,8 @@ class FirestoreConversationDataSource @Inject constructor(
         conversationId: String,
         messageId: String,
         messageText: String?,
+        messageType: String?,
+        mediaUrl: String?,
         senderId: String,
         timestamp: Long
     ): Result<Unit> {
@@ -155,6 +157,8 @@ class FirestoreConversationDataSource @Inject constructor(
                     "id" to messageId,
                     "senderId" to senderId,
                     "text" to messageText,
+                    "type" to messageType,
+                    "mediaUrl" to mediaUrl,
                     "timestamp" to timestamp
                 ),
                 "updatedAt" to timestamp
