@@ -88,7 +88,8 @@ object EntityIntentHandler {
     private fun handleDateTime(context: Context, entity: ExtractedEntity.DateTime) {
         android.util.Log.d("EntityIntentHandler", "Creating calendar intent for time: ${entity.dateTime}")
         
-        val intent = Intent(Intent.ACTION_INSERT).apply {
+        // Try INSERT action first
+        val insertIntent = Intent(Intent.ACTION_INSERT).apply {
             data = CalendarContract.Events.CONTENT_URI
             putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, entity.dateTime)
             
@@ -104,20 +105,66 @@ object EntityIntentHandler {
             } ?: putExtra(CalendarContract.Events.TITLE, "Event")
         }
         
-        val resolvedActivity = intent.resolveActivity(context.packageManager)
-        android.util.Log.d("EntityIntentHandler", "Calendar intent resolves to: $resolvedActivity")
+        var resolvedActivity = insertIntent.resolveActivity(context.packageManager)
+        android.util.Log.d("EntityIntentHandler", "INSERT intent resolves to: $resolvedActivity")
         
-        if (resolvedActivity != null) {
+        // Fallback 1: Try with EDIT action
+        if (resolvedActivity == null) {
+            android.util.Log.d("EntityIntentHandler", "Trying EDIT action as fallback")
+            val editIntent = Intent(Intent.ACTION_EDIT).apply {
+                data = CalendarContract.Events.CONTENT_URI
+                putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, entity.dateTime)
+                putExtra(CalendarContract.EXTRA_EVENT_END_TIME, entity.dateTime + (60 * 60 * 1000))
+                entity.description?.let {
+                    putExtra(CalendarContract.Events.TITLE, it)
+                } ?: putExtra(CalendarContract.Events.TITLE, "Event")
+            }
+            resolvedActivity = editIntent.resolveActivity(context.packageManager)
+            android.util.Log.d("EntityIntentHandler", "EDIT intent resolves to: $resolvedActivity")
+            
+            if (resolvedActivity != null) {
+                try {
+                    context.startActivity(editIntent)
+                    return
+                } catch (e: Exception) {
+                    android.util.Log.e("EntityIntentHandler", "EDIT intent failed: ${e.message}")
+                }
+            }
+        }
+        
+        // Fallback 2: Try opening calendar app directly
+        if (resolvedActivity == null) {
+            android.util.Log.d("EntityIntentHandler", "Trying to open calendar app directly")
+            
+            // Try Google Calendar package
+            val calendarIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.calendar")
+            if (calendarIntent != null) {
+                android.util.Log.d("EntityIntentHandler", "Found Google Calendar, launching...")
+                try {
+                    context.startActivity(calendarIntent)
+                    Toast.makeText(context, "Opened Calendar - please add event manually: ${entity.text}", Toast.LENGTH_LONG).show()
+                    return
+                } catch (e: Exception) {
+                    android.util.Log.e("EntityIntentHandler", "Failed to launch calendar: ${e.message}")
+                }
+            }
+            
+            // Last resort: show the extracted info
+            android.util.Log.w("EntityIntentHandler", "No working calendar intent found")
+            Toast.makeText(
+                context,
+                "Calendar not available on emulator. Event: ${entity.text}",
+                Toast.LENGTH_LONG
+            ).show()
+        } else {
+            // Original INSERT intent worked
             try {
-                context.startActivity(intent)
+                context.startActivity(insertIntent)
                 android.util.Log.d("EntityIntentHandler", "Calendar intent launched successfully")
             } catch (e: Exception) {
                 android.util.Log.e("EntityIntentHandler", "Failed to launch calendar: ${e.message}", e)
                 Toast.makeText(context, "Failed to open calendar: ${e.message}", Toast.LENGTH_LONG).show()
             }
-        } else {
-            android.util.Log.w("EntityIntentHandler", "No calendar app found on device")
-            Toast.makeText(context, "No calendar app installed. Please install Google Calendar from Play Store.", Toast.LENGTH_LONG).show()
         }
     }
     
@@ -127,7 +174,7 @@ object EntityIntentHandler {
     private fun handleContact(context: Context, entity: ExtractedEntity.Contact) {
         android.util.Log.d("EntityIntentHandler", "Creating contact intent for: ${entity.name ?: "Unknown"}")
         
-        val intent = Intent(Intent.ACTION_INSERT).apply {
+        val insertIntent = Intent(Intent.ACTION_INSERT).apply {
             type = ContactsContract.Contacts.CONTENT_TYPE
             
             entity.name?.let {
@@ -148,21 +195,57 @@ object EntityIntentHandler {
             }
         }
         
-        val resolvedActivity = intent.resolveActivity(context.packageManager)
-        android.util.Log.d("EntityIntentHandler", "Contacts intent resolves to: $resolvedActivity")
+        var resolvedActivity = insertIntent.resolveActivity(context.packageManager)
+        android.util.Log.d("EntityIntentHandler", "INSERT Contacts intent resolves to: $resolvedActivity")
         
         if (resolvedActivity != null) {
             try {
-                context.startActivity(intent)
+                context.startActivity(insertIntent)
                 android.util.Log.d("EntityIntentHandler", "Contacts intent launched successfully")
             } catch (e: Exception) {
                 android.util.Log.e("EntityIntentHandler", "Failed to launch contacts: ${e.message}", e)
                 Toast.makeText(context, "Failed to open contacts: ${e.message}", Toast.LENGTH_LONG).show()
             }
         } else {
-            android.util.Log.w("EntityIntentHandler", "No contacts app found on device")
-            Toast.makeText(context, "No contacts app installed. Emulator may not have Contacts pre-installed.", Toast.LENGTH_LONG).show()
+            // Fallback: Try opening contacts app directly
+            android.util.Log.d("EntityIntentHandler", "Trying to open contacts app directly")
+            
+            val contactsIntent = context.packageManager.getLaunchIntentForPackage("com.google.android.contacts") 
+                ?: context.packageManager.getLaunchIntentForPackage("com.android.contacts")
+            
+            if (contactsIntent != null) {
+                android.util.Log.d("EntityIntentHandler", "Found Contacts app, launching...")
+                try {
+                    context.startActivity(contactsIntent)
+                    val contactInfo = buildString {
+                        entity.name?.let { append("Name: $it\n") }
+                        entity.phone?.let { append("Phone: $it\n") }
+                        entity.email?.let { append("Email: $it") }
+                    }
+                    Toast.makeText(
+                        context,
+                        "Opened Contacts - please add manually:\n$contactInfo",
+                        Toast.LENGTH_LONG
+                    ).show()
+                } catch (e: Exception) {
+                    android.util.Log.e("EntityIntentHandler", "Failed to launch contacts app: ${e.message}")
+                    showContactInfo(context, entity)
+                }
+            } else {
+                android.util.Log.w("EntityIntentHandler", "No contacts app found on device")
+                showContactInfo(context, entity)
+            }
         }
+    }
+    
+    private fun showContactInfo(context: Context, entity: ExtractedEntity.Contact) {
+        val contactInfo = buildString {
+            append("Contact Info:\n")
+            entity.name?.let { append("Name: $it\n") }
+            entity.phone?.let { append("Phone: $it\n") }
+            entity.email?.let { append("Email: $it") }
+        }
+        Toast.makeText(context, contactInfo, Toast.LENGTH_LONG).show()
     }
     
     /**
