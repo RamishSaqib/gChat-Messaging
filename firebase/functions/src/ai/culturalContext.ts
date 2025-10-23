@@ -361,22 +361,23 @@ export const adjustFormality = onCall<{
         formal: 'Use professional language, no contractions (e.g., "cannot" instead of "can\'t"), polite and respectful phrasing. Maintain a professional tone suitable for business communication.',
       };
 
-      const systemPrompt = `You are an expert in ${language} language and communication styles. Rewrite text to match specific formality levels while preserving the original meaning and intent.`;
+      const systemPrompt = `You are an expert in ${language} language and communication styles. Rewrite text to match specific formality levels while preserving the original meaning, intent, AND LANGUAGE. Do not translate - only adjust the tone/formality.`;
       
-      const userPrompt = `Rewrite the following ${language} text to match a ${targetFormality.toUpperCase()} tone.
+      const userPrompt = `Rewrite the following ${language} text to match a ${targetFormality.toUpperCase()} tone. IMPORTANT: Keep the text in ${language} - do NOT translate it to any other language.
 
 Rules for ${targetFormality} tone:
 ${formalityRules[targetFormality]}
 
-Important:
+Critical Requirements:
+- STAY IN ${language.toUpperCase()} LANGUAGE (do not translate)
 - Preserve the core meaning and intent
 - Keep the same person/perspective (1st, 2nd, 3rd)
 - Maintain similar length (don't make it much longer or shorter)
-- Return ONLY the rewritten text, no explanations or comments
+- Return ONLY the rewritten text in ${language}, no explanations or comments
 
-Original text: "${text}"
+Original text (in ${language}): "${text}"
 
-Rewritten text:`;
+Rewritten text (in ${language}):`;
 
       // Call GPT-4
       const completion = await openai.chat.completions.create({

@@ -951,19 +951,20 @@ class ChatViewModel @Inject constructor(
             _formalityLoading.value = true
             _formalityError.value = null
             
-            // Get user's preferred language
-            val userId = authRepository.getCurrentUserId() ?: run {
-                _formalityError.value = "User not authenticated"
-                _formalityLoading.value = false
-                return@launch
+            // Detect the language of the message text (not user's preferred language)
+            android.util.Log.d("ChatViewModel", "Detecting language of message text...")
+            val detectedLanguage = translationRepository.detectLanguage(text).getOrNull() ?: run {
+                // Fall back to user's preferred language if detection fails
+                val userId = authRepository.getCurrentUserId()
+                val user = userId?.let { userRepository.getUser(it).getOrNull() }
+                user?.preferredLanguage ?: "en"
             }
             
-            val user = userRepository.getUser(userId).getOrNull()
-            val language = user?.preferredLanguage ?: "en"
+            android.util.Log.d("ChatViewModel", "Message language detected: $detectedLanguage")
             
             val result = adjustFormalityUseCase(
                 text = text,
-                language = language,
+                language = detectedLanguage,
                 targetFormality = formality
             )
             
