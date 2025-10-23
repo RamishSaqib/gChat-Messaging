@@ -31,6 +31,9 @@ class ProfileViewModel @Inject constructor(
     private val _autoTranslateEnabled = MutableStateFlow(false)
     val autoTranslateEnabled: StateFlow<Boolean> = _autoTranslateEnabled.asStateFlow()
     
+    private val _smartRepliesEnabled = MutableStateFlow(true)
+    val smartRepliesEnabled: StateFlow<Boolean> = _smartRepliesEnabled.asStateFlow()
+    
     private val _profilePictureUrl = MutableStateFlow<String?>(null)
     val profilePictureUrl: StateFlow<String?> = _profilePictureUrl.asStateFlow()
     
@@ -61,8 +64,9 @@ class ProfileViewModel @Inject constructor(
                     user?.let {
                         _displayName.value = it.displayName
                         _autoTranslateEnabled.value = it.autoTranslateEnabled
+                        _smartRepliesEnabled.value = it.smartRepliesEnabled
                         _profilePictureUrl.value = it.profilePictureUrl
-                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, profilePictureUrl: ${it.profilePictureUrl}")
+                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, smartReplies: ${it.smartRepliesEnabled}, profilePictureUrl: ${it.profilePictureUrl}")
                     }
                 }
             } else {
@@ -77,6 +81,10 @@ class ProfileViewModel @Inject constructor(
     
     fun updateAutoTranslate(enabled: Boolean) {
         _autoTranslateEnabled.value = enabled
+    }
+    
+    fun updateSmartReplies(enabled: Boolean) {
+        _smartRepliesEnabled.value = enabled
     }
     
     fun selectProfilePicture(uri: Uri) {
@@ -115,7 +123,8 @@ class ProfileViewModel @Inject constructor(
             
             val updates = mutableMapOf<String, Any?>(
                 "displayName" to name,
-                "autoTranslateEnabled" to _autoTranslateEnabled.value
+                "autoTranslateEnabled" to _autoTranslateEnabled.value,
+                "smartRepliesEnabled" to _smartRepliesEnabled.value
             )
             
             // Only update profile picture if it changed

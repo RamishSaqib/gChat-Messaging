@@ -35,6 +35,7 @@ fun ProfileScreen(
     val currentUser by viewModel.currentUser.collectAsState()
     val displayName by viewModel.displayName.collectAsState()
     val autoTranslateEnabled by viewModel.autoTranslateEnabled.collectAsState()
+    val smartRepliesEnabled by viewModel.smartRepliesEnabled.collectAsState()
     val profilePictureUrl by viewModel.profilePictureUrl.collectAsState()
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
@@ -203,6 +204,42 @@ fun ProfileScreen(
                     Switch(
                         checked = autoTranslateEnabled,
                         onCheckedChange = { viewModel.updateAutoTranslate(it) },
+                        enabled = !isSaving
+                    )
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
+            // Smart Replies toggle
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Smart Replies",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "AI-powered quick reply suggestions",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = smartRepliesEnabled,
+                        onCheckedChange = { viewModel.updateSmartReplies(it) },
                         enabled = !isSaving
                     )
                 }
