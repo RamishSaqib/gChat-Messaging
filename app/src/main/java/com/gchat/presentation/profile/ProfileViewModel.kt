@@ -56,21 +56,27 @@ class ProfileViewModel @Inject constructor(
     private fun loadUserProfile() {
         viewModelScope.launch {
             val userId = authRepository.getCurrentUserId()
-            android.util.Log.d("ProfileViewModel", "Loading profile for user: $userId")
+            android.util.Log.d("ProfileViewModel", "🔄 Loading profile for user: $userId")
             if (userId != null) {
-                userRepository.getUserFlow(userId).collect { user ->
-                    android.util.Log.d("ProfileViewModel", "User data collected: ${user?.displayName}, email: ${user?.email}, profilePictureUrl: ${user?.profilePictureUrl}")
-                    _currentUser.value = user
-                    user?.let {
-                        _displayName.value = it.displayName
-                        _autoTranslateEnabled.value = it.autoTranslateEnabled
-                        _smartRepliesEnabled.value = it.smartRepliesEnabled
-                        _profilePictureUrl.value = it.profilePictureUrl
-                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, smartReplies: ${it.smartRepliesEnabled}, profilePictureUrl: ${it.profilePictureUrl}")
+                try {
+                    userRepository.getUserFlow(userId).collect { user ->
+                        android.util.Log.d("ProfileViewModel", "📥 User data collected: displayName=${user?.displayName}, email=${user?.email}, smartReplies=${user?.smartRepliesEnabled}, autoTranslate=${user?.autoTranslateEnabled}")
+                        _currentUser.value = user
+                        user?.let {
+                            _displayName.value = it.displayName
+                            _autoTranslateEnabled.value = it.autoTranslateEnabled
+                            _smartRepliesEnabled.value = it.smartRepliesEnabled
+                            _profilePictureUrl.value = it.profilePictureUrl
+                            android.util.Log.d("ProfileViewModel", "✅ Updated UI state - displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, smartReplies: ${it.smartRepliesEnabled}")
+                        }
                     }
+                } catch (e: Exception) {
+                    android.util.Log.e("ProfileViewModel", "❌ Error loading user profile", e)
+                    _error.value = "Failed to load profile: ${e.message}"
                 }
             } else {
-                android.util.Log.e("ProfileViewModel", "No user ID found!")
+                android.util.Log.e("ProfileViewModel", "❌ No user ID found!")
+                _error.value = "No user session found. Please log in again."
             }
         }
     }
@@ -84,6 +90,7 @@ class ProfileViewModel @Inject constructor(
     }
     
     fun updateSmartReplies(enabled: Boolean) {
+        android.util.Log.d("ProfileViewModel", "📝 Local state update: smartRepliesEnabled = $enabled (NOT saved to Firestore yet)")
         _smartRepliesEnabled.value = enabled
     }
     
@@ -127,6 +134,8 @@ class ProfileViewModel @Inject constructor(
                 "smartRepliesEnabled" to _smartRepliesEnabled.value
             )
             
+            android.util.Log.d("ProfileViewModel", "💾 Saving GLOBAL settings to Firestore: $updates")
+            
             // Only update profile picture if it changed
             if (_profilePictureUrl.value != _currentUser.value?.profilePictureUrl) {
                 updates["profilePictureUrl"] = _profilePictureUrl.value
@@ -134,10 +143,12 @@ class ProfileViewModel @Inject constructor(
             
             authRepository.updateUserProfile(userId, updates).fold(
                 onSuccess = {
+                    android.util.Log.d("ProfileViewModel", "✅ Profile saved successfully (GLOBAL settings updated)")
                     _saveSuccess.value = true
                     _isSaving.value = false
                 },
                 onFailure = { exception ->
+                    android.util.Log.e("ProfileViewModel", "❌ Failed to save profile", exception)
                     _error.value = "Failed to save profile: ${exception.message}"
                     _isSaving.value = false
                 }

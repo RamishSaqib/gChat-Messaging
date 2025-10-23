@@ -490,6 +490,8 @@ class ConversationRepositoryImpl @Inject constructor(
         return try {
             val timestamp = System.currentTimeMillis()
             
+            android.util.Log.d("ConversationRepo", "🔧 Updating smart replies for conversation $conversationId to $enabled (per-chat override, NOT global)")
+            
             // Update locally first for immediate UI update
             conversationDao.updateSmartReplies(conversationId, enabled, timestamp)
             
@@ -502,8 +504,15 @@ class ConversationRepositoryImpl @Inject constructor(
                 )
             )
             
+            result.onSuccess {
+                android.util.Log.d("ConversationRepo", "✅ Smart replies per-chat updated successfully: conversation=$conversationId, value=$enabled")
+            }.onFailure { error ->
+                android.util.Log.e("ConversationRepo", "❌ Failed to update smart replies per-chat", error)
+            }
+            
             result
         } catch (e: Exception) {
+            android.util.Log.e("ConversationRepo", "❌ Exception updating smart replies per-chat", e)
             Result.failure(e)
         }
     }

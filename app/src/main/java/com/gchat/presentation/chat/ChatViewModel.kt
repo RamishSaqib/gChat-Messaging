@@ -1024,28 +1024,41 @@ class ChatViewModel @Inject constructor(
     
     fun toggleSmartReplies() {
         viewModelScope.launch {
-            val conv = conversation.value ?: return@launch
-            val user = currentUserId.value?.let { userRepository.getUser(it).getOrNull() }
+            val conv = conversation.value ?: run {
+                android.util.Log.e("ChatViewModel", "Cannot toggle smart replies: conversation is null")
+                return@launch
+            }
+            
+            val userId = currentUserId.value ?: run {
+                android.util.Log.e("ChatViewModel", "Cannot toggle smart replies: userId is null")
+                return@launch
+            }
+            
+            val user = userRepository.getUser(userId).getOrNull()
             val globalEnabled = user?.smartRepliesEnabled ?: true
             
-            // Current effective state
-            val currentlyEnabled = conv.smartRepliesEnabled ?: globalEnabled
+            android.util.Log.d("ChatViewModel", "Toggling smart replies - current per-chat: ${conv.smartRepliesEnabled}, global: $globalEnabled")
             
             // Toggle logic:
-            // - If currently using global (null) or enabled (true), set to false
-            // - If currently disabled (false), set to null (use global)
+            // - If currently using global (null):
+            //   - If global is ON, set per-chat to OFF
+            //   - If global is OFF, set per-chat to ON
+            // - If currently explicitly enabled (true), set to false
+            // - If currently explicitly disabled (false), reset to null (use global)
             val newValue = when (conv.smartRepliesEnabled) {
-                null -> if (globalEnabled) false else true // If global is on, turn off; if global is off, turn on
-                true -> false
+                null -> if (globalEnabled) false else true // Override global setting
+                true -> false // Turn off
                 false -> null // Reset to global
             }
             
+            android.util.Log.d("ChatViewModel", "Toggling smart replies from ${conv.smartRepliesEnabled} to $newValue (global=$globalEnabled)")
+            
             conversationRepository.updateSmartReplies(conversationId, newValue).fold(
                 onSuccess = {
-                    android.util.Log.d("ChatViewModel", "Smart replies toggled: $newValue - SUCCESS")
+                    android.util.Log.d("ChatViewModel", "✅ Smart replies per-chat updated to: $newValue (does NOT affect global setting)")
                 },
                 onFailure = { error ->
-                    android.util.Log.e("ChatViewModel", "Failed to toggle smart replies", error)
+                    android.util.Log.e("ChatViewModel", "❌ Failed to toggle smart replies per-chat", error)
                 }
             )
         }
