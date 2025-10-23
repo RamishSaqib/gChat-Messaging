@@ -733,5 +733,24 @@ class ChatViewModel @Inject constructor(
             else -> playVoiceMessage(messageId, audioUrl)
         }
     }
+    
+    /**
+     * Set or update the user's nickname in this conversation
+     */
+    fun setNickname(nickname: String?) {
+        viewModelScope.launch {
+            val userId = currentUserId.value ?: return@launch
+            
+            conversationRepository.setNickname(conversationId, userId, nickname).fold(
+                onSuccess = {
+                    // Success - conversation flow will update automatically
+                    android.util.Log.d("ChatViewModel", "Nickname updated")
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Failed to set nickname", error)
+                }
+            )
+        }
+    }
 }
 

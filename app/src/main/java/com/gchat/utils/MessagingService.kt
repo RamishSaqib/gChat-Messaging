@@ -63,6 +63,8 @@ class MessagingService : FirebaseMessagingService() {
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
         
+        android.util.Log.d("MessagingService", "Message received at ${System.currentTimeMillis()}")
+        
         val data = message.data
         
         when (data["type"]) {
@@ -74,7 +76,16 @@ class MessagingService : FirebaseMessagingService() {
                 val isGroupChat = data["isGroup"]?.toBoolean() ?: false
                 val groupName = data["groupName"]
                 
-                showMessageNotification(conversationId, senderId, senderName, messageText, isGroupChat, groupName)
+                // Check if user is currently viewing this conversation
+                val currentConversationId = (application as? GChatApplication)?.currentConversationId
+                
+                if (conversationId != currentConversationId) {
+                    // User is NOT in this chat - show notification
+                    android.util.Log.d("MessagingService", "User in different chat, showing notification")
+                    showMessageNotification(conversationId, senderId, senderName, messageText, isGroupChat, groupName)
+                } else {
+                    android.util.Log.d("MessagingService", "User is in this chat, suppressing notification")
+                }
             }
             "TYPING" -> {
                 // Handle typing indicator if needed

@@ -105,4 +105,5 @@ dist
 .DS_Store
 
 # Plan files
+.cursor/
 .cursor/plans/

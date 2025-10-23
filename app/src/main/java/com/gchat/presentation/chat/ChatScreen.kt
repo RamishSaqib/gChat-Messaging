@@ -26,7 +26,9 @@ import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PhotoLibrary
 import androidx.compose.material.icons.filled.Send
 import androidx.compose.material.icons.filled.Translate
@@ -96,6 +98,21 @@ fun ChatScreen(
     val transcriptionLoading by viewModel.transcriptionLoading.collectAsState()
     
     var showRecordingSheet by remember { mutableStateOf(false) }
+    var showChatMenu by remember { mutableStateOf(false) }
+    var showNicknameDialog by remember { mutableStateOf(false) }
+    
+    // Track active conversation for notification suppression
+    val application = LocalContext.current.applicationContext as? com.gchat.GChatApplication
+    LaunchedEffect(conversationId) {
+        application?.currentConversationId = conversationId
+    }
+    
+    DisposableEffect(Unit) {
+        onDispose {
+            // Clear when leaving chat screen
+            application?.currentConversationId = null
+        }
+    }
     
     // Audio permission
     val audioPermissionState = rememberPermissionState(Manifest.permission.RECORD_AUDIO)
@@ -208,6 +225,28 @@ fun ChatScreen(
                         navigationIcon = {
                             IconButton(onClick = onNavigateBack) {
                                 Icon(Icons.Filled.ArrowBack, "Back")
+                            }
+                        },
+                        actions = {
+                            // Only show for DM chats, not groups
+                            val isGroup = conversation?.isGroup() == true
+                            if (!isGroup) {
+                                IconButton(onClick = { showChatMenu = true }) {
+                                    Icon(Icons.Default.MoreVert, "Menu")
+                                }
+                                DropdownMenu(
+                                    expanded = showChatMenu,
+                                    onDismissRequest = { showChatMenu = false }
+                                ) {
+                                    DropdownMenuItem(
+                                        text = { Text("Change My Nickname") },
+                                        onClick = {
+                                            showChatMenu = false
+                                            showNicknameDialog = true
+                                        },
+                                        leadingIcon = { Icon(Icons.Default.Edit, null) }
+                                    )
+                                }
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
@@ -375,6 +414,56 @@ fun ChatScreen(
             // Permission was just granted, now launch camera
             // (This will trigger if user grants permission from the dialog)
         }
+    }
+    
+    // Nickname dialog
+    if (showNicknameDialog) {
+        var nicknameText by remember { 
+            mutableStateOf(conversation?.getNickname(currentUserId ?: "") ?: "") 
+        }
+        
+        AlertDialog(
+            onDismissRequest = { showNicknameDialog = false },
+            title = { Text("Change My Nickname") },
+            text = {
+                Column {
+                    Text(
+                        text = "Set a custom nickname that only shows in this chat.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(modifier = Modifier.height(16.dp))
+                    OutlinedTextField(
+                        value = nicknameText,
+                        onValueChange = { nicknameText = it },
+                        label = { Text("Nickname") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = {
+                    viewModel.setNickname(nicknameText.ifBlank { null })
+                    showNicknameDialog = false
+                }) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                if (nicknameText.isNotBlank()) {
+                    TextButton(onClick = {
+                        viewModel.setNickname(null)
+                        showNicknameDialog = false
+                    }) {
+                        Text("Remove")
+                    }
+                }
+                TextButton(onClick = { showNicknameDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
     
     // Voice recording sheet

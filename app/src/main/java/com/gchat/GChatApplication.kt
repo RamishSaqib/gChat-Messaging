@@ -41,6 +41,9 @@ class GChatApplication : Application() {
     
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
     private var heartbeatJob: Job? = null
+    
+    // Track which conversation user is currently viewing (for notification suppression)
+    var currentConversationId: String? = null
 
     override fun onCreate() {
         super.onCreate()
