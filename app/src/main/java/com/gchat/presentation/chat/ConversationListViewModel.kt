@@ -32,14 +32,6 @@ class ConversationListViewModel @Inject constructor(
     // Track conversations being dismissed for immediate UI removal
     private val _dismissedConversationIds = MutableStateFlow<Set<String>>(emptySet())
     
-    // Track if initial load is complete (used to differentiate between loading and truly empty)
-    val isInitialLoad: StateFlow<Boolean> = flow {
-        emit(true) // Start as loading
-        // Wait for first emission from conversationsWithUsers (after user data is loaded)
-        conversationsWithUsers.first()
-        emit(false) // Loading complete
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
-    
     // Current user information
     val currentUser: StateFlow<User?> = flow {
         val userId = authRepository.getCurrentUserId()
@@ -192,6 +184,15 @@ class ConversationListViewModel @Inject constructor(
             started = SharingStarted.Eagerly, // Changed to Eagerly to keep collecting even when screen not visible
             initialValue = emptyList()
         )
+    
+    // Track if initial load is complete (used to differentiate between loading and truly empty)
+    // MUST be defined AFTER conversationsWithUsers to avoid null reference
+    val isInitialLoad: StateFlow<Boolean> = flow {
+        emit(true) // Start as loading
+        // Wait for first emission from conversationsWithUsers (after user data is loaded)
+        conversationsWithUsers.first()
+        emit(false) // Loading complete
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     
     fun deleteConversation(conversationId: String, onComplete: (Result<Unit>) -> Unit = {}) {
         viewModelScope.launch {
