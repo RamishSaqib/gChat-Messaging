@@ -545,14 +545,21 @@ class ChatViewModel @Inject constructor(
             }.collect { (messagesList, userId) ->
                 if (userId == null) return@collect
                 
+                // Get the latest message overall
+                val latestMessage = messagesList.maxByOrNull { it.timestamp }
+                
                 // Get the latest message from the other user
                 val latestIncomingMessage = messagesList
                     .filter { it.senderId != userId && it.type == MessageType.TEXT && !it.text.isNullOrBlank() }
                     .maxByOrNull { it.timestamp }
                 
-                // Only generate if we have a new incoming message
+                // Only generate if:
+                // 1. We have a new incoming message
+                // 2. The incoming message ID hasn't been processed yet
+                // 3. The latest message in the conversation is from the other user (not from us)
                 if (latestIncomingMessage != null && 
-                    latestIncomingMessage.id != _lastSmartReplyMessageId.value) {
+                    latestIncomingMessage.id != _lastSmartReplyMessageId.value &&
+                    latestMessage?.id == latestIncomingMessage.id) {
                     
                     // Debounce: cancel previous job and start new one after delay
                     smartReplyJob?.cancel()
