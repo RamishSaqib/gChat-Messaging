@@ -28,6 +28,8 @@ import com.gchat.domain.usecase.SendMessageUseCase
 import com.gchat.domain.usecase.SendVoiceMessageUseCase
 import com.gchat.domain.usecase.TranscribeVoiceMessageUseCase
 import com.gchat.domain.usecase.TranslateMessageUseCase
+import com.gchat.domain.usecase.GenerateSmartRepliesUseCase
+import com.gchat.domain.model.SmartReply
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -55,6 +57,7 @@ class ChatViewModel @Inject constructor(
     private val sendVoiceMessageUseCase: SendVoiceMessageUseCase,
     private val playVoiceMessageUseCase: PlayVoiceMessageUseCase,
     private val transcribeVoiceMessageUseCase: TranscribeVoiceMessageUseCase,
+    private val generateSmartRepliesUseCase: GenerateSmartRepliesUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -509,6 +512,111 @@ class ChatViewModel @Inject constructor(
                     }
             }
         }
+    }
+    
+    // ===== Smart Reply State =====
+    
+    private val _smartReplies = MutableStateFlow<List<SmartReply>>(emptyList())
+    val smartReplies: StateFlow<List<SmartReply>> = _smartReplies.asStateFlow()
+    
+    private val _smartRepliesLoading = MutableStateFlow(false)
+    val smartRepliesLoading: StateFlow<Boolean> = _smartRepliesLoading.asStateFlow()
+    
+    private val _smartRepliesError = MutableStateFlow<String?>(null)
+    val smartRepliesError: StateFlow<String?> = _smartRepliesError.asStateFlow()
+    
+    // Track the last message we generated replies for (to avoid regenerating)
+    private val _lastSmartReplyMessageId = MutableStateFlow<String?>(null)
+    
+    // Debounce job for smart reply generation
+    private var smartReplyJob: Job? = null
+    
+    /**
+     * Auto-generate smart replies for incoming messages
+     * Debounced by 500ms to avoid excessive API calls
+     */
+    init {
+        viewModelScope.launch {
+            combine(
+                messages,
+                currentUserId
+            ) { messagesList, userId ->
+                Pair(messagesList, userId)
+            }.collect { (messagesList, userId) ->
+                if (userId == null) return@collect
+                
+                // Get the latest message from the other user
+                val latestIncomingMessage = messagesList
+                    .filter { it.senderId != userId && it.type == MessageType.TEXT && !it.text.isNullOrBlank() }
+                    .maxByOrNull { it.timestamp }
+                
+                // Only generate if we have a new incoming message
+                if (latestIncomingMessage != null && 
+                    latestIncomingMessage.id != _lastSmartReplyMessageId.value) {
+                    
+                    // Debounce: cancel previous job and start new one after delay
+                    smartReplyJob?.cancel()
+                    smartReplyJob = launch {
+                        delay(500) // 500ms debounce
+                        loadSmartReplies(latestIncomingMessage)
+                    }
+                }
+            }
+        }
+    }
+    
+    /**
+     * Load smart reply suggestions for a message
+     */
+    fun loadSmartReplies(incomingMessage: Message) {
+        viewModelScope.launch {
+            _smartRepliesLoading.value = true
+            _smartRepliesError.value = null
+            
+            android.util.Log.d("ChatViewModel", "Loading smart replies for message: ${incomingMessage.id}")
+            
+            // Get target language from user preferences
+            val userId = authRepository.getCurrentUserId() ?: return@launch
+            val user = userRepository.getUser(userId).getOrNull()
+            val targetLanguage = user?.preferredLanguage ?: "en"
+            
+            val result = generateSmartRepliesUseCase(
+                conversationId = conversationId,
+                incomingMessageId = incomingMessage.id,
+                targetLanguage = targetLanguage
+            )
+            
+            result.onSuccess { replies ->
+                _smartReplies.value = replies
+                _lastSmartReplyMessageId.value = incomingMessage.id
+                _smartRepliesError.value = null
+                android.util.Log.d("ChatViewModel", "Smart replies loaded: ${replies.size}")
+            }.onFailure { error ->
+                _smartReplies.value = emptyList()
+                _smartRepliesError.value = error.message ?: "Failed to generate smart replies"
+                android.util.Log.e("ChatViewModel", "Smart reply error", error)
+            }
+            
+            _smartRepliesLoading.value = false
+        }
+    }
+    
+    /**
+     * Use a smart reply suggestion
+     * Inserts the reply text into the message input field
+     */
+    fun useSmartReply(reply: SmartReply) {
+        _messageText.value = reply.replyText
+        android.util.Log.d("ChatViewModel", "Smart reply selected: ${reply.replyText}")
+    }
+    
+    /**
+     * Dismiss smart reply suggestions
+     */
+    fun dismissSmartReplies() {
+        _smartReplies.value = emptyList()
+        _lastSmartReplyMessageId.value = null
+        android.util.Log.d("ChatViewModel", "Smart replies dismissed")
     }
     
     // ===== Data Extraction State =====

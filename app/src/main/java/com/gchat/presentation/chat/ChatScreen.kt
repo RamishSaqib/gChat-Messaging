@@ -81,6 +81,11 @@ fun ChatScreen(
     val conversation by viewModel.conversation.collectAsState()
     val participantUsers by viewModel.participantUsers.collectAsState()
     val otherUserName by viewModel.otherUserName.collectAsState()
+    
+    // Smart Reply state
+    val smartReplies by viewModel.smartReplies.collectAsState()
+    val smartRepliesLoading by viewModel.smartRepliesLoading.collectAsState()
+    val smartRepliesError by viewModel.smartRepliesError.collectAsState()
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val uploadError by viewModel.uploadError.collectAsState()
     val typingIndicatorText by viewModel.typingIndicatorText.collectAsState()
@@ -285,33 +290,60 @@ fun ChatScreen(
             }
         },
         bottomBar = {
-            MessageInput(
-                messageText = messageText,
-                onMessageChange = viewModel::updateMessageText,
-                onSendClick = {
-                    selectedImageUri?.let { uri ->
-                        // Send image with caption
-                        viewModel.sendImageMessage(uri, messageText.ifBlank { null })
-                        selectedImageUri = null
-                    } ?: run {
-                        // Send text only
-                        viewModel.sendMessage()
-                    }
-                },
-                onAttachmentClick = { showImagePicker = true },
-                onMicClick = {
-                    // Check and request audio permission
-                    if (audioPermissionState.status.isGranted) {
-                        showRecordingSheet = true
-                        viewModel.startVoiceRecording()
-                    } else {
-                        audioPermissionState.launchPermissionRequest()
-                    }
-                },
-                isUploading = uploadProgress != null,
-                selectedImageUri = selectedImageUri,
-                onClearImage = { selectedImageUri = null }
-            )
+            Column {
+                // Smart Reply Suggestions (appears above message input)
+                SmartReplySuggestions(
+                    replies = smartReplies,
+                    isLoading = smartRepliesLoading,
+                    error = smartRepliesError,
+                    onReplySelected = { reply ->
+                        viewModel.useSmartReply(reply)
+                    },
+                    onRetry = {
+                        // Retry with the last message
+                        messages.filter { it.senderId != currentUserId }
+                            .maxByOrNull { it.timestamp }
+                            ?.let { viewModel.loadSmartReplies(it) }
+                    },
+                    onDismiss = { viewModel.dismissSmartReplies() }
+                )
+                
+                MessageInput(
+                    messageText = messageText,
+                    onMessageChange = {
+                        viewModel.updateMessageText(it)
+                        // Dismiss smart replies when user starts typing
+                        if (it.isNotBlank() && smartReplies.isNotEmpty()) {
+                            viewModel.dismissSmartReplies()
+                        }
+                    },
+                    onSendClick = {
+                        selectedImageUri?.let { uri ->
+                            // Send image with caption
+                            viewModel.sendImageMessage(uri, messageText.ifBlank { null })
+                            selectedImageUri = null
+                        } ?: run {
+                            // Send text only
+                            viewModel.sendMessage()
+                        }
+                        // Dismiss smart replies after sending
+                        viewModel.dismissSmartReplies()
+                    },
+                    onAttachmentClick = { showImagePicker = true },
+                    onMicClick = {
+                        // Check and request audio permission
+                        if (audioPermissionState.status.isGranted) {
+                            showRecordingSheet = true
+                            viewModel.startVoiceRecording()
+                        } else {
+                            audioPermissionState.launchPermissionRequest()
+                        }
+                    },
+                    isUploading = uploadProgress != null,
+                    selectedImageUri = selectedImageUri,
+                    onClearImage = { selectedImageUri = null }
+                )
+            }
         }
     ) { paddingValues ->
         if (messages.isEmpty()) {
