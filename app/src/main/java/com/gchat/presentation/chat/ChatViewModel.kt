@@ -62,6 +62,7 @@ class ChatViewModel @Inject constructor(
     private val audioRepository: AudioRepository,
     private val typingRepository: TypingRepository,
     private val translationRepository: TranslationRepository,
+    private val autoTranslateRepository: com.gchat.domain.repository.AutoTranslateRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -83,12 +84,10 @@ class ChatViewModel @Inject constructor(
         emit(authRepository.getCurrentUserId())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
-    // Get conversation details
-    val conversation: StateFlow<com.gchat.domain.model.Conversation?> = flow {
-        conversationRepository.getConversation(conversationId)
-            .onSuccess { emit(it) }
-            .onFailure { emit(null) }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    // Get conversation details (with real-time updates)
+    val conversation: StateFlow<com.gchat.domain.model.Conversation?> = 
+        conversationRepository.getConversationFlow(conversationId)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
     // Filter messages to only show those after user's deletion timestamp (for fresh history)
     val messages: StateFlow<List<Message>> = combine(
@@ -443,6 +442,73 @@ class ChatViewModel @Inject constructor(
      */
     fun getTranslationError(messageId: String): String? {
         return _translationErrors.value[messageId]
+    }
+    
+    // ===== Auto-Translation State =====
+    
+    /**
+     * Determine if auto-translate should be enabled for this conversation
+     * Combines global user setting with per-conversation override
+     */
+    val shouldAutoTranslate: StateFlow<Boolean> = combine(
+        currentUserId,
+        conversation
+    ) { userId, conv ->
+        if (userId == null || conv == null) {
+            false
+        } else {
+            autoTranslateRepository.shouldAutoTranslate(conversationId, userId)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    
+    /**
+     * Auto-translate incoming messages
+     * This observes new messages and automatically translates them if auto-translate is enabled
+     */
+    init {
+        viewModelScope.launch {
+            combine(
+                messages,
+                shouldAutoTranslate,
+                currentUserId
+            ) { messagesList, autoTranslate, userId ->
+                Triple(messagesList, autoTranslate, userId)
+            }.collect { (messagesList, autoTranslate, userId) ->
+                if (!autoTranslate || userId == null) return@collect
+                
+                // Get user's preferred language
+                val user = userRepository.getUser(userId).getOrNull()
+                val targetLanguage = user?.preferredLanguage ?: "en"
+                
+                // Auto-translate new messages that:
+                // 1. Are not from current user
+                // 2. Are text messages
+                // 3. Don't already have a translation
+                messagesList
+                    .filter { message ->
+                        message.senderId != userId &&
+                        message.type == MessageType.TEXT &&
+                        !message.text.isNullOrBlank() &&
+                        !_translations.value.containsKey(message.id)
+                    }
+                    .forEach { message ->
+                        // Detect language first to avoid translating messages already in target language
+                        launch {
+                            val detectedLanguage = translationRepository.detectLanguage(message.text ?: "")
+                                .getOrNull()
+                            
+                            // Only translate if the detected language is different from target language
+                            if (detectedLanguage != null && detectedLanguage != targetLanguage) {
+                                translateMessage(message, targetLanguage)
+                            } else if (detectedLanguage == null) {
+                                // If detection fails, still attempt translation (it will auto-detect)
+                                translateMessage(message, targetLanguage)
+                            }
+                            // If detectedLanguage == targetLanguage, skip translation
+                        }
+                    }
+            }
+        }
     }
     
     // ===== Data Extraction State =====
@@ -804,6 +870,23 @@ class ChatViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     android.util.Log.e("ChatViewModel", "Failed to set nickname", error)
+                }
+            )
+        }
+    }
+    
+    /**
+     * Toggle auto-translate for this conversation
+     */
+    fun toggleAutoTranslate() {
+        viewModelScope.launch {
+            val currentlyEnabled = conversation.value?.autoTranslateEnabled ?: false
+            conversationRepository.updateAutoTranslate(conversationId, !currentlyEnabled).fold(
+                onSuccess = {
+                    android.util.Log.d("ChatViewModel", "Auto-translate toggled: ${!currentlyEnabled} - SUCCESS")
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Failed to toggle auto-translate", error)
                 }
             )
         }

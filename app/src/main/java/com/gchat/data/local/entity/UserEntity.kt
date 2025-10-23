@@ -18,6 +18,7 @@ data class UserEntity(
     val phoneNumber: String?,
     val profilePictureUrl: String?,
     val preferredLanguage: String,
+    val autoTranslateEnabled: Boolean = false,
     val isOnline: Boolean,
     val lastSeen: Long
 )

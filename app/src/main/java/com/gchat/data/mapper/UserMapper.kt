@@ -17,6 +17,7 @@ object UserMapper {
             phoneNumber = entity.phoneNumber,
             profilePictureUrl = entity.profilePictureUrl,
             preferredLanguage = entity.preferredLanguage,
+            autoTranslateEnabled = entity.autoTranslateEnabled,
             isOnline = entity.isOnline,
             lastSeen = entity.lastSeen
         )
@@ -30,6 +31,7 @@ object UserMapper {
             phoneNumber = domain.phoneNumber,
             profilePictureUrl = domain.profilePictureUrl,
             preferredLanguage = domain.preferredLanguage,
+            autoTranslateEnabled = domain.autoTranslateEnabled,
             isOnline = domain.isOnline,
             lastSeen = domain.lastSeen
         )
@@ -44,6 +46,7 @@ object UserMapper {
                 phoneNumber = document.getString("phoneNumber"),
                 profilePictureUrl = document.getString("profilePictureUrl"),
                 preferredLanguage = document.getString("preferredLanguage") ?: "en",
+                autoTranslateEnabled = document.getBoolean("autoTranslateEnabled") ?: false,
                 isOnline = document.getBoolean("isOnline") ?: false,
                 lastSeen = document.getLong("lastSeen") ?: 0L,
                 fcmToken = document.getString("fcmToken"),
@@ -61,6 +64,7 @@ object UserMapper {
             "phoneNumber" to user.phoneNumber,
             "profilePictureUrl" to user.profilePictureUrl,
             "preferredLanguage" to user.preferredLanguage,
+            "autoTranslateEnabled" to user.autoTranslateEnabled,
             "isOnline" to user.isOnline,
             "lastSeen" to user.lastSeen,
             "fcmToken" to user.fcmToken,

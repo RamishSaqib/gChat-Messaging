@@ -12,6 +12,7 @@ data class User(
     val phoneNumber: String?,
     val profilePictureUrl: String? = null,
     val preferredLanguage: String = "en",
+    val autoTranslateEnabled: Boolean = false,
     val isOnline: Boolean = false,
     val lastSeen: Long = 0L,
     val fcmToken: String? = null,

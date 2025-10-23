@@ -20,11 +20,13 @@ import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.AttachFile
 import androidx.compose.material.icons.filled.Subtitles
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.CameraAlt
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Mic
@@ -228,25 +230,47 @@ fun ChatScreen(
                             }
                         },
                         actions = {
-                            // Only show for DM chats, not groups
-                            val isGroup = conversation?.isGroup() == true
-                            if (!isGroup) {
-                                IconButton(onClick = { showChatMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, "Menu")
-                                }
-                                DropdownMenu(
-                                    expanded = showChatMenu,
-                                    onDismissRequest = { showChatMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Change My Nickname") },
-                                        onClick = {
-                                            showChatMenu = false
-                                            showNicknameDialog = true
-                                        },
-                                        leadingIcon = { Icon(Icons.Default.Edit, null) }
-                                    )
-                                }
+                            // Show menu for all chats
+                            IconButton(onClick = { showChatMenu = true }) {
+                                Icon(Icons.Default.MoreVert, "Menu")
+                            }
+                            DropdownMenu(
+                                expanded = showChatMenu,
+                                onDismissRequest = { showChatMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Change My Nickname") },
+                                    onClick = {
+                                        showChatMenu = false
+                                        showNicknameDialog = true
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Edit, null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { 
+                                        Column {
+                                            Text("Auto-translate")
+                                            Text(
+                                                text = if (conversation?.autoTranslateEnabled == true) "Enabled" else "Disabled",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        // Don't close menu, just toggle
+                                        viewModel.toggleAutoTranslate()
+                                    },
+                                    trailingIcon = {
+                                        Switch(
+                                            checked = conversation?.autoTranslateEnabled == true,
+                                            onCheckedChange = { 
+                                                viewModel.toggleAutoTranslate()
+                                            }
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Translate, null) }
+                                )
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(
