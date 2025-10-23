@@ -128,7 +128,7 @@ object ConversationMapper {
                 unreadCount = 0, // Calculated client-side
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
                 createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
-                autoTranslateEnabled = false, // User preference, stored locally
+                autoTranslateEnabled = document.getBoolean("autoTranslateEnabled") ?: false,
                 creatorId = document.getString("creatorId"),
                 deletedAt = deletedAtMap?.mapNotNull { (k, v) ->
                     (k as? String)?.let { key -> (v as? Number)?.toLong()?.let { value -> key to value } }
@@ -161,6 +161,7 @@ object ConversationMapper {
             "lastMessage" to lastMessageMap,
             "updatedAt" to conversation.updatedAt,
             "createdAt" to conversation.createdAt,
+            "autoTranslateEnabled" to conversation.autoTranslateEnabled,
             "creatorId" to conversation.creatorId,
             "deletedAt" to conversation.deletedAt
         )
