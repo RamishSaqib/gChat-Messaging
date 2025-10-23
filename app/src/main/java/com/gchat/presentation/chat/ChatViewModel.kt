@@ -84,12 +84,10 @@ class ChatViewModel @Inject constructor(
         emit(authRepository.getCurrentUserId())
     }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
-    // Get conversation details
-    val conversation: StateFlow<com.gchat.domain.model.Conversation?> = flow {
-        conversationRepository.getConversation(conversationId)
-            .onSuccess { emit(it) }
-            .onFailure { emit(null) }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    // Get conversation details (with real-time updates)
+    val conversation: StateFlow<com.gchat.domain.model.Conversation?> = 
+        conversationRepository.getConversationFlow(conversationId)
+            .stateIn(viewModelScope, SharingStarted.Eagerly, null)
     
     // Filter messages to only show those after user's deletion timestamp (for fresh history)
     val messages: StateFlow<List<Message>> = combine(
