@@ -2,6 +2,7 @@ package com.gchat.utils
 
 import android.app.PendingIntent
 import android.content.Intent
+import android.os.Build
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.gchat.GChatApplication
@@ -111,17 +112,26 @@ class MessagingService : FirebaseMessagingService() {
         
         // Create intent to open conversation
         val intent = Intent(this, MainActivity::class.java).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("conversationId", conversationId)
             putExtra("openChat", true)
+        }
+        
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
         }
         
         val pendingIntent = PendingIntent.getActivity(
             this,
             conversationId.hashCode(),
             intent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            pendingIntentFlags
         )
+        
+        android.util.Log.d("MessagingService", "Created notification for conversation: $conversationId")
+        android.util.Log.d("MessagingService", "Intent extras: conversationId=$conversationId, openChat=true")
         
         // Build notification title based on chat type
         val title = if (isGroupChat) {
@@ -153,6 +163,8 @@ class MessagingService : FirebaseMessagingService() {
         // Show notification
         NotificationManagerCompat.from(this)
             .notify(conversationId.hashCode(), notification)
+            
+        android.util.Log.d("MessagingService", "Notification displayed with ID: ${conversationId.hashCode()}")
     }
 }
 

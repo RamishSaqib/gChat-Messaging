@@ -112,11 +112,14 @@ class ChatViewModel @Inject constructor(
     // Get participants for all chats (userId -> User)
     // Used for displaying sender names in group chats and typing indicators in all chats
     val participantUsers: StateFlow<Map<String, com.gchat.domain.model.User>> = flow {
+        // Wait a tiny bit to ensure conversation is loaded first
+        delay(50)
+        
         val conv = conversationRepository.getConversation(conversationId).getOrNull()
         if (conv != null) {
             val users = mutableMapOf<String, com.gchat.domain.model.User>()
             
-            // Load all users concurrently to avoid flicker
+            // Load all users concurrently
             coroutineScope {
                 conv.participants.map { userId ->
                     async {
@@ -131,7 +134,11 @@ class ChatViewModel @Inject constructor(
         } else {
             emit(emptyMap())
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, emptyMap())
+    }.stateIn(
+        scope = viewModelScope, 
+        started = SharingStarted.Lazily, // Wait for first collector
+        initialValue = emptyMap()
+    )
     
     // Get display name for the TopBar (with nickname support)
     val otherUserName: StateFlow<String> = combine(
