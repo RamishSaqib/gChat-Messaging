@@ -37,6 +37,7 @@ import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import javax.inject.Inject
 
 /**
@@ -112,54 +113,92 @@ class ChatViewModel @Inject constructor(
     // Get participants for all chats (userId -> User)
     // Used for displaying sender names in group chats and typing indicators in all chats
     val participantUsers: StateFlow<Map<String, com.gchat.domain.model.User>> = flow {
-        // Wait a tiny bit to ensure conversation is loaded first
-        delay(50)
-        
         val conv = conversationRepository.getConversation(conversationId).getOrNull()
         if (conv != null) {
-            val users = mutableMapOf<String, com.gchat.domain.model.User>()
+            // Emit empty map first so UI doesn't wait
+            emit(emptyMap())
             
-            // Load all users concurrently
-            coroutineScope {
-                conv.participants.map { userId ->
-                    async {
-                        userRepository.getUser(userId).onSuccess { user ->
-                            users[userId] = user
-                        }
-                    }
-                }.awaitAll()
-            }
-            
-            emit(users)
+            // Then observe real-time updates from flows
+            combine(conv.participants.map { userId ->
+                userRepository.getUserFlow(userId).filterNotNull()
+            }) { users ->
+                users.mapIndexed { index, user -> 
+                    conv.participants[index] to user 
+                }.toMap()
+            }.collect { emit(it) }
         } else {
             emit(emptyMap())
         }
     }.stateIn(
-        scope = viewModelScope, 
-        started = SharingStarted.Lazily, // Wait for first collector
+        scope = viewModelScope,
+        started = SharingStarted.Eagerly, // Start loading immediately, not on first collection
         initialValue = emptyMap()
     )
     
+    // Preload display name synchronously in init block for instant display
+    private val preloadedDisplayName: String by lazy {
+        val startTime = System.currentTimeMillis()
+        
+        runBlocking {
+            val conv = conversationRepository.getConversation(conversationId).getOrNull()
+            val userId = authRepository.getCurrentUserId()
+            
+            if (conv != null && userId != null) {
+                val otherUserId = conv.getOtherParticipantId(userId)
+                
+                if (otherUserId != null) {
+                    // DM chat - get name from cache
+                    val cachedUser = userRepository.getUser(otherUserId).getOrNull()
+                    val displayName = if (cachedUser != null) {
+                        conv.getUserDisplayName(otherUserId, cachedUser)
+                    } else {
+                        "Chat"
+                    }
+                    
+                    val elapsed = System.currentTimeMillis() - startTime
+                    android.util.Log.d("ChatViewModel", "⚡ Preloaded display name in ${elapsed}ms: $displayName")
+                    displayName
+                } else {
+                    // Group chat
+                    val groupName = conv.name ?: "Group Chat"
+                    val elapsed = System.currentTimeMillis() - startTime
+                    android.util.Log.d("ChatViewModel", "⚡ Preloaded group name in ${elapsed}ms: $groupName")
+                    groupName
+                }
+            } else {
+                android.util.Log.d("ChatViewModel", "⚠️ Failed to preload display name")
+                "Chat"
+            }
+        }
+    }
+    
     // Get display name for the TopBar (with nickname support)
-    val otherUserName: StateFlow<String> = combine(
-        conversation,
-        currentUserId,
-        participantUsers
-    ) { conv, userId, participants ->
+    // Use preloaded value as initial value, then observe real-time updates
+    val otherUserName: StateFlow<String> = flow {
+        android.util.Log.d("ChatViewModel", "otherUserName flow starting for conversationId: $conversationId")
+        
+        // STEP 1: Emit preloaded value immediately (should already be computed)
+        emit(preloadedDisplayName)
+        
+        // STEP 2: Get conversation and subscribe to real-time updates
+        val conv = conversationRepository.getConversation(conversationId).getOrNull()
+        val userId = authRepository.getCurrentUserId()
+        
         if (conv != null && userId != null) {
             val otherUserId = conv.getOtherParticipantId(userId)
+            
             if (otherUserId != null) {
-                // DM chat - use nickname if set, otherwise real name
-                val otherUser = participants[otherUserId]
-                conv.getUserDisplayName(otherUserId, otherUser)
-            } else {
-                // Group chat - use conversation name
-                conv.name ?: "Group Chat"
+                // DM chat - observe real-time updates
+                android.util.Log.d("ChatViewModel", "Subscribing to real-time user updates for: $otherUserId")
+                userRepository.getUserFlow(otherUserId).filterNotNull().collect { user ->
+                    val displayName = conv.getUserDisplayName(otherUserId, user)
+                    android.util.Log.d("ChatViewModel", "📡 Real-time update: $displayName")
+                    emit(displayName)
+                }
             }
-        } else {
-            "Chat"
+            // Group chat name doesn't change, so no need to observe
         }
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, "Chat")
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, preloadedDisplayName)
     
     // Typing indicators
     private var typingDebounceJob: Job? = null

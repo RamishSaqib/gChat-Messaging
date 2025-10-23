@@ -111,24 +111,38 @@ class MessagingService : FirebaseMessagingService() {
         }
         
         // Create intent to open conversation
+        // CRITICAL: Use explicit component and FLAG_ACTIVITY_NEW_TASK for killed state
         val intent = Intent(this, MainActivity::class.java).apply {
+            // Use explicit component to ensure Android launches MainActivity
+            component = android.content.ComponentName(this@MessagingService, MainActivity::class.java)
+            action = Intent.ACTION_VIEW
+            data = android.net.Uri.parse("gchat://conversation/$conversationId")
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
             putExtra("conversationId", conversationId)
             putExtra("openChat", true)
         }
         
+        android.util.Log.d("MessagingService", "Intent component: ${intent.component}")
+        android.util.Log.d("MessagingService", "Intent flags: ${intent.flags}")
+        
+        // Use unique request code per conversation to prevent intent clobbering
+        val requestCode = conversationId.hashCode()
+        
+        // Use FLAG_MUTABLE for Android 12+ to allow extras delivery when launching from killed state
         val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
         } else {
             PendingIntent.FLAG_UPDATE_CURRENT
         }
         
         val pendingIntent = PendingIntent.getActivity(
             this,
-            conversationId.hashCode(),
+            requestCode,
             intent,
             pendingIntentFlags
         )
+        
+        android.util.Log.d("MessagingService", "PendingIntent created with requestCode: $requestCode")
         
         android.util.Log.d("MessagingService", "Created notification for conversation: $conversationId")
         android.util.Log.d("MessagingService", "Intent extras: conversationId=$conversationId, openChat=true")

@@ -10,6 +10,9 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
@@ -18,6 +21,7 @@ import com.gchat.presentation.navigation.NavGraph
 import com.gchat.presentation.navigation.Screen
 import com.gchat.presentation.theme.GChatTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 
@@ -35,12 +39,16 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         
-        android.util.Log.d("MainActivity", "onCreate called")
+        android.util.Log.d("MainActivity", "═══════════════════════════════════════")
+        android.util.Log.d("MainActivity", "onCreate called - savedInstanceState: ${if (savedInstanceState == null) "NEW" else "RESTORED"}")
         android.util.Log.d("MainActivity", "Intent: ${intent?.toString()}")
-        android.util.Log.d("MainActivity", "Intent extras: ${intent?.extras?.keySet()?.joinToString()}")
-        android.util.Log.d("MainActivity", "conversationId: ${intent?.getStringExtra("conversationId")}")
-        android.util.Log.d("MainActivity", "openChat: ${intent?.getBooleanExtra("openChat", false)}")
         android.util.Log.d("MainActivity", "Intent action: ${intent?.action}")
+        android.util.Log.d("MainActivity", "Intent data: ${intent?.data}")
+        android.util.Log.d("MainActivity", "Intent extras: ${intent?.extras?.keySet()?.joinToString() ?: "null"}")
+        android.util.Log.d("MainActivity", "conversationId extra: ${intent?.getStringExtra("conversationId")}")
+        android.util.Log.d("MainActivity", "openChat extra: ${intent?.getBooleanExtra("openChat", false)}")
+        android.util.Log.d("MainActivity", "Intent flags: ${intent?.flags}")
+        android.util.Log.d("MainActivity", "═══════════════════════════════════════")
         
         // Check intent immediately
         handleIntent(intent)
@@ -56,36 +64,68 @@ class MainActivity : ComponentActivity() {
                     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
                     val navigationEvent by _navigationEvents.asStateFlow().collectAsState()
                     
-                    // Handle navigation events
-                    LaunchedEffect(isAuthenticated, navigationEvent) {
-                        android.util.Log.d("MainActivity", "LaunchedEffect triggered - auth: $isAuthenticated, event: $navigationEvent")
+                    // Track if auth state has been initialized
+                    var authInitialized by remember { mutableStateOf(false) }
+                    
+                    // Track if initial navigation is complete
+                    var navigationHandled by remember { mutableStateOf(false) }
+                    
+                    // Wait for auth state to be determined on first launch
+                    LaunchedEffect(Unit) {
+                        // Give Firebase Auth a moment to initialize
+                        delay(100)
+                        authInitialized = true
+                        android.util.Log.d("MainActivity", "Auth initialized, isAuthenticated: $isAuthenticated")
+                    }
+                    
+                    // Handle navigation events from notifications
+                    LaunchedEffect(navigationEvent, isAuthenticated, authInitialized) {
+                        if (!authInitialized) {
+                            android.util.Log.d("MainActivity", "Auth not initialized yet, waiting...")
+                            return@LaunchedEffect
+                        }
                         
-                        if (isAuthenticated) {
-                            when (val event = navigationEvent) {
-                                is NavigationEvent.OpenChat -> {
-                                    android.util.Log.d("MainActivity", "Navigating to chat: ${event.conversationId}")
-                                    // Navigate directly to chat
-                                    navController.navigate(Screen.Chat.createRoute(event.conversationId)) {
-                                        popUpTo(Screen.Login.route) { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                    _navigationEvents.value = null // Clear event
-                                }
-                                null -> {
-                                    // Regular navigation to conversation list
-                                    android.util.Log.d("MainActivity", "No pending event - navigating to conversation list")
-                                    navController.navigate(Screen.ConversationList.createRoute()) {
-                                        popUpTo(Screen.Login.route) { inclusive = true }
-                                        launchSingleTop = true
-                                    }
-                                }
-                            }
-                        } else {
+                        if (!isAuthenticated) {
                             android.util.Log.d("MainActivity", "Not authenticated yet, waiting...")
+                            return@LaunchedEffect
+                        }
+                        
+                        val event = navigationEvent
+                        android.util.Log.d("MainActivity", "LaunchedEffect - event: $event, handled: $navigationHandled")
+                        
+                        when {
+                            event is NavigationEvent.OpenChat -> {
+                                // ALWAYS navigate for notification events
+                                android.util.Log.d("MainActivity", "Navigating to chat from notification: ${event.conversationId}")
+                                navController.navigate(Screen.Chat.createRoute(event.conversationId)) {
+                                    // Keep conversation list in backstack so back button works
+                                    popUpTo(Screen.ConversationList.route) {
+                                        inclusive = false
+                                    }
+                                    launchSingleTop = true
+                                }
+                                // Mark as handled
+                                navigationHandled = true
+                                // Wait a bit before clearing
+                                delay(500)
+                                _navigationEvents.value = null
+                                // DON'T reset navigationHandled here!
+                            }
+                            event == null && !navigationHandled -> {
+                                android.util.Log.d("MainActivity", "Initial navigation to conversation list")
+                                navController.navigate(Screen.ConversationList.createRoute()) {
+                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                    launchSingleTop = true
+                                }
+                                navigationHandled = true
+                            }
                         }
                     }
                     
-                    NavGraph(navController = navController, authViewModel = authViewModel)
+                    // Only show NavGraph after auth is initialized to prevent login screen flicker
+                    if (authInitialized) {
+                        NavGraph(navController = navController, authViewModel = authViewModel)
+                    }
                 }
             }
         }
@@ -93,14 +133,37 @@ class MainActivity : ComponentActivity() {
     
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
+        android.util.Log.d("MainActivity", "═══════════════════════════════════════")
+        android.util.Log.d("MainActivity", "onNewIntent called")
+        android.util.Log.d("MainActivity", "Intent: ${intent?.toString()}")
+        android.util.Log.d("MainActivity", "Intent action: ${intent?.action}")
+        android.util.Log.d("MainActivity", "Intent data: ${intent?.data}")
+        android.util.Log.d("MainActivity", "Intent extras: ${intent?.extras?.keySet()?.joinToString() ?: "null"}")
+        android.util.Log.d("MainActivity", "conversationId extra: ${intent?.getStringExtra("conversationId")}")
+        android.util.Log.d("MainActivity", "openChat extra: ${intent?.getBooleanExtra("openChat", false)}")
+        android.util.Log.d("MainActivity", "Intent flags: ${intent?.flags}")
+        android.util.Log.d("MainActivity", "═══════════════════════════════════════")
         setIntent(intent)
         handleIntent(intent)
     }
     
     private fun handleIntent(intent: Intent?) {
         android.util.Log.d("MainActivity", "handleIntent called")
-        val conversationId = intent?.getStringExtra("conversationId")
-        val openChat = intent?.getBooleanExtra("openChat", false) ?: false
+        
+        // Try to extract conversationId from extras first
+        var conversationId = intent?.getStringExtra("conversationId")
+        var openChat = intent?.getBooleanExtra("openChat", false) ?: false
+        
+        // If not in extras, try to extract from data URI (gchat://conversation/{id})
+        if (conversationId == null && intent?.data != null) {
+            val uri = intent.data
+            android.util.Log.d("MainActivity", "Intent data URI: $uri")
+            if (uri?.scheme == "gchat" && uri.host == "conversation") {
+                conversationId = uri.pathSegments?.firstOrNull()
+                openChat = true
+                android.util.Log.d("MainActivity", "Extracted conversationId from URI: $conversationId")
+            }
+        }
         
         android.util.Log.d("MainActivity", "Parsed - conversationId: $conversationId, openChat: $openChat")
         

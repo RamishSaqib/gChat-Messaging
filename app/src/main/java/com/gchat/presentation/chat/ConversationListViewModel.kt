@@ -32,6 +32,14 @@ class ConversationListViewModel @Inject constructor(
     // Track conversations being dismissed for immediate UI removal
     private val _dismissedConversationIds = MutableStateFlow<Set<String>>(emptySet())
     
+    // Track if initial load is complete (used to differentiate between loading and truly empty)
+    val isInitialLoad: StateFlow<Boolean> = flow {
+        emit(true) // Start as loading
+        // Wait for first emission from conversations
+        getConversationsUseCase().first()
+        emit(false) // Loading complete
+    }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
+    
     // Current user information
     val currentUser: StateFlow<User?> = flow {
         val userId = authRepository.getCurrentUserId()
@@ -64,7 +72,37 @@ class ConversationListViewModel @Inject constructor(
             }
             android.util.Log.d("ConversationListVM", "Filtered to ${visibleConversations.size} visible conversations")
             
-            // Create a combined flow that updates when any user status changes
+            if (visibleConversations.isEmpty()) {
+                return@flatMapLatest flowOf(emptyList())
+            }
+            
+            // STEP 1: Pre-load ALL user data from cache in background (non-blocking)
+            val preloadedUsers = mutableMapOf<String, User?>()
+            
+            // Collect all unique user IDs we need
+            val userIdsToLoad = mutableSetOf<String>()
+            visibleConversations.forEach { conversation ->
+                conversation.getOtherParticipantId(currentUserId)?.let { userIdsToLoad.add(it) }
+                conversation.lastMessage?.senderId?.let { 
+                    if (it != currentUserId) userIdsToLoad.add(it) 
+                }
+            }
+            
+            android.util.Log.d("ConversationListVM", "Loading ${userIdsToLoad.size} users in batch")
+            
+            // Load users asynchronously - don't block here!
+            viewModelScope.launch {
+                val startTime = System.currentTimeMillis()
+                userRepository.getUsersByIds(userIdsToLoad.toList()).onSuccess { users ->
+                    users.forEach { user ->
+                        preloadedUsers[user.id] = user
+                    }
+                    val loadTime = System.currentTimeMillis() - startTime
+                    android.util.Log.d("ConversationListVM", "Async loaded ${preloadedUsers.size} users in ${loadTime}ms")
+                }
+            }
+            
+            // STEP 2: Create flows immediately (will start with null, then update as users load)
             val conversationFlows = visibleConversations.map { conversation ->
                 val otherUserId = conversation.getOtherParticipantId(currentUserId)
                 val lastMessageSenderId = conversation.lastMessage?.senderId
@@ -72,49 +110,23 @@ class ConversationListViewModel @Inject constructor(
                 if (otherUserId != null) {
                     // 1-on-1 chat: Get other user's info
                     val userFlow = userFlowCache.getOrPut(otherUserId) {
-                        kotlinx.coroutines.flow.flow {
-                            // Try to get from cache first to avoid flicker
-                            val cachedUser = userRepository.getUser(otherUserId).getOrNull()
-                            if (cachedUser != null) {
-                                emit(cachedUser)
-                            }
-                            
-                            // Then observe real-time updates
-                            userRepository.getUserFlow(otherUserId)
-                                .collect { user ->
-                                    if (user != null) {
-                                        emit(user)
-                                    }
-                                }
-                        }.stateIn(
-                            scope = viewModelScope,
-                            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                            initialValue = null
-                        )
+                        userRepository.getUserFlow(otherUserId)
+                            .stateIn(
+                                scope = viewModelScope,
+                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                initialValue = null // Will be filled by getUserFlow
+                            )
                     }
                     
                     // Also get last message sender (could be either user)
-                    if (lastMessageSenderId != null && lastMessageSenderId != currentUserId) {
+                    if (lastMessageSenderId != null && lastMessageSenderId != currentUserId && lastMessageSenderId != otherUserId) {
                         val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
-                            kotlinx.coroutines.flow.flow {
-                                // Try to get from cache first to avoid flicker
-                                val cachedUser = userRepository.getUser(lastMessageSenderId).getOrNull()
-                                if (cachedUser != null) {
-                                    emit(cachedUser)
-                                }
-                                
-                                // Then observe real-time updates
-                                userRepository.getUserFlow(lastMessageSenderId)
-                                    .collect { user ->
-                                        if (user != null) {
-                                            emit(user)
-                                        }
-                                    }
-                            }.stateIn(
-                                scope = viewModelScope,
-                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                                initialValue = null
-                            )
+                            userRepository.getUserFlow(lastMessageSenderId)
+                                .stateIn(
+                                    scope = viewModelScope,
+                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                    initialValue = null
+                                )
                         }
                         combine(userFlow, senderFlow) { user, sender ->
                             ConversationWithUser(
@@ -136,25 +148,12 @@ class ConversationListViewModel @Inject constructor(
                     // Group conversation: get last message sender
                     if (lastMessageSenderId != null) {
                         val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
-                            kotlinx.coroutines.flow.flow {
-                                // Try to get from cache first to avoid flicker
-                                val cachedUser = userRepository.getUser(lastMessageSenderId).getOrNull()
-                                if (cachedUser != null) {
-                                    emit(cachedUser)
-                                }
-                                
-                                // Then observe real-time updates
-                                userRepository.getUserFlow(lastMessageSenderId)
-                                    .collect { user ->
-                                        if (user != null) {
-                                            emit(user)
-                                        }
-                                    }
-                            }.stateIn(
-                                scope = viewModelScope,
-                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                                initialValue = null
-                            )
+                            userRepository.getUserFlow(lastMessageSenderId)
+                                .stateIn(
+                                    scope = viewModelScope,
+                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                    initialValue = null
+                                )
                         }
                         senderFlow.map { sender ->
                             ConversationWithUser(

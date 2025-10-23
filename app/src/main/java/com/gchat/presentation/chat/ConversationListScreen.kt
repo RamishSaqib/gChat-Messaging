@@ -55,6 +55,7 @@ fun ConversationListScreen(
 ) {
     val conversationsWithUsers by viewModel.conversationsWithUsers.collectAsState()
     val currentUser by viewModel.currentUser.collectAsState()
+    val isInitialLoad by viewModel.isInitialLoad.collectAsState()
     var showFabMenu by remember { mutableStateOf(false) }
     
     // Handle navigation from notification
@@ -191,7 +192,15 @@ fun ConversationListScreen(
                 .background(MaterialTheme.colorScheme.background)
                 .padding(paddingValues)
         ) {
-            if (conversationsWithUsers.isEmpty()) {
+            if (isInitialLoad) {
+                // Show loading indicator during initial load
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator()
+                }
+            } else if (conversationsWithUsers.isEmpty()) {
                 Column(
                     modifier = Modifier
                         .fillMaxSize()

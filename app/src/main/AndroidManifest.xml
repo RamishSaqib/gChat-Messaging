@@ -30,7 +30,7 @@
         <activity
             android:name=".presentation.MainActivity"
             android:exported="true"
-            android:launchMode="singleTask"
+            android:launchMode="singleTop"
             android:theme="@style/Theme.GChat"
             android:windowSoftInputMode="adjustResize">
             <intent-filter>
@@ -46,6 +46,12 @@
                 <data
                     android:scheme="gchat"
                     android:host="conversation" />
+            </intent-filter>
+
+            <!-- Custom action for notification deep linking -->
+            <intent-filter>
+                <action android:name="com.gchat.OPEN_CONVERSATION" />
+                <category android:name="android.intent.category.DEFAULT" />
             </intent-filter>
         </activity>
 

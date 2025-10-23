@@ -73,11 +73,7 @@ export const onMessageCreated = onDocumentCreated(
         return;
       }
 
-      // Prepare notification
-      const notificationTitle = conversation.type === 'GROUP'
-        ? `${senderName} in ${conversation.name || 'Group Chat'}`
-        : senderName;
-
+      // Prepare notification body
       const notificationBody = message.type === 'IMAGE'
         ? '📷 Sent an image'
         : message.type === 'AUDIO'
@@ -86,7 +82,9 @@ export const onMessageCreated = onDocumentCreated(
 
       console.log(`Sending notification from ${senderName} (${message.senderId}) with message: ${notificationBody}`);
 
-      // Send multicast notification
+      // Send data-only message (no notification payload)
+      // This ensures MessagingService.onMessageReceived() is ALWAYS called,
+      // even when the app is in the background or killed.
       const response = await messaging.sendEachForMulticast({
         tokens,
         data: {
@@ -99,24 +97,16 @@ export const onMessageCreated = onDocumentCreated(
           isGroup: conversation.type === 'GROUP' ? 'true' : 'false',
           groupName: conversation.name || '',
         },
-        notification: {
-          title: notificationTitle,
-          body: notificationBody,
-        },
         android: {
           priority: 'high',
-          notification: {
-            channelId: 'messages',
-            sound: 'default',
-            clickAction: 'FLUTTER_NOTIFICATION_CLICK',
-            tag: conversationId, // Group notifications by conversation
-          },
         },
         apns: {
+          headers: {
+            'apns-priority': '10',
+          },
           payload: {
             aps: {
-              sound: 'default',
-              badge: 1,
+              'content-available': 1,
             },
           },
         },
