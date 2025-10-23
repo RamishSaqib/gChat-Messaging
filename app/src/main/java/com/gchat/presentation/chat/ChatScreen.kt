@@ -303,7 +303,7 @@ fun ChatScreen(
                                             }
                                         )
                                     },
-                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Message, null) }
+                                    leadingIcon = { Icon(Icons.Default.AutoAwesome, null) }
                                 )
                             }
                         },
