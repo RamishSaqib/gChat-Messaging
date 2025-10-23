@@ -19,6 +19,7 @@ data class UserEntity(
     val profilePictureUrl: String?,
     val preferredLanguage: String,
     val autoTranslateEnabled: Boolean = false,
+    val smartRepliesEnabled: Boolean = true,
     val isOnline: Boolean,
     val lastSeen: Long
 )

@@ -6,8 +6,8 @@
  */
 
 import { onCall, HttpsError } from 'firebase-functions/v2/https';
-import { getFirestore, FieldPath } from 'firebase-admin/firestore';
-import { openai, MODELS, CONFIGS } from '../utils/openai';
+import { getFirestore } from 'firebase-admin/firestore';
+import { openai, MODELS } from '../utils/openai';
 import { checkRateLimit } from '../utils/rateLimit';
 
 interface SmartReplyRequest {

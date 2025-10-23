@@ -18,6 +18,7 @@ object UserMapper {
             profilePictureUrl = entity.profilePictureUrl,
             preferredLanguage = entity.preferredLanguage,
             autoTranslateEnabled = entity.autoTranslateEnabled,
+            smartRepliesEnabled = entity.smartRepliesEnabled,
             isOnline = entity.isOnline,
             lastSeen = entity.lastSeen
         )
@@ -32,6 +33,7 @@ object UserMapper {
             profilePictureUrl = domain.profilePictureUrl,
             preferredLanguage = domain.preferredLanguage,
             autoTranslateEnabled = domain.autoTranslateEnabled,
+            smartRepliesEnabled = domain.smartRepliesEnabled,
             isOnline = domain.isOnline,
             lastSeen = domain.lastSeen
         )
@@ -47,6 +49,7 @@ object UserMapper {
                 profilePictureUrl = document.getString("profilePictureUrl"),
                 preferredLanguage = document.getString("preferredLanguage") ?: "en",
                 autoTranslateEnabled = document.getBoolean("autoTranslateEnabled") ?: false,
+                smartRepliesEnabled = document.getBoolean("smartRepliesEnabled") ?: true,
                 isOnline = document.getBoolean("isOnline") ?: false,
                 lastSeen = document.getLong("lastSeen") ?: 0L,
                 fcmToken = document.getString("fcmToken"),
@@ -65,6 +68,7 @@ object UserMapper {
             "profilePictureUrl" to user.profilePictureUrl,
             "preferredLanguage" to user.preferredLanguage,
             "autoTranslateEnabled" to user.autoTranslateEnabled,
+            "smartRepliesEnabled" to user.smartRepliesEnabled,
             "isOnline" to user.isOnline,
             "lastSeen" to user.lastSeen,
             "fcmToken" to user.fcmToken,

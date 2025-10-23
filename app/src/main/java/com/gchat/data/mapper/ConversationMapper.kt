@@ -40,6 +40,7 @@ object ConversationMapper {
             updatedAt = entity.updatedAt,
             createdAt = entity.createdAt,
             autoTranslateEnabled = entity.autoTranslateEnabled,
+            smartRepliesEnabled = entity.smartRepliesEnabled,
             creatorId = entity.creatorId,
             deletedAt = try {
                 json.decodeFromString<Map<String, Long>>(entity.deletedAt)
@@ -68,6 +69,7 @@ object ConversationMapper {
             updatedAt = domain.updatedAt,
             createdAt = domain.createdAt,
             autoTranslateEnabled = domain.autoTranslateEnabled,
+            smartRepliesEnabled = domain.smartRepliesEnabled,
             creatorId = domain.creatorId,
             deletedAt = json.encodeToString(domain.deletedAt)
         )
@@ -129,6 +131,7 @@ object ConversationMapper {
                 updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
                 createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
                 autoTranslateEnabled = document.getBoolean("autoTranslateEnabled") ?: false,
+                smartRepliesEnabled = document.get("smartRepliesEnabled") as? Boolean, // null = use global
                 creatorId = document.getString("creatorId"),
                 deletedAt = deletedAtMap?.mapNotNull { (k, v) ->
                     (k as? String)?.let { key -> (v as? Number)?.toLong()?.let { value -> key to value } }
@@ -162,6 +165,7 @@ object ConversationMapper {
             "updatedAt" to conversation.updatedAt,
             "createdAt" to conversation.createdAt,
             "autoTranslateEnabled" to conversation.autoTranslateEnabled,
+            "smartRepliesEnabled" to conversation.smartRepliesEnabled,
             "creatorId" to conversation.creatorId,
             "deletedAt" to conversation.deletedAt
         )

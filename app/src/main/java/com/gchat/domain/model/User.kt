@@ -13,6 +13,7 @@ data class User(
     val profilePictureUrl: String? = null,
     val preferredLanguage: String = "en",
     val autoTranslateEnabled: Boolean = false,
+    val smartRepliesEnabled: Boolean = true, // Default ON
     val isOnline: Boolean = false,
     val lastSeen: Long = 0L,
     val fcmToken: String? = null,
