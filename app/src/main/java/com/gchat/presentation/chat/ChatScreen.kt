@@ -228,25 +228,45 @@ fun ChatScreen(
                             }
                         },
                         actions = {
-                            // Only show for DM chats, not groups
-                            val isGroup = conversation?.isGroup() == true
-                            if (!isGroup) {
-                                IconButton(onClick = { showChatMenu = true }) {
-                                    Icon(Icons.Default.MoreVert, "Menu")
-                                }
-                                DropdownMenu(
-                                    expanded = showChatMenu,
-                                    onDismissRequest = { showChatMenu = false }
-                                ) {
-                                    DropdownMenuItem(
-                                        text = { Text("Change My Nickname") },
-                                        onClick = {
-                                            showChatMenu = false
-                                            showNicknameDialog = true
-                                        },
-                                        leadingIcon = { Icon(Icons.Default.Edit, null) }
-                                    )
-                                }
+                            // Show menu for all chats
+                            IconButton(onClick = { showChatMenu = true }) {
+                                Icon(Icons.Default.MoreVert, "Menu")
+                            }
+                            DropdownMenu(
+                                expanded = showChatMenu,
+                                onDismissRequest = { showChatMenu = false }
+                            ) {
+                                DropdownMenuItem(
+                                    text = { Text("Change My Nickname") },
+                                    onClick = {
+                                        showChatMenu = false
+                                        showNicknameDialog = true
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Edit, null) }
+                                )
+                                DropdownMenuItem(
+                                    text = { 
+                                        Text(
+                                            if (conversation?.autoTranslateEnabled == true) 
+                                                "Disable Auto-translate" 
+                                            else 
+                                                "Enable Auto-translate"
+                                        )
+                                    },
+                                    onClick = {
+                                        showChatMenu = false
+                                        viewModel.toggleAutoTranslate()
+                                    },
+                                    leadingIcon = { 
+                                        Icon(
+                                            if (conversation?.autoTranslateEnabled == true)
+                                                Icons.Default.Check
+                                            else
+                                                Icons.Default.Add,
+                                            null
+                                        ) 
+                                    }
+                                )
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(

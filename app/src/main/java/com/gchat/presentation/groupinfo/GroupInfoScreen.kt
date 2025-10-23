@@ -131,13 +131,7 @@ private fun GroupInfoContent(
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             GroupInfoTopBar(
-                onNavigateBack = onNavigateBack,
-                showMenu = showMenu,
-                onShowMenuChange = onShowMenuChange,
-                onShowNicknameDialog = { onShowNicknameDialogChange(true) },
-                onShowLeaveConfirmation = { onShowLeaveConfirmationChange(true) },
-                conversation = conversation,
-                onToggleAutoTranslate = { viewModel.toggleAutoTranslate() }
+                onNavigateBack = onNavigateBack
             )
         }
     ) { paddingValues ->
@@ -189,6 +183,29 @@ private fun GroupInfoContent(
                         }
                     }
                 )
+            }
+            
+            // Leave Group button
+            item {
+                Spacer(modifier = Modifier.height(32.dp))
+                OutlinedButton(
+                    onClick = { onShowLeaveConfirmationChange(true) },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        contentColor = MaterialTheme.colorScheme.error
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.ExitToApp,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Leave Group")
+                }
+                Spacer(modifier = Modifier.height(16.dp))
             }
         }
     }
@@ -335,68 +352,13 @@ private fun GroupInfoContent(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun GroupInfoTopBar(
-    onNavigateBack: () -> Unit,
-    showMenu: Boolean,
-    onShowMenuChange: (Boolean) -> Unit,
-    onShowNicknameDialog: () -> Unit,
-    onShowLeaveConfirmation: () -> Unit,
-    conversation: com.gchat.domain.model.Conversation?,
-    onToggleAutoTranslate: () -> Unit
+    onNavigateBack: () -> Unit
 ) {
     TopAppBar(
         title = { Text("Group Info") },
         navigationIcon = {
             IconButton(onClick = onNavigateBack) {
                 Icon(Icons.Default.ArrowBack, "Back")
-            }
-        },
-        actions = {
-            IconButton(onClick = { onShowMenuChange(true) }) {
-                Icon(Icons.Default.MoreVert, "Menu")
-            }
-            DropdownMenu(
-                expanded = showMenu,
-                onDismissRequest = { onShowMenuChange(false) }
-            ) {
-                DropdownMenuItem(
-                    text = { Text("Change My Nickname") },
-                    onClick = {
-                        onShowMenuChange(false)
-                        onShowNicknameDialog()
-                    },
-                    leadingIcon = { Icon(Icons.Default.Edit, null) }
-                )
-                DropdownMenuItem(
-                    text = { 
-                        Text(
-                            if (conversation?.autoTranslateEnabled == true) 
-                                "Disable Auto-translate" 
-                            else 
-                                "Enable Auto-translate"
-                        )
-                    },
-                    onClick = {
-                        onShowMenuChange(false)
-                        onToggleAutoTranslate()
-                    },
-                    leadingIcon = { 
-                        Icon(
-                            if (conversation?.autoTranslateEnabled == true)
-                                Icons.Default.Check
-                            else
-                                Icons.Default.Add,
-                            null
-                        ) 
-                    }
-                )
-                DropdownMenuItem(
-                    text = { Text("Leave Group") },
-                    onClick = {
-                        onShowMenuChange(false)
-                        onShowLeaveConfirmation()
-                    },
-                    leadingIcon = { Icon(Icons.Default.ExitToApp, null) }
-                )
             }
         }
     )
