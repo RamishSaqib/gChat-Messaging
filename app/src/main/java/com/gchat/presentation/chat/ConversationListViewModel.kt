@@ -76,7 +76,8 @@ class ConversationListViewModel @Inject constructor(
                 return@flatMapLatest flowOf(emptyList())
             }
             
-            // STEP 1: Pre-load ALL user data from cache in background (non-blocking)
+            // STEP 1: Pre-load ALL user data from cache in background
+            // Wait for getUsersByIds to complete before creating flows to avoid null flashes
             val preloadedUsers = mutableMapOf<String, User?>()
             
             // Collect all unique user IDs we need
@@ -90,15 +91,16 @@ class ConversationListViewModel @Inject constructor(
             
             android.util.Log.d("ConversationListVM", "Loading ${userIdsToLoad.size} users in batch")
             
-            // Load users asynchronously - don't block here!
-            viewModelScope.launch {
+            // CRITICAL: Wait for users to be cached before creating flows
+            // This prevents getUserFlow from emitting null as initial value
+            if (userIdsToLoad.isNotEmpty()) {
                 val startTime = System.currentTimeMillis()
                 userRepository.getUsersByIds(userIdsToLoad.toList()).onSuccess { users ->
                     users.forEach { user ->
                         preloadedUsers[user.id] = user
                     }
                     val loadTime = System.currentTimeMillis() - startTime
-                    android.util.Log.d("ConversationListVM", "Async loaded ${preloadedUsers.size} users in ${loadTime}ms")
+                    android.util.Log.d("ConversationListVM", "Preloaded ${preloadedUsers.size} users in ${loadTime}ms (blocking)")
                 }
             }
             
