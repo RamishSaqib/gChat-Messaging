@@ -248,26 +248,28 @@ fun ChatScreen(
                                 )
                                 DropdownMenuItem(
                                     text = { 
-                                        Text(
-                                            if (conversation?.autoTranslateEnabled == true) 
-                                                "Disable Auto-translate" 
-                                            else 
-                                                "Enable Auto-translate"
-                                        )
+                                        Column {
+                                            Text("Auto-translate")
+                                            Text(
+                                                text = if (conversation?.autoTranslateEnabled == true) "Enabled" else "Disabled",
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
                                     },
                                     onClick = {
-                                        showChatMenu = false
+                                        // Don't close menu, just toggle
                                         viewModel.toggleAutoTranslate()
                                     },
-                                    leadingIcon = { 
-                                        Icon(
-                                            if (conversation?.autoTranslateEnabled == true)
-                                                Icons.Default.Check
-                                            else
-                                                Icons.Default.Add,
-                                            null
-                                        ) 
-                                    }
+                                    trailingIcon = {
+                                        Switch(
+                                            checked = conversation?.autoTranslateEnabled == true,
+                                            onCheckedChange = { 
+                                                viewModel.toggleAutoTranslate()
+                                            }
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.Default.Translate, null) }
                                 )
                             }
                         },
