@@ -31,6 +31,9 @@ import com.gchat.domain.usecase.TranslateMessageUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -114,9 +117,9 @@ class ChatViewModel @Inject constructor(
             val users = mutableMapOf<String, com.gchat.domain.model.User>()
             
             // Load all users concurrently to avoid flicker
-            kotlinx.coroutines.coroutineScope {
+            coroutineScope {
                 conv.participants.map { userId ->
-                    kotlinx.coroutines.async {
+                    async {
                         userRepository.getUser(userId).onSuccess { user ->
                             users[userId] = user
                         }
