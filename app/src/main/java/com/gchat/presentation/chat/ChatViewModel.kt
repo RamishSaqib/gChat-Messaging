@@ -870,7 +870,7 @@ class ChatViewModel @Inject constructor(
             val currentlyEnabled = conversation.value?.autoTranslateEnabled ?: false
             conversationRepository.updateAutoTranslate(conversationId, !currentlyEnabled).fold(
                 onSuccess = {
-                    android.util.Log.d("ChatViewModel", "Auto-translate toggled: ${!currentlyEnabled}")
+                    android.util.Log.d("ChatViewModel", "Auto-translate toggled: ${!currentlyEnabled} - SUCCESS")
                 },
                 onFailure = { error ->
                     android.util.Log.e("ChatViewModel", "Failed to toggle auto-translate", error)
