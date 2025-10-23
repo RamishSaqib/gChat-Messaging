@@ -70,31 +70,49 @@ class ConversationListViewModel @Inject constructor(
                 if (otherUserId != null) {
                     // 1-on-1 chat: Get other user's info
                     val userFlow = userFlowCache.getOrPut(otherUserId) {
-                        userRepository.getUserFlow(otherUserId)
-                            .scan<User?, User?>(null) { previous, current ->
-                                // Keep previous value if current is null (user went offline)
-                                current ?: previous
+                        kotlinx.coroutines.flow.flow {
+                            // Try to get from cache first to avoid flicker
+                            val cachedUser = userRepository.getUser(otherUserId).getOrNull()
+                            if (cachedUser != null) {
+                                emit(cachedUser)
                             }
-                            .stateIn(
-                                scope = viewModelScope,
-                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                                initialValue = null
-                            )
+                            
+                            // Then observe real-time updates
+                            userRepository.getUserFlow(otherUserId)
+                                .collect { user ->
+                                    if (user != null) {
+                                        emit(user)
+                                    }
+                                }
+                        }.stateIn(
+                            scope = viewModelScope,
+                            started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                            initialValue = null
+                        )
                     }
                     
                     // Also get last message sender (could be either user)
                     if (lastMessageSenderId != null && lastMessageSenderId != currentUserId) {
                         val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
-                            userRepository.getUserFlow(lastMessageSenderId)
-                                .scan<User?, User?>(null) { previous, current ->
-                                    // Keep previous value if current is null (user went offline)
-                                    current ?: previous
+                            kotlinx.coroutines.flow.flow {
+                                // Try to get from cache first to avoid flicker
+                                val cachedUser = userRepository.getUser(lastMessageSenderId).getOrNull()
+                                if (cachedUser != null) {
+                                    emit(cachedUser)
                                 }
-                                .stateIn(
-                                    scope = viewModelScope,
-                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                                    initialValue = null
-                                )
+                                
+                                // Then observe real-time updates
+                                userRepository.getUserFlow(lastMessageSenderId)
+                                    .collect { user ->
+                                        if (user != null) {
+                                            emit(user)
+                                        }
+                                    }
+                            }.stateIn(
+                                scope = viewModelScope,
+                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                initialValue = null
+                            )
                         }
                         combine(userFlow, senderFlow) { user, sender ->
                             ConversationWithUser(
@@ -116,16 +134,25 @@ class ConversationListViewModel @Inject constructor(
                     // Group conversation: get last message sender
                     if (lastMessageSenderId != null) {
                         val senderFlow = userFlowCache.getOrPut(lastMessageSenderId) {
-                            userRepository.getUserFlow(lastMessageSenderId)
-                                .scan<User?, User?>(null) { previous, current ->
-                                    // Keep previous value if current is null (user went offline)
-                                    current ?: previous
+                            kotlinx.coroutines.flow.flow {
+                                // Try to get from cache first to avoid flicker
+                                val cachedUser = userRepository.getUser(lastMessageSenderId).getOrNull()
+                                if (cachedUser != null) {
+                                    emit(cachedUser)
                                 }
-                                .stateIn(
-                                    scope = viewModelScope,
-                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
-                                    initialValue = null
-                                )
+                                
+                                // Then observe real-time updates
+                                userRepository.getUserFlow(lastMessageSenderId)
+                                    .collect { user ->
+                                        if (user != null) {
+                                            emit(user)
+                                        }
+                                    }
+                            }.stateIn(
+                                scope = viewModelScope,
+                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                initialValue = null
+                            )
                         }
                         senderFlow.map { sender ->
                             ConversationWithUser(

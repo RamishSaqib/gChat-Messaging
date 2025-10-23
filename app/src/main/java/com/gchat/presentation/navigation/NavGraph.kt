@@ -27,10 +27,12 @@ fun NavGraph(
     navController: NavHostController,
     authViewModel: AuthViewModel = hiltViewModel()
 ) {
-    // Use a fixed start destination to avoid crashes on auth state changes
+    val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
+    
+    // Use dynamic start destination based on auth state
     NavHost(
         navController = navController,
-        startDestination = Screen.Login.route
+        startDestination = if (isAuthenticated) Screen.ConversationList.route else Screen.Login.route
     ) {
         // Authentication screens
         composable(Screen.Login.route) {

@@ -10,8 +10,6 @@ import androidx.compose.material3.Surface
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.rememberNavController
@@ -20,6 +18,8 @@ import com.gchat.presentation.navigation.NavGraph
 import com.gchat.presentation.navigation.Screen
 import com.gchat.presentation.theme.GChatTheme
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.asStateFlow
 
 /**
  * Main Activity for gChat
@@ -30,11 +30,13 @@ import dagger.hilt.android.AndroidEntryPoint
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     
-    private var latestIntent by mutableStateOf<Intent?>(null)
+    private val _navigationEvents = MutableStateFlow<NavigationEvent?>(null)
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        latestIntent = intent
+        
+        // Check intent immediately
+        handleIntent(intent)
         
         setContent {
             GChatTheme {
@@ -45,25 +47,26 @@ class MainActivity : ComponentActivity() {
                     val navController = rememberNavController()
                     val authViewModel: AuthViewModel = hiltViewModel()
                     val isAuthenticated by authViewModel.isAuthenticated.collectAsState()
+                    val navigationEvent by _navigationEvents.asStateFlow().collectAsState()
                     
-                    // Handle notification navigation whenever intent or auth state changes
-                    LaunchedEffect(isAuthenticated, latestIntent) {
+                    // Handle navigation events
+                    LaunchedEffect(isAuthenticated, navigationEvent) {
                         if (isAuthenticated) {
-                            val conversationId = latestIntent?.getStringExtra("conversationId")
-                            val openChat = latestIntent?.getBooleanExtra("openChat", false) ?: false
-                            
-                            if (openChat && conversationId != null) {
-                                // Navigate to conversation list with conversationId to auto-open chat
-                                navController.navigate(Screen.ConversationList.createRoute(conversationId)) {
-                                    popUpTo(Screen.Login.route) { inclusive = true }
+                            when (val event = navigationEvent) {
+                                is NavigationEvent.OpenChat -> {
+                                    // Navigate directly to chat
+                                    navController.navigate(Screen.Chat.createRoute(event.conversationId)) {
+                                        popUpTo(Screen.Login.route) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
+                                    _navigationEvents.value = null // Clear event
                                 }
-                                
-                                // Clear the intent flags so we don't navigate again
-                                latestIntent = Intent()
-                            } else if (latestIntent != null) {
-                                // Regular navigation to conversation list
-                                navController.navigate(Screen.ConversationList.createRoute()) {
-                                    popUpTo(Screen.Login.route) { inclusive = true }
+                                null -> {
+                                    // Regular navigation to conversation list
+                                    navController.navigate(Screen.ConversationList.createRoute()) {
+                                        popUpTo(Screen.Login.route) { inclusive = true }
+                                        launchSingleTop = true
+                                    }
                                 }
                             }
                         }
@@ -78,7 +81,19 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        latestIntent = intent
+        handleIntent(intent)
+    }
+    
+    private fun handleIntent(intent: Intent?) {
+        val conversationId = intent?.getStringExtra("conversationId")
+        val openChat = intent?.getBooleanExtra("openChat", false) ?: false
+        
+        if (openChat && conversationId != null) {
+            _navigationEvents.value = NavigationEvent.OpenChat(conversationId)
+        }
     }
 }
 
+sealed class NavigationEvent {
+    data class OpenChat(val conversationId: String) : NavigationEvent()
+}

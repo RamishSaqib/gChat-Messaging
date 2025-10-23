@@ -112,11 +112,18 @@ class ChatViewModel @Inject constructor(
         val conv = conversationRepository.getConversation(conversationId).getOrNull()
         if (conv != null) {
             val users = mutableMapOf<String, com.gchat.domain.model.User>()
-            conv.participants.forEach { userId ->
-                userRepository.getUser(userId).onSuccess { user ->
-                    users[userId] = user
-                }
+            
+            // Load all users concurrently to avoid flicker
+            kotlinx.coroutines.coroutineScope {
+                conv.participants.map { userId ->
+                    kotlinx.coroutines.async {
+                        userRepository.getUser(userId).onSuccess { user ->
+                            users[userId] = user
+                        }
+                    }
+                }.awaitAll()
             }
+            
             emit(users)
         } else {
             emit(emptyMap())
