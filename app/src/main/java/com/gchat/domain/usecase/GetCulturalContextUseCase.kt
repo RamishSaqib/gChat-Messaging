@@ -19,14 +19,12 @@ class GetCulturalContextUseCase @Inject constructor(
      * @param messageId The ID of the message to analyze
      * @param text The text content to analyze
      * @param language The language of the text
-     * @param mode Analysis mode: 'all', 'slang', or 'idioms'
      * @return Result containing CulturalContextResult with detected expressions
      */
     suspend operator fun invoke(
         messageId: String,
         text: String,
-        language: String,
-        mode: String = "all"
+        language: String
     ): Result<CulturalContextResult> {
         // Validate input
         if (text.isBlank()) {
@@ -40,8 +38,7 @@ class GetCulturalContextUseCase @Inject constructor(
         return culturalContextRepository.getCulturalContext(
             messageId = messageId,
             text = text,
-            language = language,
-            mode = mode
+            language = language
         )
     }
 }

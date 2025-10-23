@@ -161,18 +161,12 @@ class ChatViewModel @Inject constructor(
                         "Chat"
                     }
                     
-                    val elapsed = System.currentTimeMillis() - startTime
-                    android.util.Log.d("ChatViewModel", "⚡ Preloaded display name in ${elapsed}ms: $displayName")
                     displayName
                 } else {
                     // Group chat
-                    val groupName = conv.name ?: "Group Chat"
-                    val elapsed = System.currentTimeMillis() - startTime
-                    android.util.Log.d("ChatViewModel", "⚡ Preloaded group name in ${elapsed}ms: $groupName")
-                    groupName
+                    conv.name ?: "Group Chat"
                 }
             } else {
-                android.util.Log.d("ChatViewModel", "⚠️ Failed to preload display name")
                 "Chat"
             }
         }
@@ -181,8 +175,6 @@ class ChatViewModel @Inject constructor(
     // Get display name for the TopBar (with nickname support)
     // Use preloaded value as initial value, then observe real-time updates
     val otherUserName: StateFlow<String> = flow {
-        android.util.Log.d("ChatViewModel", "otherUserName flow starting for conversationId: $conversationId")
-        
         // STEP 1: Emit preloaded value immediately (should already be computed)
         emit(preloadedDisplayName)
         
@@ -195,10 +187,8 @@ class ChatViewModel @Inject constructor(
             
             if (otherUserId != null) {
                 // DM chat - observe real-time updates
-                android.util.Log.d("ChatViewModel", "Subscribing to real-time user updates for: $otherUserId")
                 userRepository.getUserFlow(otherUserId).filterNotNull().collect { user ->
                     val displayName = conv.getUserDisplayName(otherUserId, user)
-                    android.util.Log.d("ChatViewModel", "📡 Real-time update: $displayName")
                     emit(displayName)
                 }
             }
@@ -388,8 +378,6 @@ class ChatViewModel @Inject constructor(
             // Clear any previous error
             _translationErrors.value = _translationErrors.value - messageId
             
-            android.util.Log.d("ChatViewModel", "Translating message $messageId to $targetLanguage")
-            
             // Call translation use case
             translateMessageUseCase(
                 messageId = messageId,
@@ -398,7 +386,6 @@ class ChatViewModel @Inject constructor(
                 sourceLanguage = null // Auto-detect
             ).fold(
                 onSuccess = { translation ->
-                    android.util.Log.d("ChatViewModel", "Translation success: ${translation.translatedText}")
                     // Add to translations map
                     _translations.value = _translations.value + (messageId to translation)
                     // Remove from loading
@@ -506,8 +493,6 @@ class ChatViewModel @Inject constructor(
                                 .getOrNull()
                                 ?.preferredLanguage
                             
-                            android.util.Log.d("ChatViewModel", "Detecting language for message ${message.id} (sender hint: $senderLanguageHint)")
-                            
                             val detectedLanguage = translationRepository.detectLanguage(
                                 text = message.text ?: "",
                                 senderLanguageHint = senderLanguageHint
@@ -515,14 +500,10 @@ class ChatViewModel @Inject constructor(
                             
                             // Only translate if the detected language is different from target language
                             if (detectedLanguage != null && detectedLanguage != targetLanguage) {
-                                android.util.Log.d("ChatViewModel", "Language detected: $detectedLanguage (target: $targetLanguage) - translating")
                                 translateMessage(message, targetLanguage)
                             } else if (detectedLanguage == null) {
                                 // If detection fails, still attempt translation (it will auto-detect)
-                                android.util.Log.d("ChatViewModel", "Language detection failed - attempting translation anyway")
                                 translateMessage(message, targetLanguage)
-                            } else {
-                                android.util.Log.d("ChatViewModel", "Language matches target ($targetLanguage) - skipping translation")
                             }
                             // If detectedLanguage == targetLanguage, skip translation
                         }
@@ -612,8 +593,6 @@ class ChatViewModel @Inject constructor(
             _smartRepliesLoading.value = true
             _smartRepliesError.value = null
             
-            android.util.Log.d("ChatViewModel", "Loading smart replies for message: ${incomingMessage.id}")
-            
             // Get target language from user preferences
             val userId = authRepository.getCurrentUserId() ?: return@launch
             val user = userRepository.getUser(userId).getOrNull()
@@ -629,7 +608,6 @@ class ChatViewModel @Inject constructor(
                 _smartReplies.value = replies
                 _lastSmartReplyMessageId.value = incomingMessage.id
                 _smartRepliesError.value = null
-                android.util.Log.d("ChatViewModel", "Smart replies loaded: ${replies.size}")
             }.onFailure { error ->
                 _smartReplies.value = emptyList()
                 _smartRepliesError.value = error.message ?: "Failed to generate smart replies"
@@ -646,7 +624,6 @@ class ChatViewModel @Inject constructor(
      */
     fun useSmartReply(reply: SmartReply) {
         _messageText.value = reply.replyText
-        android.util.Log.d("ChatViewModel", "Smart reply selected: ${reply.replyText}")
     }
     
     /**
@@ -655,7 +632,6 @@ class ChatViewModel @Inject constructor(
     fun dismissSmartReplies() {
         _smartReplies.value = emptyList()
         _lastSmartReplyMessageId.value = null
-        android.util.Log.d("ChatViewModel", "Smart replies dismissed")
     }
     
     // ===== Data Extraction State =====
@@ -676,10 +652,7 @@ class ChatViewModel @Inject constructor(
      * Extract intelligent data from a single message
      */
     fun extractFromMessage(message: Message) {
-        if (message.text.isNullOrBlank()) {
-            android.util.Log.d("ChatViewModel", "Cannot extract from empty message")
-            return
-        }
+        if (message.text.isNullOrBlank()) return
         
         viewModelScope.launch {
             val messageId = message.id
@@ -690,8 +663,6 @@ class ChatViewModel @Inject constructor(
             // Clear any previous error
             _extractionErrors.value = _extractionErrors.value - messageId
             
-            android.util.Log.d("ChatViewModel", "Extracting data from message $messageId")
-            
             // Call extraction use case
             val result = extractDataFromMessageUseCase(
                 messageId = messageId,
@@ -700,7 +671,6 @@ class ChatViewModel @Inject constructor(
             )
             
             result.onSuccess { extracted ->
-                android.util.Log.d("ChatViewModel", "Extraction success: ${extracted.entities.size} entities")
                 // Only store if entities were found
                 if (extracted.hasEntities()) {
                     _extractedData.value = _extractedData.value + (messageId to extracted)
@@ -708,7 +678,6 @@ class ChatViewModel @Inject constructor(
                 // Remove from loading
                 _extractionLoading.value = _extractionLoading.value - messageId
             }.onFailure { error ->
-                android.util.Log.e("ChatViewModel", "Extraction failed: ${error.message}")
                 // Add error
                 _extractionErrors.value = _extractionErrors.value + (messageId to (error.message ?: "Extraction failed"))
                 // Remove from loading
@@ -725,8 +694,6 @@ class ChatViewModel @Inject constructor(
         
         viewModelScope.launch {
             _batchExtractionLoading.value = true
-            
-            android.util.Log.d("ChatViewModel", "Batch extracting from ${messages.size} messages")
             
             // Filter to only text messages and prepare pairs
             val messagePairs = messages
@@ -745,8 +712,6 @@ class ChatViewModel @Inject constructor(
             )
             
             result.onSuccess { batchResult ->
-                android.util.Log.d("ChatViewModel", "Batch extraction success: ${batchResult.totalEntities} total entities")
-                
                 // Add all extracted data to the map
                 val newData = batchResult.results
                     .filter { it.hasEntities() }
@@ -756,7 +721,6 @@ class ChatViewModel @Inject constructor(
                 
                 _batchExtractionLoading.value = false
             }.onFailure { error ->
-                android.util.Log.e("ChatViewModel", "Batch extraction failed: ${error.message}")
                 _batchExtractionLoading.value = false
             }
         }
@@ -819,11 +783,8 @@ class ChatViewModel @Inject constructor(
      * Load cultural context (idioms, slang, cultural references) for a message.
      * Typically triggered when user taps the cultural context icon or when translation is shown.
      */
-    fun loadCulturalContext(message: Message, mode: String = "all") {
-        if (message.text.isNullOrBlank()) {
-            android.util.Log.d("ChatViewModel", "Cannot load cultural context for empty message")
-            return
-        }
+    fun loadCulturalContext(message: Message) {
+        if (message.text.isNullOrBlank()) return
         
         viewModelScope.launch {
             val messageId = message.id
@@ -834,8 +795,6 @@ class ChatViewModel @Inject constructor(
             // Clear any previous error
             _culturalContextErrors.value = _culturalContextErrors.value - messageId
             
-            android.util.Log.d("ChatViewModel", "Loading cultural context for message $messageId (mode: $mode)")
-            
             // Detect language (use detected language from translation if available, otherwise detect with sender hint)
             val language = translations.value[messageId]?.sourceLanguage 
                 ?: run {
@@ -844,26 +803,20 @@ class ChatViewModel @Inject constructor(
                         .getOrNull()
                         ?.preferredLanguage
                     
-                    android.util.Log.d("ChatViewModel", "Detecting language for cultural context (sender hint: $senderLanguageHint)")
-                    
                     translationRepository.detectLanguage(
                         text = message.text,
                         senderLanguageHint = senderLanguageHint
                     ).getOrNull() ?: "en"
                 }
             
-            android.util.Log.d("ChatViewModel", "Detected language for cultural context: $language")
-            
             // Call use case
             val result = getCulturalContextUseCase(
                 messageId = messageId,
                 text = message.text,
-                language = language,
-                mode = mode
+                language = language
             )
             
             result.onSuccess { contextResult ->
-                android.util.Log.d("ChatViewModel", "Cultural context loaded: ${contextResult.contexts.size} items found")
                 // Add to contexts map
                 _culturalContexts.value = _culturalContexts.value + (messageId to contextResult)
                 // Remove from loading
@@ -879,14 +832,7 @@ class ChatViewModel @Inject constructor(
     }
     
     /**
-     * Explain slang/idioms in a message (shortcut for cultural context with slang mode)
-     */
-    fun explainSlang(message: Message) {
-        loadCulturalContext(message, mode = "slang")
-    }
-    
-    /**
-     * Get cultural context for a specific message
+     * Check if message has cultural context loaded
      */
     fun getCulturalContext(messageId: String): com.gchat.domain.model.CulturalContextResult? {
         return _culturalContexts.value[messageId]
@@ -929,7 +875,6 @@ class ChatViewModel @Inject constructor(
      * The message text will be adjusted when user manually triggers adjustment.
      */
     fun setSelectedFormality(formality: FormalityLevel) {
-        android.util.Log.d("ChatViewModel", "Formality level selected: $formality")
         _selectedFormality.value = formality
     }
     
@@ -939,28 +884,21 @@ class ChatViewModel @Inject constructor(
      */
     fun adjustCurrentMessageFormality() {
         val text = _messageText.value
-        if (text.length <= 10) {
-            android.util.Log.d("ChatViewModel", "Text too short for formality adjustment (${text.length} chars)")
-            return
-        }
+        if (text.length <= 10) return
         
         val formality = _selectedFormality.value
-        android.util.Log.d("ChatViewModel", "Adjusting message formality to $formality")
         
         viewModelScope.launch {
             _formalityLoading.value = true
             _formalityError.value = null
             
             // Detect the language of the message text (not user's preferred language)
-            android.util.Log.d("ChatViewModel", "Detecting language of message text...")
             val detectedLanguage = translationRepository.detectLanguage(text).getOrNull() ?: run {
                 // Fall back to user's preferred language if detection fails
                 val userId = authRepository.getCurrentUserId()
                 val user = userId?.let { userRepository.getUser(it).getOrNull() }
                 user?.preferredLanguage ?: "en"
             }
-            
-            android.util.Log.d("ChatViewModel", "Message language detected: $detectedLanguage")
             
             val result = adjustFormalityUseCase(
                 text = text,
@@ -971,7 +909,6 @@ class ChatViewModel @Inject constructor(
             result.onSuccess { adjustedText ->
                 _messageText.value = adjustedText
                 _formalityError.value = null
-                android.util.Log.d("ChatViewModel", "Formality adjustment successful: ${text.length} -> ${adjustedText.length} chars")
             }.onFailure { error ->
                 _formalityError.value = error.message ?: "Failed to adjust formality"
                 android.util.Log.e("ChatViewModel", "Formality adjustment failed", error)
@@ -1032,7 +969,6 @@ class ChatViewModel @Inject constructor(
                 )
                 
                 sendResult.onSuccess { message ->
-                    android.util.Log.d("ChatViewModel", "Voice message sent: ${message.id}")
                     // Note: Transcription is now manual via long-press menu
                 }.onFailure { error ->
                     android.util.Log.e("ChatViewModel", "Failed to send voice message", error)
@@ -1068,17 +1004,11 @@ class ChatViewModel @Inject constructor(
             
             _currentlyPlayingMessageId.value = messageId
             
-            android.util.Log.d("ChatViewModel", "Starting to collect playback state for message: $messageId")
-            
             playVoiceMessageUseCase(audioUrl, _playbackSpeed.value).collect { state ->
-                android.util.Log.d("ChatViewModel", "Received playback state: $state for message: $messageId")
-                
                 // Create a new map to trigger StateFlow emission
                 _playbackStates.value = _playbackStates.value.toMutableMap().apply {
                     put(messageId, state)
                 }
-                
-                android.util.Log.d("ChatViewModel", "Updated _playbackStates map, new size: ${_playbackStates.value.size}")
                 
                 // Clear currently playing when completed
                 if (state is PlaybackState.Completed) {
@@ -1137,14 +1067,9 @@ class ChatViewModel @Inject constructor(
             // Add to loading set (create new set to trigger StateFlow)
             _transcriptionLoading.value = _transcriptionLoading.value + messageId
             
-            android.util.Log.d("ChatViewModel", "Requesting transcription for message $messageId")
-            
             val result = transcribeVoiceMessageUseCase(messageId, audioUrl, conversationId)
             
-            result.onSuccess { transcriptionResult ->
-                android.util.Log.d("ChatViewModel", "Transcription success: ${transcriptionResult.text}")
-                // Transcription is automatically updated in the message by the use case
-            }.onFailure { error ->
+            result.onFailure { error ->
                 android.util.Log.e("ChatViewModel", "Transcription failed", error)
             }
             
@@ -1190,7 +1115,6 @@ class ChatViewModel @Inject constructor(
             conversationRepository.setNickname(conversationId, userId, nickname).fold(
                 onSuccess = {
                     // Success - conversation flow will update automatically
-                    android.util.Log.d("ChatViewModel", "Nickname updated")
                 },
                 onFailure = { error ->
                     android.util.Log.e("ChatViewModel", "Failed to set nickname", error)
@@ -1206,9 +1130,7 @@ class ChatViewModel @Inject constructor(
         viewModelScope.launch {
             val currentlyEnabled = conversation.value?.autoTranslateEnabled ?: false
             conversationRepository.updateAutoTranslate(conversationId, !currentlyEnabled).fold(
-                onSuccess = {
-                    android.util.Log.d("ChatViewModel", "Auto-translate toggled: ${!currentlyEnabled} - SUCCESS")
-                },
+                onSuccess = {},
                 onFailure = { error ->
                     android.util.Log.e("ChatViewModel", "Failed to toggle auto-translate", error)
                 }
@@ -1231,8 +1153,6 @@ class ChatViewModel @Inject constructor(
             val user = userRepository.getUser(userId).getOrNull()
             val globalEnabled = user?.smartRepliesEnabled ?: true
             
-            android.util.Log.d("ChatViewModel", "Toggling smart replies - current per-chat: ${conv.smartRepliesEnabled}, global: $globalEnabled")
-            
             // Toggle logic:
             // - If currently using global (null):
             //   - If global is ON, set per-chat to OFF
@@ -1245,14 +1165,10 @@ class ChatViewModel @Inject constructor(
                 false -> null // Reset to global
             }
             
-            android.util.Log.d("ChatViewModel", "Toggling smart replies from ${conv.smartRepliesEnabled} to $newValue (global=$globalEnabled)")
-            
             conversationRepository.updateSmartReplies(conversationId, newValue).fold(
-                onSuccess = {
-                    android.util.Log.d("ChatViewModel", "✅ Smart replies per-chat updated to: $newValue (does NOT affect global setting)")
-                },
+                onSuccess = {},
                 onFailure = { error ->
-                    android.util.Log.e("ChatViewModel", "❌ Failed to toggle smart replies per-chat", error)
+                    android.util.Log.e("ChatViewModel", "Failed to toggle smart replies per-chat", error)
                 }
             )
         }

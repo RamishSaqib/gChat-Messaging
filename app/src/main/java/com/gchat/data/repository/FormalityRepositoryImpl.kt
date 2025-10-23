@@ -34,12 +34,10 @@ class FormalityRepositoryImpl @Inject constructor(
         
         // Check cache
         if (cachedEntry != null && System.currentTimeMillis() - cachedEntry.second < CACHE_TTL_MS) {
-            android.util.Log.d("FormalityRepository", "Cache hit for formality adjustment")
             return Result.success(cachedEntry.first)
         }
         
         // Cache miss - call Firebase
-        android.util.Log.d("FormalityRepository", "Cache miss, calling Firebase for formality adjustment")
         return firebaseFormalityDataSource.adjustFormality(text, language, targetFormality)
             .onSuccess { adjustedText ->
                 // Cache the result

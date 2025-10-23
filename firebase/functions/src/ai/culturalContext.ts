@@ -8,7 +8,6 @@ interface CulturalContextRequest {
   messageId: string;
   text: string;
   language: string;
-  mode?: 'all' | 'slang' | 'idioms'; // 'all' by default, for PR #18 slang mode
 }
 
 interface CulturalContextItem {
@@ -45,7 +44,7 @@ export const getCulturalContext = onCall<CulturalContextRequest>(
     region: 'us-central1',
   },
   async (request) => {
-    const { messageId, text, language, mode = 'all' } = request.data;
+    const { messageId, text, language } = request.data;
     const userId = request.auth?.uid;
 
     // Validate auth
@@ -77,10 +76,10 @@ export const getCulturalContext = onCall<CulturalContextRequest>(
       throw error;
     }
 
-    // Generate cache key using hash of text + language + mode
+    // Generate cache key using hash of text + language
     const textHash = crypto
       .createHash('sha256')
-      .update(`${text}-${language}-${mode}`)
+      .update(`${text}-${language}`)
       .digest('hex');
 
     const db = getFirestore();
@@ -96,7 +95,6 @@ export const getCulturalContext = onCall<CulturalContextRequest>(
         const CACHE_TTL = 30 * 24 * 60 * 60 * 1000; // 30 days in milliseconds
 
         if (cacheAge < CACHE_TTL) {
-          console.log(`Cache hit for cultural context: ${textHash.substring(0, 8)}`);
           return {
             messageId,
             contexts: cachedData!.contexts,
@@ -109,68 +107,10 @@ export const getCulturalContext = onCall<CulturalContextRequest>(
         }
       }
 
-      console.log(`Cache miss, generating cultural context for: "${text.substring(0, 50)}..."`);
-
-      // Build GPT-4 prompt based on mode
-      let systemPrompt: string;
-      let userPrompt: string;
-
-      if (mode === 'slang') {
-        systemPrompt = `You are an expert linguist specializing in modern slang, internet language, and regional dialects. Analyze text and identify slang terms, memes, and informal expressions.`;
-        userPrompt = `Analyze the following ${language} text and identify any slang, internet memes, Gen Z language, or informal expressions.
-
-For each slang term found, provide:
-1. The term/phrase (exact text from message)
-2. Actual meaning/definition
-3. Context of use (when and how it's typically used)
-4. Examples of usage (1-2 examples)
-
-If there are no slang terms, return an empty array.
-
-Text: "${text}"
-
-Return ONLY valid JSON in this exact format, no markdown or code blocks:
-{
-  "contexts": [
-    {
-      "phrase": "the slang term",
-      "actualMeaning": "what it means",
-      "culturalContext": "when and how it's used",
-      "examples": ["example 1", "example 2"]
-    }
-  ]
-}`;
-      } else if (mode === 'idioms') {
-        systemPrompt = `You are an expert linguist specializing in idioms and figurative language. Analyze text and identify idiomatic expressions.`;
-        userPrompt = `Analyze the following ${language} text and identify any idioms or figurative expressions.
-
-For each idiom found, provide:
-1. The phrase/expression (exact text from message)
-2. Literal translation (what it would mean word-for-word)
-3. Actual meaning
-4. Cultural context and origin
-5. Examples of usage (1-2 examples)
-
-If there are no idioms, return an empty array.
-
-Text: "${text}"
-
-Return ONLY valid JSON in this exact format, no markdown or code blocks:
-{
-  "contexts": [
-    {
-      "phrase": "the idiom",
-      "literalTranslation": "word-for-word meaning",
-      "actualMeaning": "actual meaning",
-      "culturalContext": "origin and usage notes",
-      "examples": ["example 1", "example 2"]
-    }
-  ]
-}`;
-      } else {
-        // mode === 'all' (default)
-        systemPrompt = `You are an expert linguist specializing in cultural communication. Analyze text and identify idioms, slang, cultural references, and expressions that may not translate literally.`;
-        userPrompt = `Analyze the following ${language} text and identify any idioms, slang, cultural references, or expressions that may not translate literally.
+      // Build GPT-4 prompt
+      const systemPrompt = `You are an expert linguist specializing in cultural communication. Analyze text and identify idioms, slang, cultural references, and expressions that may not translate literally.`;
+      
+      const userPrompt = `Analyze the following ${language} text and identify any idioms, slang, cultural references, or expressions that may not translate literally.
 
 For each expression found, provide:
 1. The phrase/expression (exact text from message)
@@ -195,7 +135,6 @@ Return ONLY valid JSON in this exact format, no markdown or code blocks:
     }
   ]
 }`;
-      }
 
       // Call GPT-4
       const completion = await openai.chat.completions.create({
@@ -236,13 +175,10 @@ Return ONLY valid JSON in this exact format, no markdown or code blocks:
       await cacheRef.set({
         text,
         language,
-        mode,
         contexts: parsedResponse.contexts,
         timestamp: Date.now(),
         expiresAt: FieldValue.serverTimestamp(),
       });
-
-      console.log(`Cultural context generated and cached: ${parsedResponse.contexts.length} items found`);
 
       return {
         messageId,
@@ -342,7 +278,6 @@ export const adjustFormality = onCall<{
         const CACHE_TTL = 7 * 24 * 60 * 60 * 1000; // 7 days
 
         if (cacheAge < CACHE_TTL) {
-          console.log(`Cache hit for formality adjustment: ${cacheKey.substring(0, 8)}`);
           return {
             adjustedText: cachedData!.adjustedText,
             cached: true,
@@ -351,8 +286,6 @@ export const adjustFormality = onCall<{
           await cacheRef.delete();
         }
       }
-
-      console.log(`Adjusting formality to ${targetFormality} for: "${text.substring(0, 50)}..."`);
 
       // Build GPT-4 prompt
       const formalityRules: { [key: string]: string } = {
@@ -403,8 +336,6 @@ Rewritten text (in ${language}):`;
         adjustedText,
         timestamp: Date.now(),
       });
-
-      console.log(`Formality adjusted successfully`);
 
       return {
         adjustedText,

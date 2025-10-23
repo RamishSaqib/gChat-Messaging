@@ -20,25 +20,13 @@ class CulturalContextRepositoryImpl @Inject constructor(
     override suspend fun getCulturalContext(
         messageId: String,
         text: String,
-        language: String,
-        mode: String
+        language: String
     ): Result<CulturalContextResult> {
-        android.util.Log.d(
-            "CulturalContextRepo",
-            "Getting cultural context for message: $messageId (language: $language, mode: $mode)"
-        )
-
         return firebaseCulturalContextDataSource.getCulturalContext(
             messageId = messageId,
             text = text,
-            language = language,
-            mode = mode
-        ).onSuccess { result ->
-            android.util.Log.d(
-                "CulturalContextRepo",
-                "Cultural context fetched: ${result.contexts.size} items (cached: ${result.cached})"
-            )
-        }.onFailure { error ->
+            language = language
+        ).onFailure { error ->
             android.util.Log.e("CulturalContextRepo", "Failed to get cultural context", error)
         }
     }

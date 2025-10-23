@@ -56,7 +56,6 @@ export const translateMessage = onCall<TranslationRequest>(
       // Check cache first
       const cached = await getCachedTranslation(text, targetLanguage);
       if (cached) {
-        console.log('Cache hit for translation');
         return {
           translatedText: cached.translatedText,
           sourceLanguage: cached.sourceLanguage,
@@ -64,8 +63,6 @@ export const translateMessage = onCall<TranslationRequest>(
           cached: true,
         };
       }
-
-      console.log(`Translating text to ${targetLanguage}...`);
 
       // Call OpenAI for translation
       const completion = await openai.chat.completions.create({
@@ -104,8 +101,6 @@ Do not add explanations or notes - only return the translated text.`,
         targetLanguage,
         request.auth.uid
       );
-
-      console.log('Translation completed successfully');
 
       return {
         translatedText,
@@ -190,8 +185,6 @@ export const detectLanguage = onCall<LanguageDetectionRequest>(
       });
 
       const languageCode = await detectLanguageInternal(text, senderLanguageHint);
-
-      console.log(`Language detected: ${languageCode}${senderLanguageHint ? ` (hint: ${senderLanguageHint})` : ''}`);
 
       return {
         languageCode,

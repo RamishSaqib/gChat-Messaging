@@ -36,8 +36,6 @@ class FirebaseTranslationDataSource @Inject constructor(
                 data["sourceLanguage"] = it
             }
             
-            android.util.Log.d("FirebaseTranslation", "Calling translateMessage function: $data")
-            
             val result = functions
                 .getHttpsCallable("translateMessage")
                 .call(data)
@@ -45,8 +43,6 @@ class FirebaseTranslationDataSource @Inject constructor(
             
             val resultData = result.data as? Map<*, *>
                 ?: return Result.failure(Exception("Invalid response from translation service"))
-            
-            android.util.Log.d("FirebaseTranslation", "Translation result: $resultData")
             
             val translatedText = resultData["translatedText"] as? String
                 ?: return Result.failure(Exception("Translation text missing"))
@@ -89,8 +85,6 @@ class FirebaseTranslationDataSource @Inject constructor(
                 data["senderLanguageHint"] = it
             }
             
-            android.util.Log.d("FirebaseTranslation", "Detecting language (hint: $senderLanguageHint): $text")
-            
             val result = functions
                 .getHttpsCallable("detectLanguage")
                 .call(data)
@@ -101,8 +95,6 @@ class FirebaseTranslationDataSource @Inject constructor(
             
             val languageCode = resultData["languageCode"] as? String
                 ?: return Result.failure(Exception("Language code missing"))
-            
-            android.util.Log.d("FirebaseTranslation", "Detected language: $languageCode")
             
             Result.success(languageCode)
         } catch (e: Exception) {

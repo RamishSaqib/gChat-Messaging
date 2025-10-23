@@ -14,14 +14,12 @@ interface CulturalContextRepository {
      * @param messageId The ID of the message
      * @param text The text to analyze
      * @param language The language of the text
-     * @param mode Analysis mode: 'all' (default), 'slang', or 'idioms'
      * @return Result containing CulturalContextResult or an error
      */
     suspend fun getCulturalContext(
         messageId: String,
         text: String,
-        language: String,
-        mode: String = "all"
+        language: String
     ): Result<CulturalContextResult>
 }
 

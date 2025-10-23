@@ -40,16 +40,13 @@ class TranslationRepositoryImpl @Inject constructor(
                 onSuccess = { translation ->
                     // Cache the translation locally
                     translationDao.insert(TranslationMapper.toEntity(translation))
-                    android.util.Log.d("TranslationRepo", "Translation cached: ${translation.id}")
                     Result.success(translation)
                 },
                 onFailure = { error ->
-                    android.util.Log.e("TranslationRepo", "Translation failed", error)
                     Result.failure(error)
                 }
             )
         } catch (e: Exception) {
-            android.util.Log.e("TranslationRepo", "Translation error", e)
             Result.failure(e)
         }
     }
@@ -85,9 +82,8 @@ class TranslationRepositoryImpl @Inject constructor(
         try {
             val thirtyDaysAgo = System.currentTimeMillis() - (30 * 24 * 60 * 60 * 1000)
             translationDao.deleteOldTranslations(thirtyDaysAgo)
-            android.util.Log.d("TranslationRepo", "Cleaned up old translations")
         } catch (e: Exception) {
-            android.util.Log.e("TranslationRepo", "Cleanup failed", e)
+            android.util.Log.e("TranslationRepo", "Translation cleanup failed", e)
         }
     }
 }

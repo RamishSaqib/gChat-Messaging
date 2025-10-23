@@ -22,24 +22,19 @@ class FirebaseCulturalContextDataSource @Inject constructor(
      * @param messageId The ID of the message
      * @param text The text to analyze
      * @param language The language of the text
-     * @param mode Analysis mode: 'all', 'slang', or 'idioms'
      * @return Result containing CulturalContextResult
      */
     suspend fun getCulturalContext(
         messageId: String,
         text: String,
-        language: String,
-        mode: String = "all"
+        language: String
     ): Result<CulturalContextResult> {
         return try {
             val data = hashMapOf(
                 "messageId" to messageId,
                 "text" to text,
-                "language" to language,
-                "mode" to mode
+                "language" to language
             )
-
-            android.util.Log.d("FirebaseCulturalContext", "Calling getCulturalContext function: messageId=$messageId, language=$language, mode=$mode")
 
             val result = functions
                 .getHttpsCallable("getCulturalContext")
@@ -74,11 +69,6 @@ class FirebaseCulturalContextDataSource @Inject constructor(
                     null
                 }
             }
-
-            android.util.Log.d(
-                "FirebaseCulturalContext",
-                "Cultural context received: ${culturalContexts.size} items found (cached: $cached)"
-            )
 
             Result.success(
                 CulturalContextResult(
