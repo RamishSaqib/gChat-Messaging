@@ -70,9 +70,33 @@ fun CulturalContextBottomSheet(
         
         Spacer(modifier = Modifier.height(8.dp))
         
-        // Subtitle with language
+        // Subtitle with language - convert language code to full name
+        val languageName = when (culturalContextResult.language.lowercase()) {
+            "en" -> "English"
+            "es" -> "Spanish"
+            "fr" -> "French"
+            "de" -> "German"
+            "it" -> "Italian"
+            "pt" -> "Portuguese"
+            "ru" -> "Russian"
+            "ja" -> "Japanese"
+            "ko" -> "Korean"
+            "zh" -> "Chinese"
+            "ar" -> "Arabic"
+            "hi" -> "Hindi"
+            "nl" -> "Dutch"
+            "pl" -> "Polish"
+            "tr" -> "Turkish"
+            "vi" -> "Vietnamese"
+            "th" -> "Thai"
+            "sv" -> "Swedish"
+            "da" -> "Danish"
+            "fi" -> "Finnish"
+            else -> culturalContextResult.language.uppercase()
+        }
+        
         Text(
-            text = "${contexts.size} expression${if (contexts.size == 1) "" else "s"} found in ${culturalContextResult.language}",
+            text = "${contexts.size} expression${if (contexts.size == 1) "" else "s"} found in $languageName",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
