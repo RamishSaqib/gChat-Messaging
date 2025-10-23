@@ -97,32 +97,25 @@ class UserRepositoryImpl @Inject constructor(
                 return Result.success(localUsers)
             }
             
-            // Otherwise, return cached users and trigger background fetch for missing ones
+            // Otherwise, fetch missing users from Firestore (BLOCKING for initial load)
             val cachedUserIds = localUsers.map { it.id }.toSet()
             val missingUserIds = userIds.filter { it !in cachedUserIds }
             
             android.util.Log.d("UserRepository", "getUsersByIds - fetching ${missingUserIds.size} missing users from Firestore")
             
-            // Fetch missing users from Firestore in background (don't block on this)
-            // Use try-catch to prevent CancellationException from bubbling up
-            repositoryScope.launch {
-                try {
-                    val firestoreResult = firestoreUserDataSource.getUsersByIds(missingUserIds)
-                    firestoreResult.onSuccess { newUsers ->
-                        // Cache them for next time
-                        newUsers.forEach { user ->
-                            userDao.insert(UserMapper.toEntity(user))
-                        }
-                        android.util.Log.d("UserRepository", "getUsersByIds - cached ${newUsers.size} new users from Firestore")
-                    }
-                } catch (e: Exception) {
-                    // Silently fail background fetch - we already returned cached data
-                    android.util.Log.w("UserRepository", "Background fetch failed, but cached data was returned", e)
+            // Fetch missing users from Firestore and WAIT for them
+            val firestoreResult = firestoreUserDataSource.getUsersByIds(missingUserIds)
+            firestoreResult.onSuccess { newUsers ->
+                // Cache them immediately
+                newUsers.forEach { user ->
+                    userDao.insert(UserMapper.toEntity(user))
                 }
+                android.util.Log.d("UserRepository", "getUsersByIds - cached ${newUsers.size} new users from Firestore")
             }
             
-            // Return what we have now (even if incomplete)
-            Result.success(localUsers)
+            // Return ALL users (cached + newly fetched)
+            val allUsers = localUsers + (firestoreResult.getOrNull() ?: emptyList())
+            Result.success(allUsers)
             
         } catch (e: kotlinx.coroutines.CancellationException) {
             // Don't catch cancellation - rethrow it
