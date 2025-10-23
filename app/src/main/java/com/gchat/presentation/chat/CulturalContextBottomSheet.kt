@@ -16,7 +16,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.gchat.domain.model.CulturalContext
 import com.gchat.domain.model.CulturalContextResult
-import com.gchat.presentation.ui.theme.GChatTheme
+import com.gchat.presentation.theme.GChatTheme
 
 /**
  * Bottom sheet displaying cultural context (idioms, slang, cultural references) for a message.

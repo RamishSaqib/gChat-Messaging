@@ -821,7 +821,7 @@ class ChatViewModel @Inject constructor(
             android.util.Log.d("ChatViewModel", "Loading cultural context for message $messageId (mode: $mode)")
             
             // Detect language (use detected language from translation if available, otherwise detect)
-            val language = translations.value[messageId]?.detectedLanguage 
+            val language = translations.value[messageId]?.sourceLanguage 
                 ?: run {
                     translationRepository.detectLanguage(message.text).getOrNull() ?: "en"
                 }
