@@ -102,6 +102,10 @@ fun ChatScreen(
     // Cultural context state
     val culturalContexts by viewModel.culturalContexts.collectAsState()
     
+    // Formality adjustment state
+    val selectedFormality by viewModel.selectedFormality.collectAsState()
+    val formalityLoading by viewModel.formalityLoading.collectAsState()
+    
     // Voice message state
     val recordingState by viewModel.recordingState.collectAsState()
     val playbackSpeed by viewModel.playbackSpeed.collectAsState()
@@ -376,7 +380,12 @@ fun ChatScreen(
                     },
                     isUploading = uploadProgress != null,
                     selectedImageUri = selectedImageUri,
-                    onClearImage = { selectedImageUri = null }
+                    onClearImage = { selectedImageUri = null },
+                    // Formality adjustment
+                    selectedFormality = selectedFormality,
+                    onFormalitySelected = { viewModel.setSelectedFormality(it) },
+                    onAdjustFormalityClick = { viewModel.adjustCurrentMessageFormality() },
+                    isFormalityLoading = formalityLoading
                 )
             }
         }
@@ -1020,9 +1029,15 @@ fun MessageInput(
     onMicClick: () -> Unit = {},
     isUploading: Boolean = false,
     selectedImageUri: Uri? = null,
-    onClearImage: () -> Unit = {}
+    onClearImage: () -> Unit = {},
+    // Formality adjustment
+    selectedFormality: com.gchat.domain.model.FormalityLevel = com.gchat.domain.model.FormalityLevel.NEUTRAL,
+    onFormalitySelected: (com.gchat.domain.model.FormalityLevel) -> Unit = {},
+    onAdjustFormalityClick: () -> Unit = {},
+    isFormalityLoading: Boolean = false
 ) {
     val canSend = messageText.isNotBlank() || selectedImageUri != null
+    val showFormalityButton = messageText.length > 10 && selectedImageUri == null
     
     Surface(
         modifier = Modifier.fillMaxWidth(),
@@ -1089,6 +1104,18 @@ fun MessageInput(
                         imageVector = Icons.Filled.AttachFile,
                         contentDescription = "Attach image",
                         tint = MaterialTheme.colorScheme.primary
+                    )
+                }
+                
+                // Formality Selector (only when text is long enough)
+                if (showFormalityButton) {
+                    FormalitySelector(
+                        selectedFormality = selectedFormality,
+                        onFormalitySelected = onFormalitySelected,
+                        onAdjustClick = onAdjustFormalityClick,
+                        isLoading = isFormalityLoading,
+                        enabled = !isUploading,
+                        modifier = Modifier.padding(bottom = 4.dp)
                     )
                 }
                 

@@ -6,6 +6,7 @@ import com.gchat.data.repository.AutoTranslateRepositoryImpl
 import com.gchat.data.repository.ConversationRepositoryImpl
 import com.gchat.data.repository.CulturalContextRepositoryImpl
 import com.gchat.data.repository.DataExtractionRepositoryImpl
+import com.gchat.data.repository.FormalityRepositoryImpl
 import com.gchat.data.repository.MediaRepositoryImpl
 import com.gchat.data.repository.MessageRepositoryImpl
 import com.gchat.data.repository.SmartReplyRepositoryImpl
@@ -18,6 +19,7 @@ import com.gchat.domain.repository.AutoTranslateRepository
 import com.gchat.domain.repository.ConversationRepository
 import com.gchat.domain.repository.CulturalContextRepository
 import com.gchat.domain.repository.DataExtractionRepository
+import com.gchat.domain.repository.FormalityRepository
 import com.gchat.domain.repository.MediaRepository
 import com.gchat.domain.repository.MessageRepository
 import com.gchat.domain.repository.SmartReplyRepository
@@ -108,5 +110,11 @@ abstract class RepositoryModule {
     abstract fun bindCulturalContextRepository(
         culturalContextRepositoryImpl: CulturalContextRepositoryImpl
     ): CulturalContextRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindFormalityRepository(
+        formalityRepositoryImpl: FormalityRepositoryImpl
+    ): FormalityRepository
 }
 

@@ -29,7 +29,9 @@ import com.gchat.domain.usecase.SendVoiceMessageUseCase
 import com.gchat.domain.usecase.TranscribeVoiceMessageUseCase
 import com.gchat.domain.usecase.TranslateMessageUseCase
 import com.gchat.domain.usecase.GenerateSmartRepliesUseCase
+import com.gchat.domain.usecase.AdjustFormalityUseCase
 import com.gchat.domain.model.SmartReply
+import com.gchat.domain.model.FormalityLevel
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.Job
@@ -59,6 +61,7 @@ class ChatViewModel @Inject constructor(
     private val transcribeVoiceMessageUseCase: TranscribeVoiceMessageUseCase,
     private val generateSmartRepliesUseCase: GenerateSmartRepliesUseCase,
     private val getCulturalContextUseCase: com.gchat.domain.usecase.GetCulturalContextUseCase,
+    private val adjustFormalityUseCase: AdjustFormalityUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -908,6 +911,73 @@ class ChatViewModel @Inject constructor(
      */
     fun getCulturalContextError(messageId: String): String? {
         return _culturalContextErrors.value[messageId]
+    }
+    
+    // ============ Formality Adjustment State ============
+    
+    private val _selectedFormality = MutableStateFlow(FormalityLevel.NEUTRAL)
+    val selectedFormality: StateFlow<FormalityLevel> = _selectedFormality.asStateFlow()
+    
+    private val _formalityLoading = MutableStateFlow(false)
+    val formalityLoading: StateFlow<Boolean> = _formalityLoading.asStateFlow()
+    
+    private val _formalityError = MutableStateFlow<String?>(null)
+    val formalityError: StateFlow<String?> = _formalityError.asStateFlow()
+    
+    /**
+     * Set the selected formality level.
+     * The message text will be adjusted when user manually triggers adjustment.
+     */
+    fun setSelectedFormality(formality: FormalityLevel) {
+        android.util.Log.d("ChatViewModel", "Formality level selected: $formality")
+        _selectedFormality.value = formality
+    }
+    
+    /**
+     * Adjust the current message text to the selected formality level.
+     * Only works if text is longer than 10 characters.
+     */
+    fun adjustCurrentMessageFormality() {
+        val text = _messageText.value
+        if (text.length <= 10) {
+            android.util.Log.d("ChatViewModel", "Text too short for formality adjustment (${text.length} chars)")
+            return
+        }
+        
+        val formality = _selectedFormality.value
+        android.util.Log.d("ChatViewModel", "Adjusting message formality to $formality")
+        
+        viewModelScope.launch {
+            _formalityLoading.value = true
+            _formalityError.value = null
+            
+            // Get user's preferred language
+            val userId = authRepository.getCurrentUserId() ?: run {
+                _formalityError.value = "User not authenticated"
+                _formalityLoading.value = false
+                return@launch
+            }
+            
+            val user = userRepository.getUser(userId).getOrNull()
+            val language = user?.preferredLanguage ?: "en"
+            
+            val result = adjustFormalityUseCase(
+                text = text,
+                language = language,
+                targetFormality = formality
+            )
+            
+            result.onSuccess { adjustedText ->
+                _messageText.value = adjustedText
+                _formalityError.value = null
+                android.util.Log.d("ChatViewModel", "Formality adjustment successful: ${text.length} -> ${adjustedText.length} chars")
+            }.onFailure { error ->
+                _formalityError.value = error.message ?: "Failed to adjust formality"
+                android.util.Log.e("ChatViewModel", "Formality adjustment failed", error)
+            }
+            
+            _formalityLoading.value = false
+        }
     }
     
     // ============ Voice Message State ============
