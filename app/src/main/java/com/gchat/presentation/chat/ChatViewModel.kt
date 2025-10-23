@@ -492,7 +492,20 @@ class ChatViewModel @Inject constructor(
                         !_translations.value.containsKey(message.id)
                     }
                     .forEach { message ->
-                        translateMessage(message, targetLanguage)
+                        // Detect language first to avoid translating messages already in target language
+                        launch {
+                            val detectedLanguage = translationRepository.detectLanguage(message.text ?: "")
+                                .getOrNull()
+                            
+                            // Only translate if the detected language is different from target language
+                            if (detectedLanguage != null && detectedLanguage != targetLanguage) {
+                                translateMessage(message, targetLanguage)
+                            } else if (detectedLanguage == null) {
+                                // If detection fails, still attempt translation (it will auto-detect)
+                                translateMessage(message, targetLanguage)
+                            }
+                            // If detectedLanguage == targetLanguage, skip translation
+                        }
                     }
             }
         }
