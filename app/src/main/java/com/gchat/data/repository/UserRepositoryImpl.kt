@@ -27,12 +27,14 @@ class UserRepositoryImpl @Inject constructor(
     private val repositoryScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     
     override fun getUserFlow(userId: String): Flow<User?> {
-        // Offline-first approach: Start with cached data, then observe Firestore updates
-        return kotlinx.coroutines.flow.flow {
-            android.util.Log.d("UserRepository", "getUserFlow called for userId: $userId")
-            // Emit cached data first (immediate load)
-            val cachedUser = userDao.getUserById(userId)
-            android.util.Log.d("UserRepository", "Cached user found: ${cachedUser != null}, displayName: ${cachedUser?.displayName}")
+        // CRITICAL: Check cache SYNCHRONOUSLY before creating the Flow
+        // This ensures StateFlow has the correct initialValue immediately
+        val cachedUser = runBlocking { userDao.getUserById(userId) }
+        android.util.Log.d("UserRepository", "getUserFlow called for userId: $userId, cached: ${cachedUser != null}, displayName: ${cachedUser?.displayName}")
+        
+        // Start with cached value, then observe Firestore for updates
+        return flow {
+            // Emit cached data immediately (if available)
             if (cachedUser != null) {
                 emit(UserMapper.toDomain(cachedUser))
             }
