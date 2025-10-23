@@ -218,53 +218,5 @@ fun DMInfoScreen(
             }
         }
     }
-    
-    // Nickname Dialog
-    if (showNicknameDialog) {
-        var nicknameText by remember { mutableStateOf(viewModel.getCurrentNickname() ?: "") }
-        
-        AlertDialog(
-            onDismissRequest = { showNicknameDialog = false },
-            title = { Text("Change My Nickname") },
-            text = {
-                Column {
-                    Text(
-                        text = "Set a custom nickname that only shows in this chat.",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                    Spacer(modifier = Modifier.height(16.dp))
-                    OutlinedTextField(
-                        value = nicknameText,
-                        onValueChange = { nicknameText = it },
-                        label = { Text("Nickname") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
-                }
-            },
-            confirmButton = {
-                TextButton(onClick = {
-                    viewModel.setNickname(nicknameText.ifBlank { null })
-                    showNicknameDialog = false
-                }) {
-                    Text("Save")
-                }
-            },
-            dismissButton = {
-                if (nicknameText.isNotBlank()) {
-                    TextButton(onClick = {
-                        viewModel.setNickname(null)
-                        showNicknameDialog = false
-                    }) {
-                        Text("Remove")
-                    }
-                }
-                TextButton(onClick = { showNicknameDialog = false }) {
-                    Text("Cancel")
-                }
-            }
-        )
-    }
 }
 
