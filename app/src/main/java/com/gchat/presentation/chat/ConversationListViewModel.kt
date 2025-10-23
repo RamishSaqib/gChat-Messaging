@@ -32,6 +32,10 @@ class ConversationListViewModel @Inject constructor(
     // Track conversations being dismissed for immediate UI removal
     private val _dismissedConversationIds = MutableStateFlow<Set<String>>(emptySet())
     
+    // Track if initial load is complete with user data (prevents showing "Unknown User")
+    private val _isLoadingInitialData = MutableStateFlow(true)
+    val isLoadingInitialData: StateFlow<Boolean> = _isLoadingInitialData.asStateFlow()
+    
     // Track if initial load is complete (used to differentiate between loading and truly empty)
     val isInitialLoad: StateFlow<Boolean> = flow {
         emit(true) // Start as loading
@@ -76,7 +80,7 @@ class ConversationListViewModel @Inject constructor(
                 return@flatMapLatest flowOf(emptyList())
             }
             
-            // STEP 1: Pre-load ALL user data from cache in background (non-blocking)
+            // STEP 1: Pre-load ALL user data from cache AND wait for it on first load
             val preloadedUsers = mutableMapOf<String, User?>()
             
             // Collect all unique user IDs we need
@@ -90,15 +94,33 @@ class ConversationListViewModel @Inject constructor(
             
             android.util.Log.d("ConversationListVM", "Loading ${userIdsToLoad.size} users in batch")
             
-            // Load users asynchronously - don't block here!
-            viewModelScope.launch {
+            // On initial load, wait for users to be fetched before emitting to UI
+            if (_isLoadingInitialData.value && userIdsToLoad.isNotEmpty()) {
+                android.util.Log.d("ConversationListVM", "Initial load - waiting for user data...")
                 val startTime = System.currentTimeMillis()
                 userRepository.getUsersByIds(userIdsToLoad.toList()).onSuccess { users ->
                     users.forEach { user ->
                         preloadedUsers[user.id] = user
                     }
                     val loadTime = System.currentTimeMillis() - startTime
-                    android.util.Log.d("ConversationListVM", "Async loaded ${preloadedUsers.size} users in ${loadTime}ms")
+                    android.util.Log.d("ConversationListVM", "Initial load - loaded ${preloadedUsers.size} users in ${loadTime}ms")
+                    _isLoadingInitialData.value = false
+                }
+                // If we have no conversations or users, mark as loaded anyway
+                if (visibleConversations.isEmpty() || userIdsToLoad.isEmpty()) {
+                    _isLoadingInitialData.value = false
+                }
+            } else {
+                // Subsequent loads: async background loading
+                viewModelScope.launch {
+                    val startTime = System.currentTimeMillis()
+                    userRepository.getUsersByIds(userIdsToLoad.toList()).onSuccess { users ->
+                        users.forEach { user ->
+                            preloadedUsers[user.id] = user
+                        }
+                        val loadTime = System.currentTimeMillis() - startTime
+                        android.util.Log.d("ConversationListVM", "Async loaded ${preloadedUsers.size} users in ${loadTime}ms")
+                    }
                 }
             }
             
