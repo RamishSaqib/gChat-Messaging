@@ -189,8 +189,9 @@ class ConversationListViewModel @Inject constructor(
     // MUST be defined AFTER conversationsWithUsers to avoid null reference
     val isInitialLoad: StateFlow<Boolean> = flow {
         emit(true) // Start as loading
-        // Wait for first emission from conversationsWithUsers (after user data is loaded)
-        conversationsWithUsers.first()
+        // Skip the initialValue (empty list) and wait for actual data emission
+        // drop(1) skips the first emission (initialValue), then first() waits for the real data
+        conversationsWithUsers.drop(1).first()
         emit(false) // Loading complete
     }.stateIn(viewModelScope, SharingStarted.Eagerly, true)
     
