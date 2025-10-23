@@ -79,6 +79,10 @@ interface ConversationDao {
     @Query("UPDATE conversations SET autoTranslateEnabled = :enabled, updatedAt = :timestamp WHERE id = :conversationId")
     suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean, timestamp: Long)
     
+    @Query("UPDATE conversations SET smartRepliesEnabled = :enabled, updatedAt = :timestamp WHERE id = :conversationId")
+    suspend fun updateSmartReplies(conversationId: String, enabled: Boolean?, timestamp: Long)
+
+    
     @Query("UPDATE conversations SET name = :name, updatedAt = :timestamp WHERE id = :conversationId")
     suspend fun updateGroupName(conversationId: String, name: String, timestamp: Long)
     

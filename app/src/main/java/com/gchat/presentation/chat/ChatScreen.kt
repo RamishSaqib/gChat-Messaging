@@ -276,6 +276,35 @@ fun ChatScreen(
                                     },
                                     leadingIcon = { Icon(Icons.Default.Translate, null) }
                                 )
+                                DropdownMenuItem(
+                                    text = { 
+                                        Column {
+                                            Text("Smart Replies")
+                                            Text(
+                                                text = when (conversation?.smartRepliesEnabled) {
+                                                    true -> "Enabled"
+                                                    false -> "Disabled"
+                                                    null -> "Using Global"
+                                                },
+                                                style = MaterialTheme.typography.bodySmall,
+                                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                                            )
+                                        }
+                                    },
+                                    onClick = {
+                                        // Don't close menu, just toggle
+                                        viewModel.toggleSmartReplies()
+                                    },
+                                    trailingIcon = {
+                                        Switch(
+                                            checked = conversation?.smartRepliesEnabled != false,
+                                            onCheckedChange = { 
+                                                viewModel.toggleSmartReplies()
+                                            }
+                                        )
+                                    },
+                                    leadingIcon = { Icon(Icons.AutoMirrored.Filled.Message, null) }
+                                )
                             }
                         },
                         colors = TopAppBarDefaults.topAppBarColors(

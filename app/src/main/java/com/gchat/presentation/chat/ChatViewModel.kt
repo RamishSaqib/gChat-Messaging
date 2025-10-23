@@ -534,16 +534,31 @@ class ChatViewModel @Inject constructor(
     /**
      * Auto-generate smart replies for incoming messages
      * Debounced by 500ms to avoid excessive API calls
+     * Only generates if smart replies are enabled (global or per-conversation)
      */
     init {
         viewModelScope.launch {
             combine(
                 messages,
-                currentUserId
-            ) { messagesList, userId ->
-                Pair(messagesList, userId)
-            }.collect { (messagesList, userId) ->
-                if (userId == null) return@collect
+                currentUserId,
+                conversation
+            ) { messagesList, userId, conv ->
+                Triple(messagesList, userId, conv)
+            }.collect { (messagesList, userId, conv) ->
+                if (userId == null || conv == null) return@collect
+                
+                // Check if smart replies are enabled
+                val user = userRepository.getUser(userId).getOrNull()
+                val smartRepliesEnabled = conv.smartRepliesEnabled ?: (user?.smartRepliesEnabled ?: true)
+                
+                if (!smartRepliesEnabled) {
+                    // Clear any existing smart replies if feature is disabled
+                    if (_smartReplies.value.isNotEmpty()) {
+                        _smartReplies.value = emptyList()
+                        _lastSmartReplyMessageId.value = null
+                    }
+                    return@collect
+                }
                 
                 // Get the latest message overall
                 val latestMessage = messagesList.maxByOrNull { it.timestamp }
@@ -1002,6 +1017,35 @@ class ChatViewModel @Inject constructor(
                 },
                 onFailure = { error ->
                     android.util.Log.e("ChatViewModel", "Failed to toggle auto-translate", error)
+                }
+            )
+        }
+    }
+    
+    fun toggleSmartReplies() {
+        viewModelScope.launch {
+            val conv = conversation.value ?: return@launch
+            val user = currentUserId.value?.let { userRepository.getUser(it).getOrNull() }
+            val globalEnabled = user?.smartRepliesEnabled ?: true
+            
+            // Current effective state
+            val currentlyEnabled = conv.smartRepliesEnabled ?: globalEnabled
+            
+            // Toggle logic:
+            // - If currently using global (null) or enabled (true), set to false
+            // - If currently disabled (false), set to null (use global)
+            val newValue = when (conv.smartRepliesEnabled) {
+                null -> if (globalEnabled) false else true // If global is on, turn off; if global is off, turn on
+                true -> false
+                false -> null // Reset to global
+            }
+            
+            conversationRepository.updateSmartReplies(conversationId, newValue).fold(
+                onSuccess = {
+                    android.util.Log.d("ChatViewModel", "Smart replies toggled: $newValue - SUCCESS")
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Failed to toggle smart replies", error)
                 }
             )
         }

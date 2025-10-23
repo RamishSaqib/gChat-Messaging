@@ -158,5 +158,23 @@ class UserRepositoryImpl @Inject constructor(
     override suspend fun updateFcmToken(userId: String, token: String): Result<Unit> {
         return firestoreUserDataSource.updateFcmToken(userId, token)
     }
+    
+    override suspend fun updateGlobalAutoTranslate(userId: String, enabled: Boolean): Result<Unit> {
+        return try {
+            firestoreUserDataSource.updateUser(userId, mapOf("autoTranslateEnabled" to enabled))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun updateGlobalSmartReplies(userId: String, enabled: Boolean): Result<Unit> {
+        return try {
+            firestoreUserDataSource.updateUser(userId, mapOf("smartRepliesEnabled" to enabled))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
 

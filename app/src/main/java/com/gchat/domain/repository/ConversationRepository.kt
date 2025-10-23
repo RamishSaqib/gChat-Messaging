@@ -29,5 +29,8 @@ interface ConversationRepository {
     
     // Auto-translate management
     suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean): Result<Unit>
+    
+    // Smart replies management
+    suspend fun updateSmartReplies(conversationId: String, enabled: Boolean?): Result<Unit>
 }
 

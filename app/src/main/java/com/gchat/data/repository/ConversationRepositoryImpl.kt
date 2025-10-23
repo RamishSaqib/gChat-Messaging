@@ -486,6 +486,29 @@ class ConversationRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun updateSmartReplies(conversationId: String, enabled: Boolean?): Result<Unit> {
+        return try {
+            val timestamp = System.currentTimeMillis()
+            
+            // Update locally first for immediate UI update
+            conversationDao.updateSmartReplies(conversationId, enabled, timestamp)
+            
+            // Then sync to Firestore (await and return the result)
+            val result = firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf(
+                    "smartRepliesEnabled" to enabled,
+                    "updatedAt" to timestamp
+                )
+            )
+            
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    
     private suspend fun syncConversationsFromFirestore(userId: String) {
         try {
             android.util.Log.d("ConversationRepo", "Starting Firestore sync for user: $userId")
