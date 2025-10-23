@@ -9,6 +9,7 @@ import com.gchat.domain.repository.UserRepository
 import com.gchat.domain.usecase.DeleteConversationUseCase
 import com.gchat.domain.usecase.GetConversationsUseCase
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -16,6 +17,7 @@ import javax.inject.Inject
 /**
  * ViewModel for conversation list screen
  */
+@OptIn(ExperimentalCoroutinesApi::class)
 @HiltViewModel
 class ConversationListViewModel @Inject constructor(
     getConversationsUseCase: GetConversationsUseCase,
