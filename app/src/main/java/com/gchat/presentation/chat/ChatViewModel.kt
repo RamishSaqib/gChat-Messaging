@@ -498,15 +498,28 @@ class ChatViewModel @Inject constructor(
                     .forEach { message ->
                         // Detect language first to avoid translating messages already in target language
                         launch {
-                            val detectedLanguage = translationRepository.detectLanguage(message.text ?: "")
+                            // Get sender's preferred language as a hint for disambiguation
+                            val senderLanguageHint = userRepository.getUser(message.senderId)
                                 .getOrNull()
+                                ?.preferredLanguage
+                            
+                            android.util.Log.d("ChatViewModel", "Detecting language for message ${message.id} (sender hint: $senderLanguageHint)")
+                            
+                            val detectedLanguage = translationRepository.detectLanguage(
+                                text = message.text ?: "",
+                                senderLanguageHint = senderLanguageHint
+                            ).getOrNull()
                             
                             // Only translate if the detected language is different from target language
                             if (detectedLanguage != null && detectedLanguage != targetLanguage) {
+                                android.util.Log.d("ChatViewModel", "Language detected: $detectedLanguage (target: $targetLanguage) - translating")
                                 translateMessage(message, targetLanguage)
                             } else if (detectedLanguage == null) {
                                 // If detection fails, still attempt translation (it will auto-detect)
+                                android.util.Log.d("ChatViewModel", "Language detection failed - attempting translation anyway")
                                 translateMessage(message, targetLanguage)
+                            } else {
+                                android.util.Log.d("ChatViewModel", "Language matches target ($targetLanguage) - skipping translation")
                             }
                             // If detectedLanguage == targetLanguage, skip translation
                         }
@@ -820,10 +833,20 @@ class ChatViewModel @Inject constructor(
             
             android.util.Log.d("ChatViewModel", "Loading cultural context for message $messageId (mode: $mode)")
             
-            // Detect language (use detected language from translation if available, otherwise detect)
+            // Detect language (use detected language from translation if available, otherwise detect with sender hint)
             val language = translations.value[messageId]?.sourceLanguage 
                 ?: run {
-                    translationRepository.detectLanguage(message.text).getOrNull() ?: "en"
+                    // Get sender's preferred language as a hint for disambiguation
+                    val senderLanguageHint = userRepository.getUser(message.senderId)
+                        .getOrNull()
+                        ?.preferredLanguage
+                    
+                    android.util.Log.d("ChatViewModel", "Detecting language for cultural context (sender hint: $senderLanguageHint)")
+                    
+                    translationRepository.detectLanguage(
+                        text = message.text,
+                        senderLanguageHint = senderLanguageHint
+                    ).getOrNull() ?: "en"
                 }
             
             android.util.Log.d("ChatViewModel", "Detected language for cultural context: $language")

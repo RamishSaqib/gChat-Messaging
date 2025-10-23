@@ -74,12 +74,22 @@ class FirebaseTranslationDataSource @Inject constructor(
     
     /**
      * Detect language of text using Cloud Function
+     * 
+     * @param text The text to detect language for
+     * @param senderLanguageHint Optional sender's preferred language for disambiguation
      */
-    suspend fun detectLanguage(text: String): Result<String> {
+    suspend fun detectLanguage(text: String, senderLanguageHint: String? = null): Result<String> {
         return try {
             val data = hashMapOf(
                 "text" to text
             )
+            
+            // Add sender language hint if provided
+            senderLanguageHint?.let {
+                data["senderLanguageHint"] = it
+            }
+            
+            android.util.Log.d("FirebaseTranslation", "Detecting language (hint: $senderLanguageHint): $text")
             
             val result = functions
                 .getHttpsCallable("detectLanguage")
@@ -91,6 +101,8 @@ class FirebaseTranslationDataSource @Inject constructor(
             
             val languageCode = resultData["languageCode"] as? String
                 ?: return Result.failure(Exception("Language code missing"))
+            
+            android.util.Log.d("FirebaseTranslation", "Detected language: $languageCode")
             
             Result.success(languageCode)
         } catch (e: Exception) {

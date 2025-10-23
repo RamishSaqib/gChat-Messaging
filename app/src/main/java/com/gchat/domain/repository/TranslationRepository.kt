@@ -37,9 +37,10 @@ interface TranslationRepository {
      * Detect the language of given text
      * 
      * @param text Text to analyze
+     * @param senderLanguageHint Optional sender's preferred language for disambiguation
      * @return Result with detected language code or error
      */
-    suspend fun detectLanguage(text: String): Result<String>
+    suspend fun detectLanguage(text: String, senderLanguageHint: String? = null): Result<String>
     
     /**
      * Clear all cached translations (for cleanup/testing)

@@ -65,8 +65,8 @@ class TranslationRepositoryImpl @Inject constructor(
             }
     }
     
-    override suspend fun detectLanguage(text: String): Result<String> {
-        return firebaseDataSource.detectLanguage(text)
+    override suspend fun detectLanguage(text: String, senderLanguageHint: String?): Result<String> {
+        return firebaseDataSource.detectLanguage(text, senderLanguageHint)
     }
     
     override suspend fun clearCache(): Result<Unit> {

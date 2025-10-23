@@ -17,6 +17,7 @@ interface TranslationRequest {
 
 interface LanguageDetectionRequest {
   text: string;
+  senderLanguageHint?: string; // Optional: sender's preferred language for disambiguation
 }
 
 /**
@@ -128,15 +129,22 @@ Do not add explanations or notes - only return the translated text.`,
 /**
  * Internal helper for language detection (used by translation)
  */
-async function detectLanguageInternal(text: string): Promise<string> {
+async function detectLanguageInternal(text: string, senderLanguageHint?: string): Promise<string> {
   try {
+    // Build the system prompt with optional sender language hint
+    let systemPrompt = `Detect the language of the following text. Return ONLY the ISO 639-1 language code (e.g., "en", "es", "fr", "ja", "zh", "ar"). 
+If multiple languages are present, return the primary language. Do not return anything except the 2-letter code.`;
+
+    if (senderLanguageHint) {
+      systemPrompt += `\n\nNote: The sender's preferred language is "${senderLanguageHint}". If the text is ambiguous or could be multiple languages, prioritize this language as the most likely option.`;
+    }
+
     const completion = await openai.chat.completions.create({
       model: MODELS.TRANSLATION,
       messages: [
         {
           role: 'system',
-          content: `Detect the language of the following text. Return ONLY the ISO 639-1 language code (e.g., "en", "es", "fr", "ja", "zh", "ar"). 
-If multiple languages are present, return the primary language. Do not return anything except the 2-letter code.`,
+          content: systemPrompt,
         },
         {
           role: 'user',
@@ -168,7 +176,7 @@ export const detectLanguage = onCall<LanguageDetectionRequest>(
       throw new HttpsError('unauthenticated', 'User must be authenticated');
     }
 
-    const { text } = request.data;
+    const { text, senderLanguageHint } = request.data;
 
     if (!text) {
       throw new HttpsError('invalid-argument', 'Text is required');
@@ -181,7 +189,9 @@ export const detectLanguage = onCall<LanguageDetectionRequest>(
         windowMinutes: 60,
       });
 
-      const languageCode = await detectLanguageInternal(text);
+      const languageCode = await detectLanguageInternal(text, senderLanguageHint);
+
+      console.log(`Language detected: ${languageCode}${senderLanguageHint ? ` (hint: ${senderLanguageHint})` : ''}`);
 
       return {
         languageCode,
