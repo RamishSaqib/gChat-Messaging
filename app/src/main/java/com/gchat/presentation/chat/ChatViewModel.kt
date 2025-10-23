@@ -58,6 +58,7 @@ class ChatViewModel @Inject constructor(
     private val playVoiceMessageUseCase: PlayVoiceMessageUseCase,
     private val transcribeVoiceMessageUseCase: TranscribeVoiceMessageUseCase,
     private val generateSmartRepliesUseCase: GenerateSmartRepliesUseCase,
+    private val getCulturalContextUseCase: com.gchat.domain.usecase.GetCulturalContextUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -785,6 +786,105 @@ class ChatViewModel @Inject constructor(
      */
     fun getEntitiesByType(type: com.gchat.domain.model.EntityType): List<ExtractedEntity> {
         return getAllExtractedEntities().filter { it.type == type }
+    }
+    
+    // ===== Cultural Context State =====
+    
+    private val _culturalContexts = MutableStateFlow<Map<String, com.gchat.domain.model.CulturalContextResult>>(emptyMap())
+    val culturalContexts: StateFlow<Map<String, com.gchat.domain.model.CulturalContextResult>> = _culturalContexts.asStateFlow()
+    
+    private val _culturalContextLoading = MutableStateFlow<Set<String>>(emptySet())
+    val culturalContextLoading: StateFlow<Set<String>> = _culturalContextLoading.asStateFlow()
+    
+    private val _culturalContextErrors = MutableStateFlow<Map<String, String>>(emptyMap())
+    val culturalContextErrors: StateFlow<Map<String, String>> = _culturalContextErrors.asStateFlow()
+    
+    /**
+     * Load cultural context (idioms, slang, cultural references) for a message.
+     * Typically triggered when user taps the cultural context icon or when translation is shown.
+     */
+    fun loadCulturalContext(message: Message, mode: String = "all") {
+        if (message.text.isNullOrBlank()) {
+            android.util.Log.d("ChatViewModel", "Cannot load cultural context for empty message")
+            return
+        }
+        
+        viewModelScope.launch {
+            val messageId = message.id
+            
+            // Add to loading set
+            _culturalContextLoading.value = _culturalContextLoading.value + messageId
+            
+            // Clear any previous error
+            _culturalContextErrors.value = _culturalContextErrors.value - messageId
+            
+            android.util.Log.d("ChatViewModel", "Loading cultural context for message $messageId (mode: $mode)")
+            
+            // Detect language (use detected language from translation if available, otherwise detect)
+            val language = translations.value[messageId]?.detectedLanguage 
+                ?: run {
+                    translationRepository.detectLanguage(message.text).getOrNull() ?: "en"
+                }
+            
+            android.util.Log.d("ChatViewModel", "Detected language for cultural context: $language")
+            
+            // Call use case
+            val result = getCulturalContextUseCase(
+                messageId = messageId,
+                text = message.text,
+                language = language,
+                mode = mode
+            )
+            
+            result.onSuccess { contextResult ->
+                android.util.Log.d("ChatViewModel", "Cultural context loaded: ${contextResult.contexts.size} items found")
+                // Add to contexts map
+                _culturalContexts.value = _culturalContexts.value + (messageId to contextResult)
+                // Remove from loading
+                _culturalContextLoading.value = _culturalContextLoading.value - messageId
+            }.onFailure { error ->
+                android.util.Log.e("ChatViewModel", "Cultural context failed", error)
+                // Add error
+                _culturalContextErrors.value = _culturalContextErrors.value + (messageId to (error.message ?: "Failed to load cultural context"))
+                // Remove from loading
+                _culturalContextLoading.value = _culturalContextLoading.value - messageId
+            }
+        }
+    }
+    
+    /**
+     * Explain slang/idioms in a message (shortcut for cultural context with slang mode)
+     */
+    fun explainSlang(message: Message) {
+        loadCulturalContext(message, mode = "slang")
+    }
+    
+    /**
+     * Get cultural context for a specific message
+     */
+    fun getCulturalContext(messageId: String): com.gchat.domain.model.CulturalContextResult? {
+        return _culturalContexts.value[messageId]
+    }
+    
+    /**
+     * Check if message has cultural context loaded
+     */
+    fun hasCulturalContext(messageId: String): Boolean {
+        return _culturalContexts.value.containsKey(messageId)
+    }
+    
+    /**
+     * Check if cultural context is being loaded for a message
+     */
+    fun isCulturalContextLoading(messageId: String): Boolean {
+        return messageId in _culturalContextLoading.value
+    }
+    
+    /**
+     * Get cultural context error for a message
+     */
+    fun getCulturalContextError(messageId: String): String? {
+        return _culturalContextErrors.value[messageId]
     }
     
     // ============ Voice Message State ============

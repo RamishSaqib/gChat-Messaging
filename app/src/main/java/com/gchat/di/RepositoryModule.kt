@@ -4,6 +4,7 @@ import com.gchat.data.repository.AudioRepositoryImpl
 import com.gchat.data.repository.AuthRepositoryImpl
 import com.gchat.data.repository.AutoTranslateRepositoryImpl
 import com.gchat.data.repository.ConversationRepositoryImpl
+import com.gchat.data.repository.CulturalContextRepositoryImpl
 import com.gchat.data.repository.DataExtractionRepositoryImpl
 import com.gchat.data.repository.MediaRepositoryImpl
 import com.gchat.data.repository.MessageRepositoryImpl
@@ -15,6 +16,7 @@ import com.gchat.domain.repository.AudioRepository
 import com.gchat.domain.repository.AuthRepository
 import com.gchat.domain.repository.AutoTranslateRepository
 import com.gchat.domain.repository.ConversationRepository
+import com.gchat.domain.repository.CulturalContextRepository
 import com.gchat.domain.repository.DataExtractionRepository
 import com.gchat.domain.repository.MediaRepository
 import com.gchat.domain.repository.MessageRepository
@@ -100,5 +102,11 @@ abstract class RepositoryModule {
     abstract fun bindSmartReplyRepository(
         smartReplyRepositoryImpl: SmartReplyRepositoryImpl
     ): SmartReplyRepository
+    
+    @Binds
+    @Singleton
+    abstract fun bindCulturalContextRepository(
+        culturalContextRepositoryImpl: CulturalContextRepositoryImpl
+    ): CulturalContextRepository
 }
 

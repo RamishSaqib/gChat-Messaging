@@ -98,6 +98,9 @@ fun ChatScreen(
     // Data extraction state
     val extractedData by viewModel.extractedData.collectAsState()
     
+    // Cultural context state
+    val culturalContexts by viewModel.culturalContexts.collectAsState()
+    
     // Voice message state
     val recordingState by viewModel.recordingState.collectAsState()
     val playbackSpeed by viewModel.playbackSpeed.collectAsState()
@@ -128,6 +131,8 @@ fun ChatScreen(
     
     var showImagePicker by remember { mutableStateOf(false) }
     var selectedImageUri by remember { mutableStateOf<Uri?>(null) }
+    var showCulturalContextSheet by remember { mutableStateOf(false) }
+    var selectedMessageForContext by remember { mutableStateOf<String?>(null) }
     
     // Camera permission
     val cameraPermissionState = rememberPermissionState(Manifest.permission.CAMERA)
@@ -455,6 +460,15 @@ fun ChatScreen(
                             },
                             onRequestTranscription = { messageId, audioUrl ->
                                 viewModel.requestTranscription(messageId, audioUrl)
+                            },
+                            // Cultural context parameters
+                            hasCulturalContext = viewModel.hasCulturalContext(message.id),
+                            isCulturalContextLoading = viewModel.isCulturalContextLoading(message.id),
+                            culturalContextError = viewModel.getCulturalContextError(message.id),
+                            onCulturalContextClick = {
+                                viewModel.loadCulturalContext(message)
+                                selectedMessageForContext = message.id
+                                showCulturalContextSheet = true
                             }
                         )
                         Spacer(modifier = Modifier.height(if (isGroupedWithPrevious) 2.dp else 12.dp))
@@ -565,6 +579,27 @@ fun ChatScreen(
             }
         )
     }
+    
+    // Cultural Context Bottom Sheet
+    if (showCulturalContextSheet && selectedMessageForContext != null) {
+        val contextResult = culturalContexts[selectedMessageForContext]
+        if (contextResult != null) {
+            ModalBottomSheet(
+                onDismissRequest = { 
+                    showCulturalContextSheet = false
+                    selectedMessageForContext = null
+                }
+            ) {
+                CulturalContextBottomSheet(
+                    culturalContextResult = contextResult,
+                    onDismiss = {
+                        showCulturalContextSheet = false
+                        selectedMessageForContext = null
+                    }
+                )
+            }
+        }
+    }
 }
 
 @OptIn(ExperimentalFoundationApi::class)
@@ -593,7 +628,12 @@ fun MessageBubble(
     playbackSpeed: Float = 1.0f,
     onPlayPause: (String, String) -> Unit = { _, _ -> },
     onSpeedChange: (Float) -> Unit = {},
-    onRequestTranscription: (String, String) -> Unit = { _, _ -> } // messageId, audioUrl
+    onRequestTranscription: (String, String) -> Unit = { _, _ -> }, // messageId, audioUrl
+    // Cultural context parameters
+    hasCulturalContext: Boolean = false,
+    isCulturalContextLoading: Boolean = false,
+    culturalContextError: String? = null,
+    onCulturalContextClick: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var showLanguageSelector by remember { mutableStateOf(false) }
@@ -786,6 +826,66 @@ fun MessageBubble(
                     }
                 }
                 
+                // Show cultural context icon if available or loading
+                if (hasCulturalContext || isCulturalContextLoading || culturalContextError != null) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .padding(top = 4.dp)
+                            .padding(start = if (isOwnMessage) 0.dp else 12.dp)
+                    ) {
+                        when {
+                            isCulturalContextLoading -> {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    strokeWidth = 2.dp,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Loading context...",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                            culturalContextError != null -> {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = "Cultural context error",
+                                    tint = MaterialTheme.colorScheme.error,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(4.dp))
+                                Text(
+                                    text = "Context unavailable",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.error
+                                )
+                            }
+                            hasCulturalContext -> {
+                                IconButton(
+                                    onClick = onCulturalContextClick,
+                                    modifier = Modifier.size(24.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Info,
+                                        contentDescription = "Cultural context available",
+                                        tint = MaterialTheme.colorScheme.primary,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                                Text(
+                                    text = "Cultural context",
+                                    style = MaterialTheme.typography.labelSmall,
+                                    color = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.clickable { onCulturalContextClick() }
+                                )
+                            }
+                        }
+                    }
+                }
+                
                 // Show extracted smart chips
                 extractedData?.let { data ->
                     if (data.hasEntities()) {
@@ -865,6 +965,17 @@ fun MessageBubble(
                         Icon(Icons.Default.Translate, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(8.dp))
                         Text("Translate")
+                    }
+                    Button(
+                        onClick = {
+                            showMessageActions = false
+                            onCulturalContextClick()
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Cultural Context")
                     }
                     Button(
                         onClick = {
