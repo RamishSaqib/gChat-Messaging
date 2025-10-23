@@ -115,7 +115,7 @@ class ConversationListViewModel @Inject constructor(
                         userRepository.getUserFlow(otherUserId)
                             .stateIn(
                                 scope = viewModelScope,
-                                started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                started = SharingStarted.Eagerly, // Start immediately to use preloaded cache
                                 initialValue = null // Will be filled by getUserFlow
                             )
                     }
@@ -126,7 +126,7 @@ class ConversationListViewModel @Inject constructor(
                             userRepository.getUserFlow(lastMessageSenderId)
                                 .stateIn(
                                     scope = viewModelScope,
-                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                    started = SharingStarted.Eagerly, // Start immediately to use preloaded cache
                                     initialValue = null
                                 )
                         }
@@ -153,7 +153,7 @@ class ConversationListViewModel @Inject constructor(
                             userRepository.getUserFlow(lastMessageSenderId)
                                 .stateIn(
                                     scope = viewModelScope,
-                                    started = SharingStarted.WhileSubscribed(stopTimeoutMillis = 5000),
+                                    started = SharingStarted.Eagerly, // Start immediately to use preloaded cache
                                     initialValue = null
                                 )
                         }
