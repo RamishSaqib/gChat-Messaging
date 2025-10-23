@@ -135,7 +135,9 @@ private fun GroupInfoContent(
                 showMenu = showMenu,
                 onShowMenuChange = onShowMenuChange,
                 onShowNicknameDialog = { onShowNicknameDialogChange(true) },
-                onShowLeaveConfirmation = { onShowLeaveConfirmationChange(true) }
+                onShowLeaveConfirmation = { onShowLeaveConfirmationChange(true) },
+                conversation = conversation,
+                onToggleAutoTranslate = { viewModel.toggleAutoTranslate() }
             )
         }
     ) { paddingValues ->
@@ -337,7 +339,9 @@ private fun GroupInfoTopBar(
     showMenu: Boolean,
     onShowMenuChange: (Boolean) -> Unit,
     onShowNicknameDialog: () -> Unit,
-    onShowLeaveConfirmation: () -> Unit
+    onShowLeaveConfirmation: () -> Unit,
+    conversation: com.gchat.domain.model.Conversation?,
+    onToggleAutoTranslate: () -> Unit
 ) {
     TopAppBar(
         title = { Text("Group Info") },
@@ -361,6 +365,29 @@ private fun GroupInfoTopBar(
                         onShowNicknameDialog()
                     },
                     leadingIcon = { Icon(Icons.Default.Edit, null) }
+                )
+                DropdownMenuItem(
+                    text = { 
+                        Text(
+                            if (conversation?.autoTranslateEnabled == true) 
+                                "Disable Auto-translate" 
+                            else 
+                                "Enable Auto-translate"
+                        )
+                    },
+                    onClick = {
+                        onShowMenuChange(false)
+                        onToggleAutoTranslate()
+                    },
+                    leadingIcon = { 
+                        Icon(
+                            if (conversation?.autoTranslateEnabled == true)
+                                Icons.Default.Check
+                            else
+                                Icons.Default.Add,
+                            null
+                        ) 
+                    }
                 )
                 DropdownMenuItem(
                     text = { Text("Leave Group") },

@@ -62,6 +62,7 @@ class ChatViewModel @Inject constructor(
     private val audioRepository: AudioRepository,
     private val typingRepository: TypingRepository,
     private val translationRepository: TranslationRepository,
+    private val autoTranslateRepository: com.gchat.domain.repository.AutoTranslateRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -443,6 +444,60 @@ class ChatViewModel @Inject constructor(
      */
     fun getTranslationError(messageId: String): String? {
         return _translationErrors.value[messageId]
+    }
+    
+    // ===== Auto-Translation State =====
+    
+    /**
+     * Determine if auto-translate should be enabled for this conversation
+     * Combines global user setting with per-conversation override
+     */
+    val shouldAutoTranslate: StateFlow<Boolean> = combine(
+        currentUserId,
+        conversation
+    ) { userId, conv ->
+        if (userId == null || conv == null) {
+            false
+        } else {
+            autoTranslateRepository.shouldAutoTranslate(conversationId, userId)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), false)
+    
+    /**
+     * Auto-translate incoming messages
+     * This observes new messages and automatically translates them if auto-translate is enabled
+     */
+    init {
+        viewModelScope.launch {
+            combine(
+                messages,
+                shouldAutoTranslate,
+                currentUserId
+            ) { messagesList, autoTranslate, userId ->
+                Triple(messagesList, autoTranslate, userId)
+            }.collect { (messagesList, autoTranslate, userId) ->
+                if (!autoTranslate || userId == null) return@collect
+                
+                // Get user's preferred language
+                val user = userRepository.getUser(userId).getOrNull()
+                val targetLanguage = user?.preferredLanguage ?: "en"
+                
+                // Auto-translate new messages that:
+                // 1. Are not from current user
+                // 2. Are text messages
+                // 3. Don't already have a translation
+                messagesList
+                    .filter { message ->
+                        message.senderId != userId &&
+                        message.type == MessageType.TEXT &&
+                        !message.text.isNullOrBlank() &&
+                        !_translations.value.containsKey(message.id)
+                    }
+                    .forEach { message ->
+                        translateMessage(message, targetLanguage)
+                    }
+            }
+        }
     }
     
     // ===== Data Extraction State =====

@@ -26,5 +26,8 @@ interface ConversationRepository {
     
     // Nickname management
     suspend fun setNickname(conversationId: String, userId: String, nickname: String?): Result<Unit>
+    
+    // Auto-translate management
+    suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean): Result<Unit>
 }
 

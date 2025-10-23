@@ -34,6 +34,7 @@ fun ProfileScreen(
 ) {
     val currentUser by viewModel.currentUser.collectAsState()
     val displayName by viewModel.displayName.collectAsState()
+    val autoTranslateEnabled by viewModel.autoTranslateEnabled.collectAsState()
     val profilePictureUrl by viewModel.profilePictureUrl.collectAsState()
     val uploadProgress by viewModel.uploadProgress.collectAsState()
     val isSaving by viewModel.isSaving.collectAsState()
@@ -170,6 +171,42 @@ fun ProfileScreen(
                     disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Auto-translate toggle
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(modifier = Modifier.weight(1f)) {
+                        Text(
+                            text = "Auto-translate messages",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "Automatically translate incoming messages to ${currentUser?.preferredLanguage ?: "en"}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                    Switch(
+                        checked = autoTranslateEnabled,
+                        onCheckedChange = { viewModel.updateAutoTranslate(it) },
+                        enabled = !isSaving
+                    )
+                }
+            }
         }
     }
     

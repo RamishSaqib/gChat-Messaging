@@ -28,6 +28,9 @@ class ProfileViewModel @Inject constructor(
     private val _displayName = MutableStateFlow("")
     val displayName: StateFlow<String> = _displayName.asStateFlow()
     
+    private val _autoTranslateEnabled = MutableStateFlow(false)
+    val autoTranslateEnabled: StateFlow<Boolean> = _autoTranslateEnabled.asStateFlow()
+    
     private val _profilePictureUrl = MutableStateFlow<String?>(null)
     val profilePictureUrl: StateFlow<String?> = _profilePictureUrl.asStateFlow()
     
@@ -57,8 +60,9 @@ class ProfileViewModel @Inject constructor(
                     _currentUser.value = user
                     user?.let {
                         _displayName.value = it.displayName
+                        _autoTranslateEnabled.value = it.autoTranslateEnabled
                         _profilePictureUrl.value = it.profilePictureUrl
-                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}, profilePictureUrl: ${it.profilePictureUrl}")
+                        android.util.Log.d("ProfileViewModel", "Updated UI with displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, profilePictureUrl: ${it.profilePictureUrl}")
                     }
                 }
             } else {
@@ -69,6 +73,10 @@ class ProfileViewModel @Inject constructor(
     
     fun updateDisplayName(name: String) {
         _displayName.value = name
+    }
+    
+    fun updateAutoTranslate(enabled: Boolean) {
+        _autoTranslateEnabled.value = enabled
     }
     
     fun selectProfilePicture(uri: Uri) {
@@ -106,7 +114,8 @@ class ProfileViewModel @Inject constructor(
             _error.value = null
             
             val updates = mutableMapOf<String, Any?>(
-                "displayName" to name
+                "displayName" to name,
+                "autoTranslateEnabled" to _autoTranslateEnabled.value
             )
             
             // Only update profile picture if it changed

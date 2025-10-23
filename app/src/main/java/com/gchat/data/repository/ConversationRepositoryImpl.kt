@@ -464,6 +464,26 @@ class ConversationRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean): Result<Unit> {
+        return try {
+            val timestamp = System.currentTimeMillis()
+            
+            // Update locally first for immediate UI update
+            conversationDao.updateAutoTranslate(conversationId, enabled, timestamp)
+            
+            // Then sync to Firestore
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf(
+                    "autoTranslateEnabled" to enabled,
+                    "updatedAt" to timestamp
+                )
+            )
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     private suspend fun syncConversationsFromFirestore(userId: String) {
         try {
             android.util.Log.d("ConversationRepo", "Starting Firestore sync for user: $userId")

@@ -24,6 +24,7 @@ class GroupInfoViewModel @Inject constructor(
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
     private val mediaRepository: MediaRepository,
+    private val autoTranslateRepository: com.gchat.domain.repository.AutoTranslateRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -198,6 +199,22 @@ class GroupInfoViewModel @Inject constructor(
     fun getCurrentNickname(): String? {
         val userId = _currentUserId.value ?: return null
         return _conversation.value?.getNickname(userId)
+    }
+    
+    fun toggleAutoTranslate() {
+        viewModelScope.launch {
+            val currentlyEnabled = _conversation.value?.autoTranslateEnabled ?: false
+            conversationRepository.updateAutoTranslate(conversationId, !currentlyEnabled).fold(
+                onSuccess = {
+                    _success.value = if (!currentlyEnabled) {
+                        "Auto-translate enabled for this group"
+                    } else {
+                        "Auto-translate disabled for this group"
+                    }
+                },
+                onFailure = { _error.value = "Failed to update auto-translate: ${it.message}" }
+            )
+        }
     }
     
     fun clearError() {

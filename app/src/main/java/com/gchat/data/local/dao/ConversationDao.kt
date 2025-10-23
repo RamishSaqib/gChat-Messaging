@@ -76,8 +76,8 @@ interface ConversationDao {
     @Query("UPDATE conversations SET unreadCount = :count WHERE id = :conversationId")
     suspend fun updateUnreadCount(conversationId: String, count: Int)
     
-    @Query("UPDATE conversations SET autoTranslateEnabled = :enabled WHERE id = :conversationId")
-    suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean)
+    @Query("UPDATE conversations SET autoTranslateEnabled = :enabled, updatedAt = :timestamp WHERE id = :conversationId")
+    suspend fun updateAutoTranslate(conversationId: String, enabled: Boolean, timestamp: Long)
     
     @Query("UPDATE conversations SET name = :name, updatedAt = :timestamp WHERE id = :conversationId")
     suspend fun updateGroupName(conversationId: String, name: String, timestamp: Long)

@@ -24,7 +24,7 @@ import com.gchat.data.local.entity.UserEntity
         MessageEntity::class,
         TranslationEntity::class
     ],
-    version = 10, // v10: Added audioDuration, audioWaveform, transcription to MessageEntity
+    version = 11, // v11: Added autoTranslateEnabled to UserEntity
     exportSchema = false
 )
 @TypeConverters(Converters::class)

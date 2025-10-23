@@ -32,6 +32,7 @@ class DMInfoViewModel @Inject constructor(
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
     private val authRepository: AuthRepository,
+    private val autoTranslateRepository: com.gchat.domain.repository.AutoTranslateRepository,
     savedStateHandle: SavedStateHandle
 ) : ViewModel() {
     
@@ -104,6 +105,22 @@ class DMInfoViewModel @Inject constructor(
         return _conversation.value?.getNickname(userId)
     }
     
+    fun toggleAutoTranslate() {
+        viewModelScope.launch {
+            val currentlyEnabled = _conversation.value?.autoTranslateEnabled ?: false
+            conversationRepository.updateAutoTranslate(conversationId, !currentlyEnabled).fold(
+                onSuccess = {
+                    _success.value = if (!currentlyEnabled) {
+                        "Auto-translate enabled for this chat"
+                    } else {
+                        "Auto-translate disabled for this chat"
+                    }
+                },
+                onFailure = { _error.value = "Failed to update auto-translate: ${it.message}" }
+            )
+        }
+    }
+    
     fun clearError() {
         _error.value = null
     }
@@ -120,6 +137,7 @@ fun DMInfoScreen(
     viewModel: DMInfoViewModel = hiltViewModel()
 ) {
     val otherUser by viewModel.otherUser.collectAsState()
+    val conversation by viewModel.conversation.collectAsState()
     val success by viewModel.success.collectAsState()
     val error by viewModel.error.collectAsState()
     var showMenu by remember { mutableStateOf(false) }
@@ -166,6 +184,29 @@ fun DMInfoScreen(
                                 showNicknameDialog = true
                             },
                             leadingIcon = { Icon(Icons.Default.Edit, null) }
+                        )
+                        DropdownMenuItem(
+                            text = { 
+                                Text(
+                                    if (conversation?.autoTranslateEnabled == true) 
+                                        "Disable Auto-translate" 
+                                    else 
+                                        "Enable Auto-translate"
+                                )
+                            },
+                            onClick = {
+                                showMenu = false
+                                viewModel.toggleAutoTranslate()
+                            },
+                            leadingIcon = { 
+                                Icon(
+                                    if (conversation?.autoTranslateEnabled == true)
+                                        Icons.Default.Check
+                                    else
+                                        Icons.Default.Add,
+                                    null
+                                ) 
+                            }
                         )
                     }
                 }
