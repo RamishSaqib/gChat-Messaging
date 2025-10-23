@@ -67,14 +67,14 @@ export const getCulturalContext = onCall<CulturalContextRequest>(
     }
 
     // Check rate limit: 100 requests per hour
-    const rateLimitKey = `cultural-context:${userId}`;
-    const rateLimitResult = await checkRateLimit(rateLimitKey, 100, 3600);
-    
-    if (!rateLimitResult.allowed) {
-      throw new HttpsError(
-        'resource-exhausted',
-        `Rate limit exceeded. Try again in ${Math.ceil(rateLimitResult.resetIn / 60)} minutes.`
-      );
+    try {
+      await checkRateLimit(userId, 'cultural-context', {
+        maxRequests: 100,
+        windowMinutes: 60
+      });
+    } catch (error: any) {
+      // checkRateLimit throws HttpsError if limit exceeded
+      throw error;
     }
 
     // Generate cache key using hash of text + language + mode
@@ -313,14 +313,14 @@ export const adjustFormality = onCall<{
     }
 
     // Check rate limit: 50 requests per hour
-    const rateLimitKey = `formality:${userId}`;
-    const rateLimitResult = await checkRateLimit(rateLimitKey, 50, 3600);
-    
-    if (!rateLimitResult.allowed) {
-      throw new HttpsError(
-        'resource-exhausted',
-        `Rate limit exceeded. Try again in ${Math.ceil(rateLimitResult.resetIn / 60)} minutes.`
-      );
+    try {
+      await checkRateLimit(userId, 'formality', {
+        maxRequests: 50,
+        windowMinutes: 60
+      });
+    } catch (error: any) {
+      // checkRateLimit throws HttpsError if limit exceeded
+      throw error;
     }
 
     // Generate cache key

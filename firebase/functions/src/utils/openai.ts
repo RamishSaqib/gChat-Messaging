@@ -30,6 +30,7 @@ export const MODELS = {
   TRANSLATION: process.env.OPENAI_MODEL || 'gpt-4-turbo-preview',
   ASSISTANT: 'gpt-4-turbo-preview',
   DATA_EXTRACTION: 'gpt-4-turbo-preview',
+  GPT4: 'gpt-4-turbo-preview',
 };
 
 // Default configurations
