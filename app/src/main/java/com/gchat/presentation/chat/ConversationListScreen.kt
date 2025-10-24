@@ -432,12 +432,13 @@ private fun buildLastMessageText(
     android.util.Log.d("ConversationPreview", "currentUserId: $currentUserId")
     
     // Check for per-user reaction notification first
+    // Only show if it's NEWER than the last message
     val reactionNotification = conversation.reactionNotifications[currentUserId]
-    if (reactionNotification != null) {
-        android.util.Log.d("ConversationPreview", "Found reaction notification for current user: ${reactionNotification.text}")
+    if (reactionNotification != null && reactionNotification.timestamp > lastMessage.timestamp) {
+        android.util.Log.d("ConversationPreview", "Found reaction notification for current user (newer than last message): ${reactionNotification.text}")
         return reactionNotification.text
     }
-    android.util.Log.d("ConversationPreview", "No reaction notification found for current user")
+    android.util.Log.d("ConversationPreview", "No reaction notification found for current user (or it's older than last message)")
     
     // Skip old SYSTEM messages (legacy reaction previews) - they shouldn't appear in new reactions
     if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
