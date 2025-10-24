@@ -433,8 +433,14 @@ private fun buildLastMessageText(
     // Only show reaction preview if current user is the owner of the original message that was reacted to
     if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
         android.util.Log.d("ConversationPreview", "SYSTEM message - currentUserId: $currentUserId, originalMessageSenderId: ${lastMessage.originalMessageSenderId}")
+        
+        // If originalMessageSenderId is null (old SYSTEM messages), don't show the reaction preview
+        if (lastMessage.originalMessageSenderId == null) {
+            android.util.Log.d("ConversationPreview", "originalMessageSenderId is null, showing generic message")
+            return "New message"
+        }
+        
         // Check if current user is the message owner (originalMessageSenderId)
-        // If not, or if originalMessageSenderId is null, don't show the reaction preview
         if (lastMessage.originalMessageSenderId != currentUserId) {
             android.util.Log.d("ConversationPreview", "User is NOT the message owner, showing generic message")
             // User is not the message owner, don't show reaction preview
