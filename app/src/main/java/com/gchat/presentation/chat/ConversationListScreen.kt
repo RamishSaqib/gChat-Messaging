@@ -428,6 +428,12 @@ private fun buildLastMessageText(
     
     // Get the message content
     android.util.Log.d("ConversationPreview", "lastMessage - text: '${lastMessage.text}', mediaUrl: '${lastMessage.mediaUrl}', type: ${lastMessage.type}")
+    
+    // Handle SYSTEM messages (like reactions) - just show the text directly
+    if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
+        return lastMessage.text ?: "System message"
+    }
+    
     val messageContent = when {
         lastMessage.text != null && lastMessage.text.isNotBlank() -> lastMessage.text
         lastMessage.mediaUrl != null -> "📷 Image"
