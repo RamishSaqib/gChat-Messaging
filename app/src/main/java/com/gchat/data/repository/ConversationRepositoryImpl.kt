@@ -55,6 +55,7 @@ class ConversationRepositoryImpl @Inject constructor(
                 android.util.Log.d("ConversationRepo", "Room Flow emitted ${entities.size} conversations")
             }
             .map { entities ->
+                val currentUserId = auth.currentUser?.uid ?: ""
                 entities.map { entity ->
                     // Create lastMessage from entity fields (no need to look up in messages table)
                     val lastMessage = if (entity.lastMessageId != null) {
@@ -79,7 +80,43 @@ class ConversationRepositoryImpl @Inject constructor(
                         )
                     } else null
                     
-                    ConversationMapper.toDomain(entity, lastMessage)
+                    // Calculate unread count for this conversation using MessageDao directly
+                    var unreadCount = try {
+                        messageDao.getUnreadCount(entity.id, currentUserId)
+                    } catch (e: Exception) {
+                        0
+                    }
+                    
+                    // Convert entity to domain to access reactionNotifications
+                    val conversation = ConversationMapper.toDomain(entity, lastMessage)
+                    
+                    // Check if there's an unread reaction notification
+                    // A reaction notification is "unread" if it's newer than the last message the user has read
+                    val reactionNotification = conversation.reactionNotifications[currentUserId]
+                    if (reactionNotification != null) {
+                        // Get the last read message timestamp for this user
+                        val lastReadMessage = try {
+                            messageDao.getMessages(entity.id, limit = 100).lastOrNull { msg ->
+                                val readByMap = try {
+                                    kotlinx.serialization.json.Json.decodeFromString<Map<String, Long>>(msg.readBy)
+                                } catch (_: Exception) {
+                                    emptyMap()
+                                }
+                                readByMap.containsKey(currentUserId)
+                            }
+                        } catch (e: Exception) {
+                            null
+                        }
+                        
+                        val lastReadTimestamp = lastReadMessage?.timestamp ?: 0L
+                        
+                        // If reaction notification is newer than last read message, count it as unread
+                        if (reactionNotification.timestamp > lastReadTimestamp) {
+                            unreadCount += 1
+                        }
+                    }
+                    
+                    conversation.copy(unreadCount = unreadCount)
                 }
             }
             .onEach { conversations ->

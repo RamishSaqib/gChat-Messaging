@@ -56,5 +56,14 @@ interface MessageDao {
     
     @Query("DELETE FROM messages")
     suspend fun deleteAll()
+    
+    @Query("""
+        SELECT COUNT(*) 
+        FROM messages 
+        WHERE conversationId = :conversationId 
+        AND senderId != :userId 
+        AND (readBy IS NULL OR readBy NOT LIKE '%"' || :userId || '"%')
+    """)
+    suspend fun getUnreadCount(conversationId: String, userId: String): Int
 }
 

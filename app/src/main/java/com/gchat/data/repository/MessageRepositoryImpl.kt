@@ -242,6 +242,14 @@ class MessageRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun getUnreadCount(conversationId: String, userId: String): Int {
+        return try {
+            messageDao.getUnreadCount(conversationId, userId)
+        } catch (e: Exception) {
+            0
+        }
+    }
+    
     /**
      * Sync messages from Firestore to local database
      */
