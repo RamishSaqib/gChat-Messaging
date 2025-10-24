@@ -153,9 +153,9 @@ object ConversationMapper {
                 deletedAt = deletedAtMap?.mapNotNull { (k, v) ->
                     (k as? String)?.let { key -> (v as? Number)?.toLong()?.let { value -> key to value } }
                 }?.toMap() ?: emptyMap(),
-                reactionNotifications = reactionNotificationsMap?.mapNotNull { (userId, notificationData) ->
+                reactionNotifications = reactionNotificationsMap?.mapNotNull { (userIdKey, notificationData) ->
                     try {
-                        val userId = userId as? String ?: return@mapNotNull null
+                        val userId = userIdKey as? String ?: return@mapNotNull null
                         val dataMap = notificationData as? Map<*, *> ?: return@mapNotNull null
                         val notification = com.gchat.domain.model.ReactionNotification(
                             text = dataMap["text"] as? String ?: return@mapNotNull null,
@@ -165,6 +165,7 @@ object ConversationMapper {
                         )
                         userId to notification
                     } catch (e: Exception) {
+                        android.util.Log.e("ConversationMapper", "Error parsing reaction notification", e)
                         null
                     }
                 }?.toMap() ?: emptyMap()
