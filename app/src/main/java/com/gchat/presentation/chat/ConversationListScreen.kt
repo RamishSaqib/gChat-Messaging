@@ -387,7 +387,7 @@ fun ConversationItem(
                                             fontSize = 11.sp,
                                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                         ),
-                                        color = MaterialTheme.colorScheme.onPrimary
+                                        color = Color.White // Always white for visibility on primary color
                                     )
                                 }
                             }
