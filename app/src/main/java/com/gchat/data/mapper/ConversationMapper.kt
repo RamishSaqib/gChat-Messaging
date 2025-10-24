@@ -83,6 +83,8 @@ object ConversationMapper {
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
             val reactionNotificationsMap = document.get("reactionNotifications") as? Map<*, *>
             
+            android.util.Log.d("ConversationMapper", "fromFirestore - reactionNotificationsMap: $reactionNotificationsMap")
+            
             // Parse last message if it exists
             val lastMessage = lastMessageMap?.let {
                 try {
