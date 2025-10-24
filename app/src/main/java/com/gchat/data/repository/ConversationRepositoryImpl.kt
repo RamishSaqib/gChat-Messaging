@@ -83,8 +83,11 @@ class ConversationRepositoryImpl @Inject constructor(
                     // Calculate unread count for this conversation
                     // Use Room as the source of truth - it syncs from Firestore
                     var unreadCount = try {
-                        messageDao.getUnreadCount(entity.id, currentUserId)
+                        val count = messageDao.getUnreadCount(entity.id, currentUserId)
+                        android.util.Log.d("ConversationRepo", "Unread count for ${entity.id.take(8)}: $count (userId=$currentUserId)")
+                        count
                     } catch (e: Exception) {
+                        android.util.Log.e("ConversationRepo", "Error getting unread count for ${entity.id}: ${e.message}")
                         0
                     }
                     

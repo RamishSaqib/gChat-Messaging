@@ -305,14 +305,18 @@ class ChatViewModel @Inject constructor(
             message.senderId != userId && !message.isReadBy(userId)
         }
         
+        android.util.Log.d("ChatViewModel", "markAllMessagesAsRead: Found ${unreadMessages.size} unread messages (userId=$userId)")
+        
         viewModelScope.launch {
             unreadMessages.forEach { message ->
+                android.util.Log.d("ChatViewModel", "Marking message ${message.id.take(8)} as read")
                 markMessageAsReadUseCase(
                     messageId = message.id,
                     conversationId = conversationId,
                     userId = userId
                 )
             }
+            android.util.Log.d("ChatViewModel", "Finished marking ${unreadMessages.size} messages as read")
         }
     }
     
