@@ -175,5 +175,92 @@ class FirestoreMessageDataSource @Inject constructor(
             Result.failure(e)
         }
     }
+    
+    suspend fun addReaction(
+        conversationId: String,
+        messageId: String,
+        userId: String,
+        emoji: String
+    ): Result<Unit> {
+        return try {
+            val messageRef = getMessagesCollection(conversationId).document(messageId)
+            
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(messageRef)
+                
+                // Parse existing reactions map (emoji -> list of userIds)
+                val currentReactions = try {
+                    (snapshot.get("reactions") as? Map<*, *>)?.mapNotNull { (key, value) ->
+                        val emojiKey = key as? String
+                        val userIds = (value as? List<*>)?.mapNotNull { it as? String }?.toMutableList()
+                        if (emojiKey != null && userIds != null) emojiKey to userIds else null
+                    }?.toMap()?.toMutableMap() ?: mutableMapOf()
+                } catch (e: Exception) {
+                    mutableMapOf()
+                }
+                
+                // Remove user from all other reactions first (user can only have one reaction per message)
+                currentReactions.values.forEach { userIds ->
+                    userIds.remove(userId)
+                }
+                // Remove empty reaction lists
+                currentReactions.entries.removeIf { it.value.isEmpty() }
+                
+                // Add user to the selected emoji reaction
+                val userList = currentReactions.getOrPut(emoji) { mutableListOf() }
+                if (!userList.contains(userId)) {
+                    userList.add(userId)
+                }
+                
+                // Update in Firestore
+                transaction.update(messageRef, "reactions", currentReactions)
+            }.await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreMessage", "Add reaction error", e)
+            Result.failure(e)
+        }
+    }
+    
+    suspend fun removeReaction(
+        conversationId: String,
+        messageId: String,
+        userId: String
+    ): Result<Unit> {
+        return try {
+            val messageRef = getMessagesCollection(conversationId).document(messageId)
+            
+            firestore.runTransaction { transaction ->
+                val snapshot = transaction.get(messageRef)
+                
+                // Parse existing reactions map
+                val currentReactions = try {
+                    (snapshot.get("reactions") as? Map<*, *>)?.mapNotNull { (key, value) ->
+                        val emojiKey = key as? String
+                        val userIds = (value as? List<*>)?.mapNotNull { it as? String }?.toMutableList()
+                        if (emojiKey != null && userIds != null) emojiKey to userIds else null
+                    }?.toMap()?.toMutableMap() ?: mutableMapOf()
+                } catch (e: Exception) {
+                    mutableMapOf()
+                }
+                
+                // Remove user from all reactions
+                currentReactions.values.forEach { userIds ->
+                    userIds.remove(userId)
+                }
+                // Remove empty reaction lists
+                currentReactions.entries.removeIf { it.value.isEmpty() }
+                
+                // Update in Firestore
+                transaction.update(messageRef, "reactions", currentReactions)
+            }.await()
+            
+            Result.success(Unit)
+        } catch (e: Exception) {
+            android.util.Log.e("FirestoreMessage", "Remove reaction error", e)
+            Result.failure(e)
+        }
+    }
 }
 

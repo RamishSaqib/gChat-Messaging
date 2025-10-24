@@ -479,6 +479,18 @@ fun ChatScreen(
                                 viewModel.loadCulturalContext(message)
                                 selectedMessageForContext = message.id
                                 showCulturalContextSheet = true
+                            },
+                            // Reaction parameters
+                            onAddReaction = { emoji ->
+                                viewModel.addReaction(message, emoji)
+                            },
+                            onRemoveReaction = {
+                                viewModel.removeReaction(message)
+                            },
+                            onReactionClick = { emoji ->
+                                // Show reaction viewer
+                                selectedMessageForContext = message.id
+                                // Handled in MessageBubble
                             }
                         )
                         Spacer(modifier = Modifier.height(if (isGroupedWithPrevious) 2.dp else 12.dp))
@@ -643,12 +655,18 @@ fun MessageBubble(
     hasCulturalContext: Boolean = false,
     isCulturalContextLoading: Boolean = false,
     culturalContextError: String? = null,
-    onCulturalContextClick: () -> Unit = {}
+    onCulturalContextClick: () -> Unit = {},
+    // Reaction parameters
+    onAddReaction: (String) -> Unit = {},
+    onRemoveReaction: () -> Unit = {},
+    onReactionClick: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     var showLanguageSelector by remember { mutableStateOf(false) }
     var showContextMenu by remember { mutableStateOf(false) }
     var showMessageActions by remember { mutableStateOf(false) }
+    var showReactionPicker by remember { mutableStateOf(false) }
+    var showReactionViewer by remember { mutableStateOf(false) }
     // Get users who have read this message (excluding the sender)
     val readByUsers = message.readBy.keys
         .filter { it != message.senderId }
@@ -782,7 +800,7 @@ fun MessageBubble(
                         )
                     }
                 } else {
-                    // Regular text message bubble with long-press for translation
+                    // Regular text message bubble with long-press for reactions
                     Surface(
                         shape = if (isOwnMessage) MessageBubbleShapeSent else MessageBubbleShapeReceived,
                         color = if (isOwnMessage) {
@@ -796,7 +814,7 @@ fun MessageBubble(
                             .combinedClickable(
                                 onClick = {},
                                 onLongClick = {
-                                    showMessageActions = true
+                                    showReactionPicker = true
                                 }
                             )
                     ) {
@@ -909,6 +927,29 @@ fun MessageBubble(
                     }
                 }
                 
+                // Show reactions
+                if (message.hasReactions()) {
+                    ReactionsDisplay(
+                        message = message,
+                        currentUserId = currentUserId,
+                        onReactionClick = { emoji ->
+                            // Toggle user's reaction or show viewer
+                            val userReaction = message.getUserReaction(currentUserId)
+                            if (userReaction == emoji) {
+                                // Remove reaction
+                                onRemoveReaction()
+                            } else {
+                                // Show viewer
+                                showReactionViewer = true
+                            }
+                        },
+                        modifier = Modifier.padding(
+                            start = if (isOwnMessage) 0.dp else 12.dp,
+                            end = if (isOwnMessage) 12.dp else 0.dp
+                        )
+                    )
+                }
+                
                 // Timestamp and read receipts OUTSIDE the bubble
                 Row(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -1016,6 +1057,25 @@ fun MessageBubble(
                 onTranslateClick(languageCode)
             },
             onDismiss = { showLanguageSelector = false }
+        )
+    }
+    
+    // Reaction picker
+    if (showReactionPicker) {
+        ReactionPicker(
+            onEmojiSelected = { emoji ->
+                onAddReaction(emoji)
+            },
+            onDismiss = { showReactionPicker = false }
+        )
+    }
+    
+    // Reaction viewer sheet
+    if (showReactionViewer) {
+        ReactionViewerSheet(
+            message = message,
+            participantUsers = participantUsers,
+            onDismiss = { showReactionViewer = false }
         )
     }
 }

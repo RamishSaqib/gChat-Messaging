@@ -32,6 +32,7 @@ data class MessageEntity(
     val translatedText: String?,
     val translationSourceLang: String?,
     val translationTargetLang: String?,
-    val culturalContext: String?
+    val culturalContext: String?,
+    val reactions: String? // JSON map of emoji -> list of userIds
 )
 

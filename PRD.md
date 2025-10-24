@@ -1,10 +1,377 @@
 # gChat - Product Requirements Document
 
-> **Status**: 🚀 MVP Phase Complete | 🎯 Ready for AI Features
+> **Status**: 🚀 AI Features Phase | ✅ PRs #1-17 Complete | 🎯 Next: Reactions & Giphy
 
 ---
 
 ## 📋 Pull Request History
+
+### PR #17: Formality Level Adjustment
+**Status:** ✅ Merged to `main`  
+**Date:** October 24, 2025  
+**Time Spent:** ~3 hours
+
+**Features Implemented:**
+- ✅ Formality adjustment UI in message input with 3 levels (Casual, Neutral, Formal)
+- ✅ Real-time formality adjustment before sending messages
+- ✅ Language preservation during adjustment (no auto-translation)
+- ✅ Smart language detection for accurate formality rules
+- ✅ Visual feedback with loading states and error handling
+- ✅ Caching to reduce API costs (10-minute in-memory cache)
+
+**Technical Implementation:**
+- **Backend (Firebase Functions):**
+  - `adjustFormality` Cloud Function with GPT-4
+  - Language-specific formality rules (contractions, politeness, etc.)
+  - Explicit prompts to prevent unwanted translation
+  - 7-day Firestore cache with SHA-256 keys
+  - Rate limiting: 50 requests/hour per user
+  
+- **Android App:**
+  - `FormalityLevel` enum: CASUAL, NEUTRAL, FORMAL
+  - `FormalityRepository` with in-memory caching (10-minute TTL)
+  - `AdjustFormalityUseCase` for business logic
+  - `FormalityAdjustmentCard` composable in message input area
+  - Language detection before adjustment (preserves original language)
+  - ViewModel methods: `setFormality()`, `adjustCurrentMessageFormality()`
+
+**UI/UX:**
+- Three pill-shaped buttons for formality selection
+- Applied formality shows highlighted button
+- "Apply" button adjusts message text in real-time
+- Loading spinner during adjustment
+- Error message with retry option
+- Formality preserved until message sent
+
+**Critical Bug Fixed:**
+- **Formality Auto-Translation Issue**
+  - Root cause: Cloud Function using user's `preferredLanguage` instead of message's language
+  - Fix: Detect message language in ViewModel before calling Cloud Function
+  - Result: Message stays in original language, only formality changes
+
+**Example Transformations:**
+- Spanish: "Hola amigo, ¿qué tal?" → Casual: "Hey amigo, ¿qué tal? 😊" → Formal: "Buenos días. ¿Cómo se encuentra usted?"
+- English: "Hey, can you help?" → Casual: "Hey, can u help? 😊" → Formal: "Good day. Would you be able to provide assistance?"
+
+---
+
+### PR #19: Giphy Integration
+**Status:** 🔄 In Progress  
+**Branch:** `feature/pr19-giphy-integration`  
+**Priority:** Medium (Engagement Feature)
+
+**Goal:** Integrate Giphy API to allow users to search and send GIFs in conversations
+
+**Features to Implement:**
+- ✅ Giphy API integration with search and trending endpoints
+- ✅ GIF search modal with grid display
+- ✅ GIF button in message input area
+- ✅ Send GIFs as IMAGE message type
+- ✅ Coil image loading with GIF support
+- ✅ Trending GIFs on sheet open
+
+**Technical Implementation:**
+- **Data Layer:**
+  - `GiphyGif` domain model (id, title, url, previewUrl, dimensions)
+  - `GiphyRepository` interface and implementation
+  - `GiphyApiService` for HTTP calls to Giphy API
+  - `GiphyDataSource` wrapping API service
+  
+- **Use Cases:**
+  - `SearchGifsUseCase` - validates query and calls repository
+  - `GetTrendingGifsUseCase` - fetches trending GIFs
+  
+- **ViewModel:**
+  - Add `searchGiphy()`, `loadTrendingGifs()`, `sendGifMessage()` methods
+  - State management for search results, loading, errors
+  
+- **UI Components:**
+  - `GiphySearchSheet` - modal bottom sheet with search bar
+  - Grid display of GIF previews (2 columns, lazy loading)
+  - Search input with real-time results
+  - Trending section when no search query
+  - Tap GIF to send immediately and close sheet
+  
+- **Configuration:**
+  - Add `GIPHY_API_KEY` to `gradle.properties`
+  - BuildConfig field for API key access
+  - No additional dependencies (Coil already supports GIFs)
+
+**UI/UX:**
+- GIF button (🎬) next to attachment button in message input
+- Tap to open Giphy search sheet
+- Shows trending GIFs by default
+- Search bar at top for custom queries
+- Grid of GIF previews, smooth scrolling
+- Tap GIF → sends immediately as image message
+- Coil handles GIF playback in chat
+
+**Files to Create:**
+- `domain/model/GiphyGif.kt`
+- `domain/repository/GiphyRepository.kt`
+- `domain/usecase/SearchGifsUseCase.kt`
+- `domain/usecase/GetTrendingGifsUseCase.kt`
+- `data/repository/GiphyRepositoryImpl.kt`
+- `data/remote/giphy/GiphyApiService.kt`
+- `data/remote/giphy/GiphyDataSource.kt`
+- `presentation/chat/GiphySearchSheet.kt`
+- `di/NetworkModule.kt` (if not exists)
+
+**Files to Modify:**
+- `presentation/chat/ChatViewModel.kt` - add Giphy methods
+- `presentation/chat/ChatScreen.kt` - add GIF button and sheet
+- `di/RepositoryModule.kt` - bind GiphyRepository
+- `gradle.properties` - add GIPHY_API_KEY
+- `app/build.gradle.kts` - add BuildConfig field
+
+---
+
+### PR #18: Message Reactions
+**Status:** 🔄 In Progress  
+**Branch:** `feature/pr18-message-reactions`  
+**Priority:** High (Core Engagement Feature)
+
+**Goal:** Implement Facebook Messenger-style emoji reactions on messages with viewer to see who reacted
+
+**Features to Implement:**
+- ✅ Quick reaction picker on long-press (6 emojis: 👍 ❤️ 😂 😮 😢 🙏)
+- ✅ Reaction display below message bubble (count only)
+- ✅ Current user's reaction highlighted
+- ✅ Tap reaction to add/remove own reaction
+- ✅ Reaction viewer bottom sheet showing who reacted with what
+- ✅ Real-time reaction updates via Firestore
+
+**Technical Implementation:**
+- **Data Model:**
+  - Add `reactions: Map<String, List<String>>` to `Message` (emoji → userIds)
+  - `Reaction` data class for viewer (emoji, userId, timestamp)
+  - Helper methods: `getReactionCounts()`, `getUserReaction()`, `hasReactions()`
+  
+- **Database Layer:**
+  - Add `reactions` field to `MessageEntity` (JSON serialized)
+  - Room migration for new column
+  - Update `MessageMapper` for reactions serialization/deserialization
+  
+- **Repository:**
+  - `MessageRepository.addReaction(messageId, conversationId, userId, emoji)`
+  - `MessageRepository.removeReaction(messageId, conversationId, userId)`
+  - Firestore transactions to update reactions map atomically
+  
+- **Use Cases:**
+  - `AddReactionUseCase` - validates emoji and calls repository
+  - `RemoveReactionUseCase` - removes user's reaction
+  
+- **ViewModel:**
+  - `addReaction()`, `removeReaction()` methods in ChatViewModel
+  - Reactions update automatically via Firestore listener
+  
+- **UI Components:**
+  - `ReactionPicker` - popup with 6 quick emojis on long-press
+  - `ReactionsDisplay` - compact reaction counts below message (e.g., "👍 3  ❤️ 2")
+  - `ReactionViewerSheet` - bottom sheet with tabs for each emoji type
+  - Shows user avatars, names, and reaction timestamps
+
+**UI/UX:**
+- Long-press message → Reaction picker appears above message
+- Tap emoji → Toggle reaction on/off
+- Reactions appear below message bubble, compactly formatted
+- User's own reaction has highlighted background
+- Tap reaction count → Opens viewer sheet showing all reactions
+- Viewer has tabs: All, 👍, ❤️, 😂, etc.
+- Real-time updates when others react
+
+**Firestore Rules:**
+- Allow authenticated users to update reactions map on messages they can read
+- Participants-only access, same as existing message rules
+
+**Files to Create:**
+- `domain/model/Reaction.kt`
+- `domain/usecase/AddReactionUseCase.kt`
+- `domain/usecase/RemoveReactionUseCase.kt`
+- `presentation/chat/ReactionPicker.kt`
+- `presentation/chat/ReactionsDisplay.kt`
+- `presentation/chat/ReactionViewerSheet.kt`
+
+**Files to Modify:**
+- `domain/model/Message.kt` - add reactions field and helpers
+- `domain/repository/MessageRepository.kt` - add reaction methods
+- `data/local/entity/MessageEntity.kt` - add reactions column
+- `data/mapper/MessageMapper.kt` - handle reactions serialization
+- `data/repository/MessageRepositoryImpl.kt` - implement reaction methods
+- `data/remote/firestore/FirestoreMessageDataSource.kt` - Firestore reactions
+- `presentation/chat/ChatViewModel.kt` - reaction ViewModel methods
+- `presentation/chat/ChatScreen.kt` - integrate reaction UI
+- `firebase/firestore.rules` - reactions permissions
+
+---
+
+### PR #16: Cultural Context Hints
+**Status:** ✅ Merged to `main`  
+**Date:** October 24, 2025  
+**Time Spent:** ~4 hours
+
+**Features Implemented:**
+- ✅ AI-powered cultural context detection for idioms, slang, and cultural references
+- ✅ 🌍 icon badge on messages with cultural expressions
+- ✅ Bottom sheet with detailed explanations (phrase, literal translation, actual meaning, cultural context, examples)
+- ✅ Full language name display (e.g., "Spanish" instead of "es")
+- ✅ Loading and error states with retry functionality
+- ✅ 30-day server-side caching for cost efficiency
+
+**Technical Implementation:**
+- **Backend (Firebase Functions):**
+  - `getCulturalContext` Cloud Function with GPT-4
+  - Unified prompt for idioms, slang, and cultural references (removed separate modes)
+  - Structured JSON response with literal translation, actual meaning, examples
+  - SHA-256 cache keys with 30-day TTL in Firestore
+  - Rate limiting: 100 requests/hour per user
+  
+- **Android App:**
+  - `CulturalContext` data class with phrase details
+  - `CulturalContextResult` containing list of contexts per message
+  - `CulturalContextRepository` with Firebase data source
+  - `GetCulturalContextUseCase` for orchestration
+  - `CulturalContextBottomSheet` with scrollable card UI
+  - Language code to full name conversion (e.g., "es" → "Spanish")
+  - ChatViewModel state management for contexts, loading, errors
+
+**UI/UX:**
+- 🌍 icon appears below message when cultural expressions detected
+- Tapping icon opens bottom sheet with detailed breakdowns
+- Each expression shows:
+  - Original phrase (highlighted)
+  - Literal translation (if applicable)
+  - Actual meaning
+  - Cultural context and usage notes
+  - 1-2 usage examples
+- Loading spinner while analyzing
+- Error message with retry button
+
+**Behavior:**
+- Analyzes message for idioms, slang, cultural references
+- Returns empty array if no special expressions found
+- Works with detected or translated language
+- Sender's language hint used for disambiguation
+- Results cached for 30 days server-side
+
+---
+
+### PR #15: Smart Replies with RAG + User Style Analysis
+**Status:** ✅ Merged to `main`  
+**Date:** October 24, 2025  
+**Time Spent:** ~5 hours
+
+**Features Implemented:**
+- ✅ Context-aware smart reply suggestions using conversation history (RAG)
+- ✅ User writing style analysis for personalized suggestions
+- ✅ Three smart reply chips appearing only when new message received
+- ✅ Smart replies disappear when user starts typing
+- ✅ Global and per-chat toggle for smart replies
+- ✅ Debouncing to prevent excessive API calls
+- ✅ In-memory caching (5-minute TTL) to reduce costs
+
+**Technical Implementation:**
+- **Backend (Firebase Functions):**
+  - `generateSmartReplies` Cloud Function with GPT-4
+  - RAG pipeline: Fetches last 10 messages for context
+  - User style analysis: Analyzes last 20 messages from current user
+  - Generates 3 contextually appropriate, style-matched replies
+  - 5-minute Firestore cache with SHA-256 keys
+  - Rate limiting: 50 requests/hour per user
+  
+- **Android App:**
+  - `SmartReply` data class with text and confidence
+  - `SmartReplyRepository` with in-memory caching (5-minute TTL)
+  - `GenerateSmartRepliesUseCase` orchestrating conversation context
+  - `SmartRepliesSection` composable with chip UI
+  - Global smart replies toggle in user profile
+  - Per-chat smart replies toggle in chat menu (overrides global)
+  - ViewModel methods: `loadSmartReplies()`, `useSmartReply()`, `dismissSmartReplies()`
+
+**UI/UX:**
+- Three suggestion chips appear above message input
+- Only shown when new message received from other user
+- Dismissed automatically when user starts typing
+- Tapping chip fills message input
+- Loading spinner while generating
+- Error state with retry button
+- Global toggle: Profile screen → "Smart Replies" switch
+- Per-chat toggle: Chat menu → "Smart Replies" switch
+
+**Critical Bugs Fixed:**
+1. **Smart Replies Reappearing After Send**
+   - Root cause: Debounce logic triggered on user's own message
+   - Fix: Only generate replies when message is from OTHER user
+   
+2. **Per-Chat Toggle Affecting Global Setting**
+   - Root cause: ViewModel updating wrong StateFlow
+   - Fix: Separate global vs per-chat update paths
+   
+3. **Blank Screen Navigation Issue**
+   - Root cause: Navigation while collecting Flow caused render issues
+   - Fix: Enhanced error handling and loading states
+
+**Behavior:**
+- Smart replies only appear when receiving messages from others
+- Replies consider conversation context and user's writing style
+- Replies respect user's preferred language
+- Disabled globally or per-chat via toggles
+- Debounced to avoid multiple API calls (2-second delay)
+
+---
+
+### PR #14: Auto-Translate Feature
+**Status:** ✅ Merged to `main`  
+**Date:** October 23, 2025  
+**Time Spent:** ~4 hours
+
+**Features Implemented:**
+- ✅ Per-conversation auto-translate toggle
+- ✅ Automatic translation of incoming messages to user's preferred language
+- ✅ Language detection with sender's language as hint for disambiguation
+- ✅ Toggle in chat screen's 3-dot menu
+- ✅ Visual indicator showing translations are active
+- ✅ "Leave Group" button added to Group Info screen
+
+**Technical Implementation:**
+- **Backend:**
+  - Enhanced `detectLanguage` Cloud Function to accept `senderLanguageHint`
+  - GPT-4 uses sender's preferred language to disambiguate (e.g., "es" vs "it")
+  - Improved accuracy for short messages and ambiguous words
+  
+- **Android App:**
+  - Added `autoTranslateEnabled` field to `Conversation` model
+  - Room database migration (v11 → v12) for new field
+  - `ConversationRepository.updateAutoTranslate()` method
+  - ChatViewModel automatically translates incoming messages when enabled
+  - Only translates if detected language differs from user's preferred language
+  - UI shows visual indicator when auto-translate is active
+
+**UI Changes:**
+- **Chat Screen:**
+  - Added "Auto-Translate" toggle switch in 3-dot menu
+  - Visual indicator at top when auto-translate enabled
+  - Switch shows current state and persists per conversation
+  
+- **Group Info Screen:**
+  - Removed 3-dot menu entirely
+  - Added "Leave Group" as standalone red button
+  - Cleaner, more direct UX
+
+**Critical Bug Fixed:**
+- **"Unknown User" Flash on Login**
+  - Root cause: UI rendering before user data loaded
+  - Fix: Modified Flow collection strategy (SharingStarted.Eagerly + drop(1))
+  - Result: Smooth loading experience without flashing placeholder data
+
+**Behavior:**
+- Auto-translate respects conversation-level settings
+- Only translates messages in different language than user's preference
+- Language hint from sender improves detection accuracy
+- Toggle persists across app restarts
+- Works in both DMs and group chats
+
+---
 
 ### PR #11: Online Status Accuracy Fix
 **Status:** ✅ Merged to `main`  

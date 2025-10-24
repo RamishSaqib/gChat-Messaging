@@ -1,15 +1,380 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #13 - Inline Translation UI | **Status:** 🎉 First AI Feature Complete!
+> **Last Merged:** PR #17 - Formality Level Adjustment | **Status:** 🎉 AI Features Phase Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 13 (Merged to main)  
-**Current PR:** None  
-**Current Sprint:** AI Translation MVP Complete ✅  
-**Next Up:** Additional AI Features (Smart Replies, Cultural Context, etc.)
+**Completed PRs:** 17 (Merged to main)  
+**Current PRs:** PR #18 (Reactions), PR #19 (Giphy) - In Planning  
+**Current Sprint:** Core AI Features Complete ✅  
+**Next Up:** Engagement Features (Reactions & Giphy)
+
+---
+
+## 🔄 PR #19: Giphy Integration (IN PLANNING)
+
+**Goal:** Integrate Giphy API to allow users to search and send GIFs in conversations
+
+**Branch:** `feature/pr19-giphy-integration`
+
+**Status:** 📋 Planning
+
+**Priority:** Medium (Engagement Feature)
+
+**Estimated Time:** ~4 hours
+
+### Features to Implement
+- [ ] Giphy API integration with search and trending endpoints
+- [ ] GIF search modal with grid display
+- [ ] GIF button in message input area
+- [ ] Send GIFs as IMAGE message type
+- [ ] Coil image loading with GIF support
+- [ ] Trending GIFs on sheet open
+
+### Technical Implementation
+
+**Data Layer:**
+- [ ] Create `GiphyGif` domain model (id, title, url, previewUrl, dimensions)
+- [ ] Create `GiphyRepository` interface
+- [ ] Create `GiphyRepositoryImpl`
+- [ ] Create `GiphyApiService` for HTTP calls
+- [ ] Create `GiphyDataSource` wrapper
+
+**Use Cases:**
+- [ ] Create `SearchGifsUseCase`
+- [ ] Create `GetTrendingGifsUseCase`
+
+**ViewModel:**
+- [ ] Add `searchGiphy()` method to ChatViewModel
+- [ ] Add `loadTrendingGifs()` method
+- [ ] Add `sendGifMessage()` method
+- [ ] Add state management for search results, loading, errors
+
+**UI Components:**
+- [ ] Create `GiphySearchSheet` composable
+- [ ] Implement grid display (2 columns, lazy loading)
+- [ ] Add search input with real-time results
+- [ ] Add trending section for default view
+- [ ] Add GIF button to message input
+
+**Configuration:**
+- [ ] Add `GIPHY_API_KEY` to `gradle.properties`
+- [ ] Add BuildConfig field in `app/build.gradle.kts`
+
+**Dependency Injection:**
+- [ ] Provide `GiphyApiService` in NetworkModule
+- [ ] Provide `GiphyDataSource` in NetworkModule
+- [ ] Bind `GiphyRepository` in RepositoryModule
+
+### Files to Create
+- `app/src/main/java/com/gchat/domain/model/GiphyGif.kt`
+- `app/src/main/java/com/gchat/domain/repository/GiphyRepository.kt`
+- `app/src/main/java/com/gchat/domain/usecase/SearchGifsUseCase.kt`
+- `app/src/main/java/com/gchat/domain/usecase/GetTrendingGifsUseCase.kt`
+- `app/src/main/java/com/gchat/data/repository/GiphyRepositoryImpl.kt`
+- `app/src/main/java/com/gchat/data/remote/giphy/GiphyApiService.kt`
+- `app/src/main/java/com/gchat/data/remote/giphy/GiphyDataSource.kt`
+- `app/src/main/java/com/gchat/presentation/chat/GiphySearchSheet.kt`
+- `app/src/main/java/com/gchat/di/NetworkModule.kt` (if doesn't exist)
+
+### Files to Modify
+- `app/src/main/java/com/gchat/presentation/chat/ChatViewModel.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ChatScreen.kt`
+- `app/src/main/java/com/gchat/di/RepositoryModule.kt`
+- `gradle.properties`
+- `app/build.gradle.kts`
+
+### Testing
+- [ ] Test Giphy API connection
+- [ ] Test search functionality
+- [ ] Test trending GIFs display
+- [ ] Test GIF sending as image message
+- [ ] Test GIF playback in chat (Coil)
+- [ ] Test error handling (API failures, no results)
+- [ ] Test grid scrolling performance
+
+---
+
+## 🔄 PR #18: Message Reactions (IN PLANNING)
+
+**Goal:** Implement Facebook Messenger-style emoji reactions on messages with viewer to see who reacted
+
+**Branch:** `feature/pr18-message-reactions`
+
+**Status:** 📋 Planning
+
+**Priority:** High (Core Engagement Feature)
+
+**Estimated Time:** ~6 hours
+
+### Features to Implement
+- [ ] Quick reaction picker on long-press (6 emojis: 👍 ❤️ 😂 😮 😢 🙏)
+- [ ] Reaction display below message bubble (count only)
+- [ ] Current user's reaction highlighted
+- [ ] Tap reaction to add/remove own reaction
+- [ ] Reaction viewer bottom sheet showing who reacted with what
+- [ ] Real-time reaction updates via Firestore
+
+### Technical Implementation
+
+**Data Model:**
+- [ ] Add `reactions: Map<String, List<String>>` to Message
+- [ ] Add helper methods: `getReactionCounts()`, `getUserReaction()`, `hasReactions()`
+- [ ] Create `Reaction` data class for viewer
+
+**Database Layer:**
+- [ ] Add `reactions` field to `MessageEntity`
+- [ ] Create Room migration for reactions column
+- [ ] Update `MessageMapper.toDomain()` to parse reactions
+- [ ] Update `MessageMapper.toEntity()` to serialize reactions
+- [ ] Update `MessageMapper.fromFirestore()` for reactions
+- [ ] Update `MessageMapper.toFirestore()` for reactions
+
+**Repository:**
+- [ ] Add `addReaction()` to MessageRepository interface
+- [ ] Add `removeReaction()` to MessageRepository interface
+- [ ] Implement `addReaction()` in MessageRepositoryImpl
+- [ ] Implement `removeReaction()` in MessageRepositoryImpl
+- [ ] Add `addReaction()` to FirestoreMessageDataSource (with transaction)
+- [ ] Add `removeReaction()` to FirestoreMessageDataSource (with transaction)
+
+**Use Cases:**
+- [ ] Create `AddReactionUseCase`
+- [ ] Create `RemoveReactionUseCase`
+
+**ViewModel:**
+- [ ] Inject AddReactionUseCase and RemoveReactionUseCase
+- [ ] Add `addReaction(message, emoji)` method
+- [ ] Add `removeReaction(message)` method
+
+**UI Components:**
+- [ ] Create `ReactionPicker` composable (popup with 6 emojis)
+- [ ] Create `ReactionsDisplay` composable (compact counts)
+- [ ] Create `ReactionViewerSheet` composable (tabs for each emoji)
+- [ ] Update `MessageBubble` with long-press handler
+- [ ] Add `ReactionsDisplay` below message content
+- [ ] Pass reactions data and callbacks
+
+**Firestore Rules:**
+- [ ] Update rules to allow reaction updates on readable messages
+
+### Files to Create
+- `app/src/main/java/com/gchat/domain/model/Reaction.kt`
+- `app/src/main/java/com/gchat/domain/usecase/AddReactionUseCase.kt`
+- `app/src/main/java/com/gchat/domain/usecase/RemoveReactionUseCase.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ReactionPicker.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ReactionsDisplay.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ReactionViewerSheet.kt`
+
+### Files to Modify
+- `app/src/main/java/com/gchat/domain/model/Message.kt`
+- `app/src/main/java/com/gchat/domain/repository/MessageRepository.kt`
+- `app/src/main/java/com/gchat/data/local/entity/MessageEntity.kt`
+- `app/src/main/java/com/gchat/data/mapper/MessageMapper.kt`
+- `app/src/main/java/com/gchat/data/local/dao/MessageDao.kt` (migration)
+- `app/src/main/java/com/gchat/data/repository/MessageRepositoryImpl.kt`
+- `app/src/main/java/com/gchat/data/remote/firestore/FirestoreMessageDataSource.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ChatViewModel.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ChatScreen.kt`
+- `firebase/firestore.rules`
+
+### Testing
+- [ ] Test reaction picker appears on long-press
+- [ ] Test adding reaction (updates locally and in Firestore)
+- [ ] Test removing reaction (toggle off)
+- [ ] Test reactions display below message
+- [ ] Test current user's reaction highlighted
+- [ ] Test reaction viewer sheet (all tabs)
+- [ ] Test real-time updates when others react
+- [ ] Test reactions in group chats (multiple users)
+- [ ] Test reactions in DMs
+- [ ] Test Room database migration
+
+---
+
+## ✅ PR #17: Formality Level Adjustment (MERGED ✅)
+
+**Goal:** Allow users to adjust message formality before sending
+
+**Branch:** `feature/pr17-formality-adjustment` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** Medium (AI Feature - Style Enhancement)
+
+**Time Spent:** ~3 hours
+
+### Features Implemented
+- [x] Formality adjustment UI in message input
+- [x] Three formality levels: Casual, Neutral, Formal
+- [x] Real-time text adjustment before sending
+- [x] Language preservation (no auto-translation)
+- [x] Visual feedback with loading states
+- [x] Error handling with retry
+- [x] In-memory caching (10-minute TTL)
+
+### Technical Implementation
+
+**Backend:**
+- [x] `adjustFormality` Cloud Function with GPT-4
+- [x] Language-specific formality rules
+- [x] Explicit prompts to prevent translation
+- [x] 7-day Firestore cache
+- [x] Rate limiting: 50 requests/hour
+
+**Android:**
+- [x] `FormalityLevel` enum
+- [x] `FormalityRepository` with caching
+- [x] `AdjustFormalityUseCase`
+- [x] `FormalityAdjustmentCard` composable
+- [x] Language detection before adjustment
+- [x] ViewModel methods
+
+### Critical Bug Fixed
+- [x] Fix formality auto-translation issue (detect message language first)
+
+### Testing
+- [x] Test formality adjustment in multiple languages
+- [x] Test language preservation
+- [x] Test caching behavior
+- [x] Test error handling and retry
+- [x] Test loading states
+- [x] Test formality persists until send
+
+---
+
+## ✅ PR #16: Cultural Context Hints (MERGED ✅)
+
+**Goal:** Provide AI-powered explanations for idioms, slang, and cultural references
+
+**Branch:** `feature/pr16-cultural-context` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** Medium (AI Feature - Educational)
+
+**Time Spent:** ~4 hours
+
+### Features Implemented
+- [x] Cultural context detection for idioms, slang, references
+- [x] 🌍 icon badge on messages with expressions
+- [x] Bottom sheet with detailed explanations
+- [x] Full language name display
+- [x] Loading and error states
+- [x] 30-day server-side caching
+
+### Technical Implementation
+
+**Backend:**
+- [x] `getCulturalContext` Cloud Function with GPT-4
+- [x] Unified prompt (removed separate modes)
+- [x] Structured JSON response
+- [x] SHA-256 cache keys (30-day TTL)
+- [x] Rate limiting: 100 requests/hour
+
+**Android:**
+- [x] `CulturalContext` data class
+- [x] `CulturalContextResult` model
+- [x] `CulturalContextRepository`
+- [x] `GetCulturalContextUseCase`
+- [x] `CulturalContextBottomSheet` composable
+- [x] Language code to name conversion
+- [x] ChatViewModel state management
+
+### Testing
+- [x] Test cultural context detection
+- [x] Test bottom sheet display
+- [x] Test loading states
+- [x] Test error handling
+- [x] Test caching
+- [x] Test language name display
+
+---
+
+## ✅ PR #15: Smart Replies with RAG + User Style Analysis (MERGED ✅)
+
+**Goal:** Implement context-aware smart reply suggestions
+
+**Branch:** `feature/pr15-smart-replies` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (AI Feature - Core UX)
+
+**Time Spent:** ~5 hours
+
+### Features Implemented
+- [x] Context-aware smart replies using RAG
+- [x] User writing style analysis
+- [x] Three reply chips
+- [x] Auto-dismiss when typing
+- [x] Global and per-chat toggles
+- [x] Debouncing (2-second delay)
+- [x] In-memory caching (5-minute TTL)
+
+### Technical Implementation
+
+**Backend:**
+- [x] `generateSmartReplies` Cloud Function with GPT-4
+- [x] RAG pipeline (last 10 messages)
+- [x] User style analysis (last 20 messages)
+- [x] 3 contextual suggestions
+- [x] 5-minute cache
+- [x] Rate limiting: 50 requests/hour
+
+**Android:**
+- [x] `SmartReply` data class
+- [x] `SmartReplyRepository` with caching
+- [x] `GenerateSmartRepliesUseCase`
+- [x] `SmartRepliesSection` composable
+- [x] Global and per-chat toggles
+- [x] ViewModel methods
+
+### Critical Bugs Fixed
+- [x] Fix smart replies reappearing after send
+- [x] Fix per-chat toggle affecting global setting
+- [x] Fix blank screen navigation issue
+
+### Testing
+- [x] Test smart reply generation
+- [x] Test only appears on incoming messages
+- [x] Test auto-dismiss when typing
+- [x] Test chip selection fills input
+- [x] Test global toggle
+- [x] Test per-chat toggle
+- [x] Test debouncing
+- [x] Test caching
+
+---
+
+## ✅ PR #14: Auto-Translate Feature (MERGED ✅)
+
+**Goal:** Automatic translation of incoming messages per conversation
+
+**Branch:** `feature/pr14-auto-translate` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (AI Feature - Core International Feature)
+
+**Time Spent:** ~4 hours
+
+### Features Implemented
+- [x] Per-conversation auto-translate toggle
+- [x] Automatic translation of incoming messages
+- [x] Language detection with sender's language hint
+- [x] Toggle in chat screen's 3-dot menu
+- [x] Visual indicator when auto-translate active
+- [x] "Leave Group" button added to Group Info
+
+### Testing
+- [x] Test auto-translate toggle per conversation
+- [x] Test only translates messages in different language
+- [x] Test sender language hint improves accuracy
+- [x] Test visual indicator display
+- [x] Test toggle persistence
 
 ---
 
@@ -18,6 +383,10 @@
 **Goal:** Implement inline message translation with caching and rate limiting
 
 **Branch:** `feature/pr13-inline-translation` → **Merged to `main`**
+
+**Status:** ✅ Merged
+
+**Priority:** High (First AI Feature)
 
 **Status:** ✅ Merged
 

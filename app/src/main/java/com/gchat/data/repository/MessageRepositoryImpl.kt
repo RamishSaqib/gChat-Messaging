@@ -213,6 +213,35 @@ class MessageRepositoryImpl @Inject constructor(
         }
     }
     
+    override suspend fun addReaction(
+        messageId: String,
+        conversationId: String,
+        userId: String,
+        emoji: String
+    ): Result<Unit> {
+        return try {
+            // Update Firestore (will sync back to local via listener)
+            val result = firestoreMessageDataSource.addReaction(conversationId, messageId, userId, emoji)
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
+    override suspend fun removeReaction(
+        messageId: String,
+        conversationId: String,
+        userId: String
+    ): Result<Unit> {
+        return try {
+            // Update Firestore (will sync back to local via listener)
+            val result = firestoreMessageDataSource.removeReaction(conversationId, messageId, userId)
+            result
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+    
     /**
      * Sync messages from Firestore to local database
      */
