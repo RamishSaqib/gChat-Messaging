@@ -155,15 +155,29 @@ object ConversationMapper {
                 }?.toMap() ?: emptyMap(),
                 reactionNotifications = reactionNotificationsMap?.mapNotNull { (userIdKey, notificationData) ->
                     try {
-                        val userId = userIdKey as? String ?: return@mapNotNull null
-                        val dataMap = notificationData as? Map<*, *> ?: return@mapNotNull null
+                        android.util.Log.d("ConversationMapper", "Parsing reaction notification - userIdKey: $userIdKey, notificationData: $notificationData")
+                        val userId = userIdKey as? String
+                        android.util.Log.d("ConversationMapper", "userId cast: $userId")
+                        if (userId == null) {
+                            android.util.Log.e("ConversationMapper", "userId is null, returning null")
+                            return@mapNotNull null
+                        }
+                        val dataMap = notificationData as? Map<*, *>
+                        android.util.Log.d("ConversationMapper", "dataMap cast: $dataMap")
+                        if (dataMap == null) {
+                            android.util.Log.e("ConversationMapper", "dataMap is null, returning null")
+                            return@mapNotNull null
+                        }
                         val notification = com.gchat.domain.model.ReactionNotification(
                             text = dataMap["text"] as? String ?: return@mapNotNull null,
                             timestamp = (dataMap["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null,
                             messageId = dataMap["messageId"] as? String ?: return@mapNotNull null,
                             reactorId = dataMap["reactorId"] as? String ?: return@mapNotNull null
                         )
-                        userId to notification
+                        android.util.Log.d("ConversationMapper", "Successfully created notification: $notification")
+                        val result = userId to notification
+                        android.util.Log.d("ConversationMapper", "Returning pair: $result")
+                        result
                     } catch (e: Exception) {
                         android.util.Log.e("ConversationMapper", "Error parsing reaction notification", e)
                         null
