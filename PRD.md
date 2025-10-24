@@ -1,6 +1,6 @@
 # gChat - Product Requirements Document
 
-> **Status**: 🚀 AI Features Phase | ✅ PRs #1-17 Complete | 🎯 Next: Reactions & Giphy
+> **Status**: 🚀 AI Features Phase | ✅ PRs #1-21 Complete | 🎯 Next: Giphy & UX Polish
 
 ---
 
@@ -52,6 +52,49 @@
 **Example Transformations:**
 - Spanish: "Hola amigo, ¿qué tal?" → Casual: "Hey amigo, ¿qué tal? 😊" → Formal: "Buenos días. ¿Cómo se encuentra usted?"
 - English: "Hey, can you help?" → Casual: "Hey, can u help? 😊" → Formal: "Good day. Would you be able to provide assistance?"
+
+---
+
+### PR #18: Message Reactions
+**Status:** ✅ Merged to `main`  
+**Date:** October 24, 2025  
+**Time Spent:** ~6 hours
+
+**Features Implemented:**
+- ✅ Facebook Messenger-style emoji reactions (6 emojis: 👍 ❤️ 😂 😮 😢 🙏)
+- ✅ Long-press to show reaction picker
+- ✅ Reaction display below message bubbles
+- ✅ Current user's reaction highlighted
+- ✅ Reaction viewer bottom sheet with tabs
+- ✅ Real-time reaction updates via Firestore
+
+**Technical Implementation:**
+- Message.reactions field: Map<String, List<String>> (emoji → userIds)
+- Room migration for reactions column with JSON serialization
+- Firestore transactions for atomic reaction updates
+- AddReactionUseCase and RemoveReactionUseCase
+- ReactionPicker, ReactionsDisplay, and ReactionViewerSheet composables
+
+**UI/UX:**
+- Long-press message shows reaction picker popup
+- Tap emoji to toggle reaction on/off
+- Reactions displayed compactly below message (e.g., "👍 3  ❤️ 2")
+- User's own reaction has highlighted background
+- Tap reaction count opens viewer with tabs for each emoji
+- Real-time updates when others react
+
+**Files Created:**
+- domain/model/Reaction.kt
+- domain/usecase/AddReactionUseCase.kt, RemoveReactionUseCase.kt
+- presentation/chat/ReactionPicker.kt, ReactionsDisplay.kt, ReactionViewerSheet.kt
+
+**Files Modified:**
+- domain/model/Message.kt - added reactions field and helper methods
+- data/local/entity/MessageEntity.kt - reactions column
+- data/mapper/MessageMapper.kt - reactions serialization
+- data/repository/MessageRepositoryImpl.kt - reaction operations
+- presentation/chat/ChatViewModel.kt, ChatScreen.kt
+- firebase/firestore.rules - reaction permissions
 
 ---
 
@@ -126,82 +169,128 @@
 
 ---
 
-### PR #18: Message Reactions
-**Status:** 🔄 In Progress  
-**Branch:** `feature/pr18-message-reactions`  
-**Priority:** High (Core Engagement Feature)
+### PR #20: Critical Bug Fixes - Unread Count & Reaction Notifications
+**Status:** ✅ Merged to `main`  
+**Date:** October 24, 2025  
+**Time Spent:** ~4 hours
 
-**Goal:** Implement Facebook Messenger-style emoji reactions on messages with viewer to see who reacted
+**Bugs Fixed:**
 
-**Features to Implement:**
-- ✅ Quick reaction picker on long-press (6 emojis: 👍 ❤️ 😂 😮 😢 🙏)
-- ✅ Reaction display below message bubble (count only)
-- ✅ Current user's reaction highlighted
-- ✅ Tap reaction to add/remove own reaction
-- ✅ Reaction viewer bottom sheet showing who reacted with what
-- ✅ Real-time reaction updates via Firestore
+**Bug #1: Unread Count Badge Not Displaying**
+- Root cause: unreadCount hardcoded to 0 in ConversationMapper
+- Fix: Added SQL query in MessageDao to calculate unread messages
+- Implementation: getUnreadCount() counts messages where senderId != currentUserId AND user not in readBy map
+- Result: Badge now displays correct unread count in real-time
+
+**Bug #2: Reaction Notifications Stuck in Preview**
+- Root cause: Reaction notifications never cleared when new messages arrived
+- Fix: Cloud Function clears reactionNotifications on new message creation
+- Implementation: onMessageCreated trigger updates conversation document
+- Result: New messages properly replace reaction notifications in preview
+
+**Additional Fixes:**
+- Fixed circular dependency in ConversationRepositoryImpl (used MessageDao directly)
+- Fixed UI timestamp check to prevent stale reaction notifications from displaying
+- Included unread reaction notifications in badge count
+- Fixed badge visibility in dark mode (added shadowElevation and tonalElevation)
 
 **Technical Implementation:**
-- **Data Model:**
-  - Add `reactions: Map<String, List<String>>` to `Message` (emoji → userIds)
-  - `Reaction` data class for viewer (emoji, userId, timestamp)
-  - Helper methods: `getReactionCounts()`, `getUserReaction()`, `hasReactions()`
-  
-- **Database Layer:**
-  - Add `reactions` field to `MessageEntity` (JSON serialized)
-  - Room migration for new column
-  - Update `MessageMapper` for reactions serialization/deserialization
-  
-- **Repository:**
-  - `MessageRepository.addReaction(messageId, conversationId, userId, emoji)`
-  - `MessageRepository.removeReaction(messageId, conversationId, userId)`
-  - Firestore transactions to update reactions map atomically
-  
-- **Use Cases:**
-  - `AddReactionUseCase` - validates emoji and calls repository
-  - `RemoveReactionUseCase` - removes user's reaction
-  
-- **ViewModel:**
-  - `addReaction()`, `removeReaction()` methods in ChatViewModel
-  - Reactions update automatically via Firestore listener
-  
-- **UI Components:**
-  - `ReactionPicker` - popup with 6 quick emojis on long-press
-  - `ReactionsDisplay` - compact reaction counts below message (e.g., "👍 3  ❤️ 2")
-  - `ReactionViewerSheet` - bottom sheet with tabs for each emoji type
-  - Shows user avatars, names, and reaction timestamps
+- Added MessageDao.getUnreadCount() SQL query
+- Updated MessageRepository interface with getUnreadCount()
+- Modified ConversationRepositoryImpl to calculate unread counts using MessageDao
+- Created firebase/functions/src/triggers/onMessageCreated.ts Cloud Function
+- Enhanced ConversationListScreen badge styling for dark mode visibility
+- Added timestamp comparison in buildLastMessageText()
+
+**Files Modified:**
+- app/src/main/java/com/gchat/data/local/dao/MessageDao.kt
+- app/src/main/java/com/gchat/domain/repository/MessageRepository.kt
+- app/src/main/java/com/gchat/data/repository/MessageRepositoryImpl.kt
+- app/src/main/java/com/gchat/data/repository/ConversationRepositoryImpl.kt
+- app/src/main/java/com/gchat/presentation/chat/ConversationListScreen.kt
+- firebase/functions/src/triggers/onMessageCreated.ts
+- firebase/functions/src/index.ts
+
+**Testing:**
+- ✅ Unread count badge displays correctly in light and dark mode
+- ✅ Badge count includes both unread messages and unread reactions
+- ✅ Reaction notifications clear when new messages arrive
+- ✅ Badge visible with proper contrast in dark mode
+
+---
+
+### PR #21: Visual Distinction for Unread Messages
+**Status:** ✅ Merged to `main`  
+**Date:** October 24, 2025  
+**Time Spent:** ~5 hours
+
+**Features Implemented:**
+
+**Visual Distinction:**
+- ✅ Bold text for conversation name and last message preview when unread
+- ✅ Subtle background tint for entire conversation row (primary color with alpha)
+- ✅ Theme-aware styling (light mode: 0.08 alpha, dark mode: surfaceVariant)
+- ✅ Unread badge uses tertiary color in dark mode for better visibility
+- ✅ Professional appearance - not overwhelming, clear visual hierarchy
+
+**Critical Bugs Fixed:**
+
+**Bug #1: Messages Not Syncing to Room Database**
+- Root cause: Messages only synced when viewing a chat (via `getMessagesFlow()`), not when on conversation list
+- Result: Unread count query returned 0 because messages weren't in Room database
+- Fix: Added background message syncing for ALL conversations in `getConversationsFlow()`
+- Implementation: Injected `FirestoreMessageDataSource` and created `startMessageSyncIfNeeded()` helper
+- Result: Messages sync automatically to Room, unread counts work for all users
+
+**Bug #2: Mark-as-Read Only Clearing 1 Message**
+- Root cause: `markAllMessagesAsRead()` called multiple times rapidly from duplicate LaunchedEffects
+- Result: Sequential `forEach` loop marked same message repeatedly before finishing
+- Fix: Use `async`/`awaitAll` to mark all messages atomically in parallel
+- Implementation: Removed redundant `LaunchedEffect(Unit)`, added early return if no unread messages
+- Result: All unread messages cleared correctly when viewing chat
+
+**Technical Implementation:**
+
+**Android App:**
+- Modified `ConversationListScreen.kt` to add visual distinction styling
+  - Added `hasUnreadMessages`, `isDarkTheme`, `backgroundColor`, `textFontWeight` variables
+  - Applied conditional background color to `Surface` composable
+  - Applied bold font weight to conversation name and message preview `Text` composables
+  - Updated badge colors for dark mode visibility (tertiary/onTertiary)
+- Modified `ConversationRepositoryImpl.kt` for background message syncing
+  - Injected `FirestoreMessageDataSource` dependency
+  - Added `activeMessageSyncJobs` map to track sync jobs per conversation
+  - Created `startMessageSyncIfNeeded()` function to start message sync per conversation
+  - Call sync for each conversation in `getConversationsFlow()` mapping
+- Modified `ChatViewModel.kt` for atomic mark-as-read
+  - Changed from sequential `forEach` to parallel `async`/`awaitAll`
+  - Added early return if no unread messages
+- Modified `ChatScreen.kt` to remove redundant LaunchedEffect
+  - Removed `LaunchedEffect(Unit)` that caused duplicate calls
+  - Kept only `LaunchedEffect(messages.size)` for mark-as-read
 
 **UI/UX:**
-- Long-press message → Reaction picker appears above message
-- Tap emoji → Toggle reaction on/off
-- Reactions appear below message bubble, compactly formatted
-- User's own reaction has highlighted background
-- Tap reaction count → Opens viewer sheet showing all reactions
-- Viewer has tabs: All, 👍, ❤️, 😂, etc.
-- Real-time updates when others react
+- Conversations with unread messages have subtle colored background
+- Background uses theme's primary color with 0.08 alpha (light) or surfaceVariant (dark)
+- Bold text for both conversation name and last message
+- Unread badge remains visible with tertiary color in dark mode
+- Clean, professional visual hierarchy between read/unread conversations
 
-**Firestore Rules:**
-- Allow authenticated users to update reactions map on messages they can read
-- Participants-only access, same as existing message rules
+**Files Modified:**
+- `app/src/main/java/com/gchat/presentation/chat/ConversationListScreen.kt`
+- `app/src/main/java/com/gchat/data/repository/ConversationRepositoryImpl.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ChatViewModel.kt`
+- `app/src/main/java/com/gchat/presentation/chat/ChatScreen.kt`
 
-**Files to Create:**
-- `domain/model/Reaction.kt`
-- `domain/usecase/AddReactionUseCase.kt`
-- `domain/usecase/RemoveReactionUseCase.kt`
-- `presentation/chat/ReactionPicker.kt`
-- `presentation/chat/ReactionsDisplay.kt`
-- `presentation/chat/ReactionViewerSheet.kt`
-
-**Files to Modify:**
-- `domain/model/Message.kt` - add reactions field and helpers
-- `domain/repository/MessageRepository.kt` - add reaction methods
-- `data/local/entity/MessageEntity.kt` - add reactions column
-- `data/mapper/MessageMapper.kt` - handle reactions serialization
-- `data/repository/MessageRepositoryImpl.kt` - implement reaction methods
-- `data/remote/firestore/FirestoreMessageDataSource.kt` - Firestore reactions
-- `presentation/chat/ChatViewModel.kt` - reaction ViewModel methods
-- `presentation/chat/ChatScreen.kt` - integrate reaction UI
-- `firebase/firestore.rules` - reactions permissions
+**Testing:**
+- ✅ Visual distinction works in light mode (subtle primary color tint)
+- ✅ Visual distinction works in dark mode (surfaceVariant background)
+- ✅ Bold text applies to conversation name and message preview
+- ✅ Unread badge visible in both themes
+- ✅ Messages sync to Room automatically for all users
+- ✅ Unread counts show correct number for multiple messages
+- ✅ Opening chat marks ALL messages as read (not just 1)
+- ✅ Unread count clears completely when viewing chat
 
 ---
 
