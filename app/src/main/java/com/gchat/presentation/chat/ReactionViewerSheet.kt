@@ -16,7 +16,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.gchat.domain.model.Message
-import com.gchat.domain.model.Reaction
 import com.gchat.domain.model.User
 import java.text.SimpleDateFormat
 import java.util.*
@@ -132,7 +131,7 @@ fun ReactionViewerSheet(
 
 @Composable
 private fun ReactionItem(
-    reaction: Reaction,
+    reaction: ReactionWithUser,
     modifier: Modifier = Modifier
 ) {
     Row(
@@ -158,7 +157,7 @@ private fun ReactionItem(
                 contentAlignment = Alignment.Center
             ) {
                 Text(
-                    text = reaction.user?.displayName?.firstOrNull()?.uppercase() ?: "?",
+                    text = reaction.user?.displayName?.firstOrNull()?.toString()?.uppercase() ?: "?",
                     color = MaterialTheme.colorScheme.onPrimaryContainer,
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
@@ -193,15 +192,15 @@ private fun ReactionItem(
 }
 
 /**
- * Build a list of Reaction objects with user info from the reactions map
+ * Build a list of ReactionWithUser objects from the reactions map
  */
 private fun buildReactionsList(
     reactionsMap: Map<String, List<String>>,
     participantUsers: Map<String, User>
-): List<Reaction> {
+): List<ReactionWithUser> {
     return reactionsMap.flatMap { (emoji, userIds) ->
         userIds.map { userId ->
-            Reaction(
+            ReactionWithUser(
                 emoji = emoji,
                 userId = userId,
                 timestamp = System.currentTimeMillis(), // Note: actual timestamp not stored, using current time
@@ -230,9 +229,9 @@ private fun formatTimestamp(timestamp: Long): String {
 }
 
 /**
- * Extended Reaction data class with user info for display
+ * Reaction data class with user info for display in the viewer
  */
-private data class Reaction(
+private data class ReactionWithUser(
     val emoji: String,
     val userId: String,
     val timestamp: Long,
