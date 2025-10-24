@@ -81,6 +81,7 @@ object ConversationMapper {
             val groupAdminsList = document.get("groupAdmins") as? List<*>
             val nicknamesMap = document.get("nicknames") as? Map<*, *>
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
+            val reactionNotificationsMap = document.get("reactionNotifications") as? Map<*, *>
             
             // Parse last message if it exists
             val lastMessage = lastMessageMap?.let {
@@ -149,6 +150,21 @@ object ConversationMapper {
                 creatorId = document.getString("creatorId"),
                 deletedAt = deletedAtMap?.mapNotNull { (k, v) ->
                     (k as? String)?.let { key -> (v as? Number)?.toLong()?.let { value -> key to value } }
+                }?.toMap() ?: emptyMap(),
+                reactionNotifications = reactionNotificationsMap?.mapNotNull { (userId, notificationData) ->
+                    try {
+                        val userId = userId as? String ?: return@mapNotNull null
+                        val dataMap = notificationData as? Map<*, *> ?: return@mapNotNull null
+                        val notification = com.gchat.domain.model.ReactionNotification(
+                            text = dataMap["text"] as? String ?: return@mapNotNull null,
+                            timestamp = (dataMap["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null,
+                            messageId = dataMap["messageId"] as? String ?: return@mapNotNull null,
+                            reactorId = dataMap["reactorId"] as? String ?: return@mapNotNull null
+                        )
+                        userId to notification
+                    } catch (e: Exception) {
+                        null
+                    }
                 }?.toMap() ?: emptyMap()
             )
         } catch (e: Exception) {

@@ -130,26 +130,23 @@ export const onMessageReactionAdded = onDocumentUpdated(
         });
         
         console.log(`✅ Notification sent successfully`);
-        console.log(`📝 Updating conversation lastMessage...`);
+        console.log(`📝 Updating conversation with reaction preview for message owner...`);
         
-        // Update conversation's lastMessage to show reaction event
-        // ONLY the message owner will see this in their preview
-        // Other users (reactor, other group members) will skip this SYSTEM message in their UI
-        await db.collection('conversations').doc(conversationId).update({
-          lastMessage: {
-            id: messageId,
-            conversationId,
-            senderId: userId, // reactor is the "sender" of this system message
-            type: 'SYSTEM',
+        // Update conversation with a per-user reaction notification
+        // This allows ONLY the message owner to see the reaction in their preview
+        // while keeping the main lastMessage unchanged for everyone else
+        const conversationRef = db.collection('conversations').doc(conversationId);
+        await conversationRef.update({
+          [`reactionNotifications.${messageSenderId}`]: {
             text: `${emoji} ${displayName} reacted to your message`,
-            mediaUrl: null,
             timestamp: Date.now(),
-            originalMessageSenderId: messageSenderId, // The user whose message was reacted to
+            messageId: messageId,
+            reactorId: userId,
           },
           updatedAt: FieldValue.serverTimestamp(),
         });
         
-        console.log(`✅ Conversation preview updated`);
+        console.log(`✅ Reaction notification set for user ${messageSenderId}`);
       }
       
     } catch (error) {
