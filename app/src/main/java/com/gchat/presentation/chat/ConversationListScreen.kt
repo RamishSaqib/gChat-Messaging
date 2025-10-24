@@ -429,10 +429,21 @@ private fun buildLastMessageText(
     // Get the message content
     android.util.Log.d("ConversationPreview", "lastMessage - text: '${lastMessage.text}', mediaUrl: '${lastMessage.mediaUrl}', type: ${lastMessage.type}")
     
-    // Skip SYSTEM messages (old reaction previews) - don't show them
+    // Handle SYSTEM messages (reaction previews)
+    // Only show to the original message owner, skip for everyone else
     if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
-        android.util.Log.d("ConversationPreview", "Skipping SYSTEM message, showing 'No messages yet'")
-        return "No messages yet"
+        android.util.Log.d("ConversationPreview", "SYSTEM message - currentUserId: $currentUserId, originalMessageSenderId: ${lastMessage.originalMessageSenderId}")
+        
+        // Check if current user is the message owner
+        if (lastMessage.originalMessageSenderId == currentUserId) {
+            android.util.Log.d("ConversationPreview", "User IS the message owner, showing reaction preview")
+            // Show reaction preview for the message owner
+            return lastMessage.text ?: "System message"
+        } else {
+            android.util.Log.d("ConversationPreview", "User is NOT the message owner, skipping SYSTEM message")
+            // Skip this SYSTEM message for everyone else (reactor, other group members)
+            return "No messages yet"
+        }
     }
     
     val messageContent = when {

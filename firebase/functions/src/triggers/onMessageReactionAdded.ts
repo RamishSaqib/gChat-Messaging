@@ -6,7 +6,7 @@
 
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { getFirestore } from 'firebase-admin/firestore';
+import { getFirestore, FieldValue } from 'firebase-admin/firestore';
 
 const messaging = getMessaging();
 const db = getFirestore();
@@ -130,11 +130,26 @@ export const onMessageReactionAdded = onDocumentUpdated(
         });
         
         console.log(`✅ Notification sent successfully`);
+        console.log(`📝 Updating conversation lastMessage...`);
         
-        // Note: We do NOT update the conversation's lastMessage for reactions
-        // This prevents the conversation preview from changing when someone reacts
-        // Only the message owner gets a notification, but the conversation list stays unchanged
-        console.log(`✅ Reaction processed successfully without updating conversation preview`);
+        // Update conversation's lastMessage to show reaction event
+        // ONLY the message owner will see this in their preview
+        // Other users (reactor, other group members) will skip this SYSTEM message in their UI
+        await db.collection('conversations').doc(conversationId).update({
+          lastMessage: {
+            id: messageId,
+            conversationId,
+            senderId: userId, // reactor is the "sender" of this system message
+            type: 'SYSTEM',
+            text: `${emoji} ${displayName} reacted to your message`,
+            mediaUrl: null,
+            timestamp: Date.now(),
+            originalMessageSenderId: messageSenderId, // The user whose message was reacted to
+          },
+          updatedAt: FieldValue.serverTimestamp(),
+        });
+        
+        console.log(`✅ Conversation preview updated`);
       }
       
     } catch (error) {
