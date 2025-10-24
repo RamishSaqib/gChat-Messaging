@@ -6,7 +6,7 @@
 
 import { onDocumentUpdated } from 'firebase-functions/v2/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
-import { getFirestore, FieldValue } from 'firebase-admin/firestore';
+import { getFirestore } from 'firebase-admin/firestore';
 
 const messaging = getMessaging();
 const db = getFirestore();
@@ -130,26 +130,11 @@ export const onMessageReactionAdded = onDocumentUpdated(
         });
         
         console.log(`✅ Notification sent successfully`);
-        console.log(`📝 Updating conversation lastMessage...`);
         
-        // Update conversation's lastMessage to show reaction event
-        // Format as a proper Message object to match Android's expected structure
-        // Store the original message sender ID in a custom field so we can check it on the client
-        await db.collection('conversations').doc(conversationId).update({
-          lastMessage: {
-            id: messageId,
-            conversationId,
-            senderId: userId, // reactor is the "sender" of this system message
-            type: 'SYSTEM',
-            text: `${emoji} ${displayName} reacted to your message`,
-            mediaUrl: null,
-            timestamp: Date.now(),
-            originalMessageSenderId: messageSenderId, // NEW: Store who owned the message that was reacted to
-          },
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        
-        console.log(`✅ Conversation preview updated`);
+        // Note: We do NOT update the conversation's lastMessage for reactions
+        // This prevents the conversation preview from changing when someone reacts
+        // Only the message owner gets a notification, but the conversation list stays unchanged
+        console.log(`✅ Reaction processed successfully without updating conversation preview`);
       }
       
     } catch (error) {

@@ -429,28 +429,6 @@ private fun buildLastMessageText(
     // Get the message content
     android.util.Log.d("ConversationPreview", "lastMessage - text: '${lastMessage.text}', mediaUrl: '${lastMessage.mediaUrl}', type: ${lastMessage.type}")
     
-    // Handle SYSTEM messages (like reactions)
-    // Only show reaction preview if current user is the owner of the original message that was reacted to
-    if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
-        android.util.Log.d("ConversationPreview", "SYSTEM message - currentUserId: $currentUserId, originalMessageSenderId: ${lastMessage.originalMessageSenderId}")
-        
-        // If originalMessageSenderId is null (old SYSTEM messages), don't show the reaction preview
-        if (lastMessage.originalMessageSenderId == null) {
-            android.util.Log.d("ConversationPreview", "originalMessageSenderId is null, showing generic message")
-            return "New message"
-        }
-        
-        // Check if current user is the message owner (originalMessageSenderId)
-        if (lastMessage.originalMessageSenderId != currentUserId) {
-            android.util.Log.d("ConversationPreview", "User is NOT the message owner, showing generic message")
-            // User is not the message owner, don't show reaction preview
-            return "New message"
-        }
-        android.util.Log.d("ConversationPreview", "User IS the message owner, showing reaction preview")
-        // Show reaction preview only for the message owner
-        return lastMessage.text ?: "System message"
-    }
-    
     val messageContent = when {
         lastMessage.text != null && lastMessage.text.isNotBlank() -> lastMessage.text
         lastMessage.mediaUrl != null -> "📷 Image"
