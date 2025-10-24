@@ -29,8 +29,7 @@ class ConversationRepositoryImpl @Inject constructor(
     private val conversationDao: ConversationDao,
     private val messageDao: MessageDao,
     private val firestoreConversationDataSource: FirestoreConversationDataSource,
-    private val auth: FirebaseAuth,
-    private val messageRepository: MessageRepository
+    private val auth: FirebaseAuth
 ) : ConversationRepository {
     
     private val scope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
@@ -81,8 +80,12 @@ class ConversationRepositoryImpl @Inject constructor(
                         )
                     } else null
                     
-                    // Calculate unread count for this conversation
-                    val unreadCount = messageRepository.getUnreadCount(entity.id, currentUserId)
+                    // Calculate unread count for this conversation using MessageDao directly
+                    val unreadCount = try {
+                        messageDao.getUnreadCount(entity.id, currentUserId)
+                    } catch (e: Exception) {
+                        0
+                    }
                     
                     ConversationMapper.toDomain(entity, lastMessage).copy(unreadCount = unreadCount)
                 }
