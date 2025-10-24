@@ -19,5 +19,6 @@ interface MessageRepository {
     suspend fun deleteMessage(conversationId: String, messageId: String): Result<Unit>
     suspend fun addReaction(messageId: String, conversationId: String, userId: String, emoji: String): Result<Unit>
     suspend fun removeReaction(messageId: String, conversationId: String, userId: String): Result<Unit>
+    suspend fun getUnreadCount(conversationId: String, userId: String): Int
 }
 

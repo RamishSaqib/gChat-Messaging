@@ -7,6 +7,7 @@
 import { onDocumentCreated } from 'firebase-functions/v2/firestore';
 import { getMessaging } from 'firebase-admin/messaging';
 import { getFirestore } from 'firebase-admin/firestore';
+import * as admin from 'firebase-admin';
 
 const messaging = getMessaging();
 const db = getFirestore();
@@ -37,6 +38,14 @@ export const onMessageCreated = onDocumentCreated(
 
       const conversation = conversationDoc.data();
       if (!conversation) return;
+
+      // Clear all reaction notifications when a new message arrives
+      // This ensures reaction previews don't stay stuck when new messages are sent
+      await db.collection('conversations').doc(conversationId).update({
+        reactionNotifications: {},
+        updatedAt: admin.firestore.FieldValue.serverTimestamp()
+      });
+      console.log(`Cleared reaction notifications for conversation ${conversationId}`);
 
       // Get recipient user IDs (exclude sender)
       const recipientIds = conversation.participants.filter(

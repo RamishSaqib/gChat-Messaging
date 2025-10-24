@@ -29,7 +29,8 @@ class ConversationRepositoryImpl @Inject constructor(
     private val conversationDao: ConversationDao,
     private val messageDao: MessageDao,
     private val firestoreConversationDataSource: FirestoreConversationDataSource,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val messageRepository: MessageRepository
 ) : ConversationRepository {
     
     private val scope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
@@ -55,6 +56,7 @@ class ConversationRepositoryImpl @Inject constructor(
                 android.util.Log.d("ConversationRepo", "Room Flow emitted ${entities.size} conversations")
             }
             .map { entities ->
+                val currentUserId = auth.currentUser?.uid ?: ""
                 entities.map { entity ->
                     // Create lastMessage from entity fields (no need to look up in messages table)
                     val lastMessage = if (entity.lastMessageId != null) {
@@ -79,7 +81,10 @@ class ConversationRepositoryImpl @Inject constructor(
                         )
                     } else null
                     
-                    ConversationMapper.toDomain(entity, lastMessage)
+                    // Calculate unread count for this conversation
+                    val unreadCount = messageRepository.getUnreadCount(entity.id, currentUserId)
+                    
+                    ConversationMapper.toDomain(entity, lastMessage).copy(unreadCount = unreadCount)
                 }
             }
             .onEach { conversations ->
