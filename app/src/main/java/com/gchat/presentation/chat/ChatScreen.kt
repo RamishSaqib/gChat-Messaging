@@ -157,12 +157,7 @@ fun ChatScreen(
         }
     }
     
-    // Mark messages as read when screen is viewed
-    LaunchedEffect(Unit) {
-        viewModel.markAllMessagesAsRead()
-    }
-    
-    // Mark new messages as read when they arrive
+    // Mark messages as read when screen is viewed or new messages arrive
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
             viewModel.markAllMessagesAsRead()
