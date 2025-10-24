@@ -133,9 +133,17 @@ export const onMessageReactionAdded = onDocumentUpdated(
         console.log(`📝 Updating conversation lastMessage...`);
         
         // Update conversation's lastMessage to show reaction event
+        // Format as a proper Message object to match Android's expected structure
         await db.collection('conversations').doc(conversationId).update({
-          lastMessage: `${emoji} ${displayName} reacted to your message`,
-          lastMessageType: 'SYSTEM',
+          lastMessage: {
+            id: messageId,
+            conversationId,
+            senderId: userId, // reactor is the "sender" of this system message
+            type: 'SYSTEM',
+            text: `${emoji} ${displayName} reacted to your message`,
+            mediaUrl: null,
+            timestamp: Date.now(),
+          },
           updatedAt: FieldValue.serverTimestamp(),
         });
         
