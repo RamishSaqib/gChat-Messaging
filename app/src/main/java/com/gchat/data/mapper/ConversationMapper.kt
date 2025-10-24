@@ -87,7 +87,8 @@ object ConversationMapper {
                 try {
                     val typeString = it["type"] as? String
                     val mediaUrlString = it["mediaUrl"] as? String
-                    android.util.Log.d("ConversationMapper", "fromFirestore lastMessage - type: $typeString, mediaUrl: $mediaUrlString, text: ${it["text"]}")
+                    val originalSenderId = it["originalMessageSenderId"] as? String
+                    android.util.Log.d("ConversationMapper", "fromFirestore lastMessage - type: $typeString, mediaUrl: $mediaUrlString, text: ${it["text"]}, originalMessageSenderId: $originalSenderId")
                     val messageType = try {
                         if (typeString != null) {
                             com.gchat.domain.model.MessageType.valueOf(typeString)
