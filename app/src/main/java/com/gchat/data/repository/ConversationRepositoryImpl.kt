@@ -29,11 +29,13 @@ class ConversationRepositoryImpl @Inject constructor(
     private val conversationDao: ConversationDao,
     private val messageDao: MessageDao,
     private val firestoreConversationDataSource: FirestoreConversationDataSource,
+    private val firestoreMessageDataSource: com.gchat.data.remote.firestore.FirestoreMessageDataSource,
     private val auth: FirebaseAuth
 ) : ConversationRepository {
     
     private val scope = CoroutineScope(Dispatchers.IO + kotlinx.coroutines.SupervisorJob())
     private var syncJob: kotlinx.coroutines.Job? = null
+    private val activeMessageSyncJobs = mutableMapOf<String, kotlinx.coroutines.Job>()
     
     override fun getConversationsFlow(): Flow<List<Conversation>> {
         // Start background sync if not already running
@@ -56,6 +58,12 @@ class ConversationRepositoryImpl @Inject constructor(
             }
             .map { entities ->
                 val currentUserId = auth.currentUser?.uid ?: ""
+                
+                // Start background message sync for each conversation
+                entities.forEach { entity ->
+                    startMessageSyncIfNeeded(entity.id)
+                }
+                
                 entities.map { entity ->
                     // Create lastMessage from entity fields (no need to look up in messages table)
                     val lastMessage = if (entity.lastMessageId != null) {
@@ -585,6 +593,29 @@ class ConversationRepositoryImpl @Inject constructor(
             // Log error but don't crash - user will see locally cached data
             android.util.Log.e("ConversationRepo", "Error syncing conversations: ${e.message}", e)
             e.printStackTrace()
+        }
+    }
+    
+    /**
+     * Start background message sync for a conversation if not already syncing
+     */
+    private fun startMessageSyncIfNeeded(conversationId: String) {
+        // Only start if not already syncing
+        if (activeMessageSyncJobs[conversationId]?.isActive != true) {
+            activeMessageSyncJobs[conversationId] = scope.launch {
+                try {
+                    android.util.Log.d("ConversationRepo", "Starting message sync for conversation ${conversationId.take(8)}")
+                    firestoreMessageDataSource.observeMessages(conversationId, limit = 100)
+                        .collect { messages ->
+                            android.util.Log.d("ConversationRepo", "Synced ${messages.size} messages for ${conversationId.take(8)}")
+                            messages.forEach { message ->
+                                messageDao.insert(com.gchat.data.mapper.MessageMapper.toEntity(message))
+                            }
+                        }
+                } catch (e: Exception) {
+                    android.util.Log.e("ConversationRepo", "Error syncing messages for ${conversationId.take(8)}: ${e.message}")
+                }
+            }
         }
     }
 }
