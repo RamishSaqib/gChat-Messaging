@@ -162,9 +162,11 @@ fun ChatScreen(
         viewModel.markAllMessagesAsRead()
     }
     
-    // Also mark messages as read when new messages arrive
+    // Mark new messages as read when they arrive
     LaunchedEffect(messages.size) {
-        viewModel.markAllMessagesAsRead()
+        if (messages.isNotEmpty()) {
+            viewModel.markAllMessagesAsRead()
+        }
     }
     
     val snackbarHostState = remember { SnackbarHostState() }
