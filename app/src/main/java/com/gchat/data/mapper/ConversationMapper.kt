@@ -128,8 +128,20 @@ object ConversationMapper {
                 }?.toMap() ?: emptyMap(),
                 lastMessage = lastMessage,
                 unreadCount = 0, // Calculated client-side
-                updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
-                createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
+                updatedAt = try {
+                    (document.get("updatedAt") as? com.google.firebase.Timestamp)?.toDate()?.time
+                        ?: document.getLong("updatedAt")
+                        ?: System.currentTimeMillis()
+                } catch (e: Exception) {
+                    document.getLong("updatedAt") ?: System.currentTimeMillis()
+                },
+                createdAt = try {
+                    (document.get("createdAt") as? com.google.firebase.Timestamp)?.toDate()?.time
+                        ?: document.getLong("createdAt")
+                        ?: System.currentTimeMillis()
+                } catch (e: Exception) {
+                    document.getLong("createdAt") ?: System.currentTimeMillis()
+                },
                 autoTranslateEnabled = document.getBoolean("autoTranslateEnabled") ?: false,
                 smartRepliesEnabled = document.get("smartRepliesEnabled") as? Boolean, // null = use global
                 creatorId = document.getString("creatorId"),
