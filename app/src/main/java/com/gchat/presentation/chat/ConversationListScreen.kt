@@ -429,6 +429,12 @@ private fun buildLastMessageText(
     // Get the message content
     android.util.Log.d("ConversationPreview", "lastMessage - text: '${lastMessage.text}', mediaUrl: '${lastMessage.mediaUrl}', type: ${lastMessage.type}")
     
+    // Skip SYSTEM messages (old reaction previews) - don't show them
+    if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
+        android.util.Log.d("ConversationPreview", "Skipping SYSTEM message, showing 'No messages yet'")
+        return "No messages yet"
+    }
+    
     val messageContent = when {
         lastMessage.text != null && lastMessage.text.isNotBlank() -> lastMessage.text
         lastMessage.mediaUrl != null -> "📷 Image"
