@@ -31,6 +31,7 @@ data class ConversationEntity(
     val autoTranslateEnabled: Boolean,
     val smartRepliesEnabled: Boolean? = null, // null = use global, true/false = override
     val creatorId: String? = null, // ID of user who created the conversation
-    val deletedAt: String = "{}" // JSON map of userId -> deletion timestamp
+    val deletedAt: String = "{}", // JSON map of userId -> deletion timestamp
+    val reactionNotifications: String = "{}" // JSON map of userId -> ReactionNotification
 )
 

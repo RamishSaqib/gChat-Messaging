@@ -46,6 +46,11 @@ object ConversationMapper {
                 json.decodeFromString<Map<String, Long>>(entity.deletedAt)
             } catch (e: Exception) {
                 emptyMap()
+            },
+            reactionNotifications = try {
+                json.decodeFromString<Map<String, com.gchat.domain.model.ReactionNotification>>(entity.reactionNotifications)
+            } catch (e: Exception) {
+                emptyMap()
             }
         )
     }
@@ -71,7 +76,8 @@ object ConversationMapper {
             autoTranslateEnabled = domain.autoTranslateEnabled,
             smartRepliesEnabled = domain.smartRepliesEnabled,
             creatorId = domain.creatorId,
-            deletedAt = json.encodeToString(domain.deletedAt)
+            deletedAt = json.encodeToString(domain.deletedAt),
+            reactionNotifications = json.encodeToString(domain.reactionNotifications)
         )
     }
     
