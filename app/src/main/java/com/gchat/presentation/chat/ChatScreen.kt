@@ -829,28 +829,29 @@ fun MessageBubble(
                             )
                         }
                         
-                        // Floating reaction button (bottom right corner like Facebook Messenger)
+                        // Floating reaction button (subtle, bottom right corner)
                         IconButton(
                             onClick = { showReactionPicker = true },
                             modifier = Modifier
                                 .align(Alignment.BottomEnd)
-                                .size(28.dp)
-                                .offset(x = 8.dp, y = 8.dp)
+                                .size(24.dp)
+                                .offset(x = 6.dp, y = 6.dp)
                         ) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.surface,
-                                shadowElevation = 2.dp,
-                                modifier = Modifier.size(28.dp)
+                                color = MaterialTheme.colorScheme.surface.copy(alpha = 0.7f),
+                                shadowElevation = 1.dp,
+                                modifier = Modifier.size(24.dp)
                             ) {
                                 Box(
                                     contentAlignment = Alignment.Center,
                                     modifier = Modifier.fillMaxSize()
                                 ) {
                                     Text(
-                                        text = "😊",
-                                        style = MaterialTheme.typography.labelMedium,
-                                        fontSize = 14.sp
+                                        text = "🙂",
+                                        style = MaterialTheme.typography.labelSmall,
+                                        fontSize = 12.sp,
+                                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.5f)
                                     )
                                 }
                             }
