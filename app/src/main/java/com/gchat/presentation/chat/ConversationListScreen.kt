@@ -429,8 +429,16 @@ private fun buildLastMessageText(
     // Get the message content
     android.util.Log.d("ConversationPreview", "lastMessage - text: '${lastMessage.text}', mediaUrl: '${lastMessage.mediaUrl}', type: ${lastMessage.type}")
     
-    // Handle SYSTEM messages (like reactions) - just show the text directly
+    // Handle SYSTEM messages (like reactions)
+    // Only show reaction preview if current user is NOT the reactor (senderId in SYSTEM message is the reactor)
     if (lastMessage.type == com.gchat.domain.model.MessageType.SYSTEM) {
+        // If current user is the reactor, don't show the reaction preview - they shouldn't see their own reaction in the preview
+        if (lastMessage.senderId == currentUserId) {
+            // Find the actual last real message to show instead
+            // For now, just show a generic message - ideally we'd fetch the previous message
+            return "New message"
+        }
+        // Show reaction preview for the message recipient
         return lastMessage.text ?: "System message"
     }
     
