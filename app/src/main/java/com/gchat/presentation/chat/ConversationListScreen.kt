@@ -377,7 +377,9 @@ fun ConversationItem(
                         if (conversation.unreadCount > 0) {
                             Surface(
                                 shape = CircleShape,
-                                color = Color(0xFFFF3B30), // Bright red that works in both light and dark mode
+                                color = MaterialTheme.colorScheme.primary,
+                                shadowElevation = 2.dp, // Add shadow for visibility in dark mode
+                                tonalElevation = 2.dp, // Additional elevation
                                 modifier = Modifier.size(20.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -387,7 +389,7 @@ fun ConversationItem(
                                             fontSize = 11.sp,
                                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                         ),
-                                        color = Color.White // Always white for visibility on red background
+                                        color = MaterialTheme.colorScheme.onPrimary
                                     )
                                 }
                             }
