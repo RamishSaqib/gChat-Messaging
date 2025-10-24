@@ -20,7 +20,8 @@ data class Message(
     val readBy: Map<String, Long> = emptyMap(), // userId -> readTimestamp
     val translation: Translation? = null,
     val culturalContext: String? = null,
-    val reactions: Map<String, List<String>> = emptyMap() // emoji -> list of userIds
+    val reactions: Map<String, List<String>> = emptyMap(), // emoji -> list of userIds
+    val originalMessageSenderId: String? = null // For SYSTEM messages: who owned the message that triggered this system message (e.g., for reactions)
 ) {
     /**
      * Check if message has been read by a specific user

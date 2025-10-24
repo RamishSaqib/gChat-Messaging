@@ -134,6 +134,7 @@ export const onMessageReactionAdded = onDocumentUpdated(
         
         // Update conversation's lastMessage to show reaction event
         // Format as a proper Message object to match Android's expected structure
+        // Store the original message sender ID in a custom field so we can check it on the client
         await db.collection('conversations').doc(conversationId).update({
           lastMessage: {
             id: messageId,
@@ -143,6 +144,7 @@ export const onMessageReactionAdded = onDocumentUpdated(
             text: `${emoji} ${displayName} reacted to your message`,
             mediaUrl: null,
             timestamp: Date.now(),
+            originalMessageSenderId: messageSenderId, // NEW: Store who owned the message that was reacted to
           },
           updatedAt: FieldValue.serverTimestamp(),
         });

@@ -107,7 +107,8 @@ object ConversationMapper {
                         mediaUrl = mediaUrlString,
                         timestamp = (it["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         status = com.gchat.domain.model.MessageStatus.SENT,
-                        readBy = emptyMap()
+                        readBy = emptyMap(),
+                        originalMessageSenderId = it["originalMessageSenderId"] as? String
                     )
                 } catch (e: Exception) {
                     null
