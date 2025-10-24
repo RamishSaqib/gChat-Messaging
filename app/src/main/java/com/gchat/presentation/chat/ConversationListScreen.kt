@@ -235,7 +235,7 @@ fun ConversationListScreen(
                 ) {
                     items(
                         conversationsWithUsers,
-                        key = { "${it.conversation.id}_${it.conversation.lastMessage?.id ?: ""}_${it.conversation.lastMessage?.timestamp ?: 0}" }
+                        key = { "${it.conversation.id}_${it.conversation.updatedAt}" }
                     ) { conversationWithUser ->
                         // Use lastMessageTimestamp as key to reset dismiss state when conversation reappears with new message
                         val dismissState = rememberDismissState(
