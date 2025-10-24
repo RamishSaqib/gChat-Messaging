@@ -797,34 +797,63 @@ fun MessageBubble(
                         )
                     }
                 } else {
-                    // Regular text message bubble with long-press for reactions
-                    Surface(
-                        shape = if (isOwnMessage) MessageBubbleShapeSent else MessageBubbleShapeReceived,
-                        color = if (isOwnMessage) {
-                            MaterialTheme.colorScheme.primary
-                        } else {
-                            MaterialTheme.colorScheme.secondaryContainer
-                        },
-                        shadowElevation = 0.5.dp,
-                        modifier = Modifier
-                            .widthIn(max = 300.dp)
-                            .combinedClickable(
-                                onClick = {},
-                                onLongClick = {
-                                    showReactionPicker = true
-                                }
-                            )
-                    ) {
-                        Text(
-                            text = message.text ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
+                    // Regular text message bubble with reaction button overlay
+                    Box {
+                        Surface(
+                            shape = if (isOwnMessage) MessageBubbleShapeSent else MessageBubbleShapeReceived,
                             color = if (isOwnMessage) {
-                                MaterialTheme.colorScheme.onPrimary
+                                MaterialTheme.colorScheme.primary
                             } else {
-                                MaterialTheme.colorScheme.onSecondaryContainer
+                                MaterialTheme.colorScheme.secondaryContainer
                             },
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
-                        )
+                            shadowElevation = 0.5.dp,
+                            modifier = Modifier
+                                .widthIn(max = 300.dp)
+                                .combinedClickable(
+                                    onClick = {},
+                                    onLongClick = {
+                                        showMessageActions = true
+                                    }
+                                )
+                        ) {
+                            Text(
+                                text = message.text ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = if (isOwnMessage) {
+                                    MaterialTheme.colorScheme.onPrimary
+                                } else {
+                                    MaterialTheme.colorScheme.onSecondaryContainer
+                                },
+                                modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp)
+                            )
+                        }
+                        
+                        // Floating reaction button (bottom right corner like Facebook Messenger)
+                        IconButton(
+                            onClick = { showReactionPicker = true },
+                            modifier = Modifier
+                                .align(Alignment.BottomEnd)
+                                .size(28.dp)
+                                .offset(x = 8.dp, y = 8.dp)
+                        ) {
+                            Surface(
+                                shape = CircleShape,
+                                color = MaterialTheme.colorScheme.surface,
+                                shadowElevation = 2.dp,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Box(
+                                    contentAlignment = Alignment.Center,
+                                    modifier = Modifier.fillMaxSize()
+                                ) {
+                                    Text(
+                                        text = "😊",
+                                        style = MaterialTheme.typography.labelMedium,
+                                        fontSize = 14.sp
+                                    )
+                                }
+                            }
+                        }
                     }
                 }
                 
@@ -988,14 +1017,14 @@ fun MessageBubble(
         }
     }
     
-    // Message actions dialog (Translate or Extract)
+    // Message actions dialog (AI Features only - reactions have separate button)
     if (showMessageActions) {
         AlertDialog(
             onDismissRequest = { showMessageActions = false },
-            title = { Text("Message Actions") },
+            title = { Text("AI Features") },
             text = {
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Choose an action for this message:")
+                    Text("Choose an AI action for this message:")
                 }
             },
             confirmButton = {
