@@ -24,7 +24,7 @@ import com.gchat.data.local.entity.UserEntity
         MessageEntity::class,
         TranslationEntity::class
     ],
-    version = 12, // v12: Added smartRepliesEnabled to UserEntity and ConversationEntity
+    version = 14, // v14: Added reactionNotifications to ConversationEntity
     exportSchema = false
 )
 @TypeConverters(Converters::class)

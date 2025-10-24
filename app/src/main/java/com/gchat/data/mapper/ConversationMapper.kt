@@ -46,6 +46,11 @@ object ConversationMapper {
                 json.decodeFromString<Map<String, Long>>(entity.deletedAt)
             } catch (e: Exception) {
                 emptyMap()
+            },
+            reactionNotifications = try {
+                json.decodeFromString<Map<String, com.gchat.domain.model.ReactionNotification>>(entity.reactionNotifications)
+            } catch (e: Exception) {
+                emptyMap()
             }
         )
     }
@@ -71,7 +76,8 @@ object ConversationMapper {
             autoTranslateEnabled = domain.autoTranslateEnabled,
             smartRepliesEnabled = domain.smartRepliesEnabled,
             creatorId = domain.creatorId,
-            deletedAt = json.encodeToString(domain.deletedAt)
+            deletedAt = json.encodeToString(domain.deletedAt),
+            reactionNotifications = json.encodeToString(domain.reactionNotifications)
         )
     }
     
@@ -81,13 +87,17 @@ object ConversationMapper {
             val groupAdminsList = document.get("groupAdmins") as? List<*>
             val nicknamesMap = document.get("nicknames") as? Map<*, *>
             val lastMessageMap = document.get("lastMessage") as? Map<*, *>
+            val reactionNotificationsMap = document.get("reactionNotifications") as? Map<*, *>
+            
+            android.util.Log.d("ConversationMapper", "fromFirestore - reactionNotificationsMap: $reactionNotificationsMap")
             
             // Parse last message if it exists
             val lastMessage = lastMessageMap?.let {
                 try {
                     val typeString = it["type"] as? String
                     val mediaUrlString = it["mediaUrl"] as? String
-                    android.util.Log.d("ConversationMapper", "fromFirestore lastMessage - type: $typeString, mediaUrl: $mediaUrlString, text: ${it["text"]}")
+                    val originalSenderId = it["originalMessageSenderId"] as? String
+                    android.util.Log.d("ConversationMapper", "fromFirestore lastMessage - type: $typeString, mediaUrl: $mediaUrlString, text: ${it["text"]}, originalMessageSenderId: $originalSenderId")
                     val messageType = try {
                         if (typeString != null) {
                             com.gchat.domain.model.MessageType.valueOf(typeString)
@@ -107,7 +117,8 @@ object ConversationMapper {
                         mediaUrl = mediaUrlString,
                         timestamp = (it["timestamp"] as? Number)?.toLong() ?: System.currentTimeMillis(),
                         status = com.gchat.domain.model.MessageStatus.SENT,
-                        readBy = emptyMap()
+                        readBy = emptyMap(),
+                        originalMessageSenderId = it["originalMessageSenderId"] as? String
                     )
                 } catch (e: Exception) {
                     null
@@ -128,13 +139,55 @@ object ConversationMapper {
                 }?.toMap() ?: emptyMap(),
                 lastMessage = lastMessage,
                 unreadCount = 0, // Calculated client-side
-                updatedAt = document.getLong("updatedAt") ?: System.currentTimeMillis(),
-                createdAt = document.getLong("createdAt") ?: System.currentTimeMillis(),
+                updatedAt = try {
+                    (document.get("updatedAt") as? com.google.firebase.Timestamp)?.toDate()?.time
+                        ?: document.getLong("updatedAt")
+                        ?: System.currentTimeMillis()
+                } catch (e: Exception) {
+                    document.getLong("updatedAt") ?: System.currentTimeMillis()
+                },
+                createdAt = try {
+                    (document.get("createdAt") as? com.google.firebase.Timestamp)?.toDate()?.time
+                        ?: document.getLong("createdAt")
+                        ?: System.currentTimeMillis()
+                } catch (e: Exception) {
+                    document.getLong("createdAt") ?: System.currentTimeMillis()
+                },
                 autoTranslateEnabled = document.getBoolean("autoTranslateEnabled") ?: false,
                 smartRepliesEnabled = document.get("smartRepliesEnabled") as? Boolean, // null = use global
                 creatorId = document.getString("creatorId"),
                 deletedAt = deletedAtMap?.mapNotNull { (k, v) ->
                     (k as? String)?.let { key -> (v as? Number)?.toLong()?.let { value -> key to value } }
+                }?.toMap() ?: emptyMap(),
+                reactionNotifications = reactionNotificationsMap?.mapNotNull { (userIdKey, notificationData) ->
+                    try {
+                        android.util.Log.d("ConversationMapper", "Parsing reaction notification - userIdKey: $userIdKey, notificationData: $notificationData")
+                        val userId = userIdKey as? String
+                        android.util.Log.d("ConversationMapper", "userId cast: $userId")
+                        if (userId == null) {
+                            android.util.Log.e("ConversationMapper", "userId is null, returning null")
+                            return@mapNotNull null
+                        }
+                        val dataMap = notificationData as? Map<*, *>
+                        android.util.Log.d("ConversationMapper", "dataMap cast: $dataMap")
+                        if (dataMap == null) {
+                            android.util.Log.e("ConversationMapper", "dataMap is null, returning null")
+                            return@mapNotNull null
+                        }
+                        val notification = com.gchat.domain.model.ReactionNotification(
+                            text = dataMap["text"] as? String ?: return@mapNotNull null,
+                            timestamp = (dataMap["timestamp"] as? Number)?.toLong() ?: return@mapNotNull null,
+                            messageId = dataMap["messageId"] as? String ?: return@mapNotNull null,
+                            reactorId = dataMap["reactorId"] as? String ?: return@mapNotNull null
+                        )
+                        android.util.Log.d("ConversationMapper", "Successfully created notification: $notification")
+                        val result = userId to notification
+                        android.util.Log.d("ConversationMapper", "Returning pair: $result")
+                        result
+                    } catch (e: Exception) {
+                        android.util.Log.e("ConversationMapper", "Error parsing reaction notification", e)
+                        null
+                    }
                 }?.toMap() ?: emptyMap()
             )
         } catch (e: Exception) {

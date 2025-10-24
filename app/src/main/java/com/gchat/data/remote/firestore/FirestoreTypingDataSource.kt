@@ -61,7 +61,14 @@ class FirestoreTypingDataSource @Inject constructor(
         val listener = getTypingCollection(conversationId)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    close(error)
+                    // Handle PERMISSION_DENIED gracefully (happens when user doesn't have access to conversation)
+                    if (error.message?.contains("PERMISSION_DENIED") == true) {
+                        android.util.Log.d("FirestoreTyping", "Snapshot listener permission denied (no access to conversation?), closing gracefully")
+                        close() // Close without error to avoid crash
+                    } else {
+                        android.util.Log.e("FirestoreTyping", "Snapshot listener error: ${error.message}", error)
+                        close(error)
+                    }
                     return@addSnapshotListener
                 }
                 

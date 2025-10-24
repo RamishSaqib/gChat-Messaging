@@ -88,6 +88,24 @@ class MessagingService : FirebaseMessagingService() {
                     android.util.Log.d("MessagingService", "User is in this chat, suppressing notification")
                 }
             }
+            "REACTION" -> {
+                val conversationId = data["conversationId"] ?: return
+                val reactorId = data["reactorId"] ?: return
+                val reactorName = data["reactorName"] ?: "Someone"
+                val emoji = data["emoji"] ?: "❤️"
+                val messageText = data["messageText"] ?: ""
+                
+                // Check if user is currently viewing this conversation
+                val currentConversationId = (application as? GChatApplication)?.currentConversationId
+                
+                if (conversationId != currentConversationId) {
+                    // User is NOT in this chat - show notification
+                    android.util.Log.d("MessagingService", "User in different chat, showing reaction notification")
+                    showReactionNotification(conversationId, reactorId, reactorName, emoji, messageText)
+                } else {
+                    android.util.Log.d("MessagingService", "User is in this chat, suppressing reaction notification")
+                }
+            }
             "TYPING" -> {
                 // Handle typing indicator if needed
                 // Usually not shown as notification, just updates UI if app is open
@@ -179,6 +197,74 @@ class MessagingService : FirebaseMessagingService() {
             .notify(conversationId.hashCode(), notification)
             
         android.util.Log.d("MessagingService", "Notification displayed with ID: ${conversationId.hashCode()}")
+    }
+    
+    private fun showReactionNotification(
+        conversationId: String,
+        reactorId: String,
+        reactorName: String,
+        emoji: String,
+        messageText: String
+    ) {
+        // Don't show notification for own reactions
+        val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
+        if (currentUserId == reactorId) {
+            android.util.Log.d("MessagingService", "Skipping notification for own reaction")
+            return
+        }
+        
+        // Create intent to open conversation
+        val intent = Intent(this, MainActivity::class.java).apply {
+            component = android.content.ComponentName(this@MessagingService, MainActivity::class.java)
+            action = Intent.ACTION_VIEW
+            data = android.net.Uri.parse("gchat://conversation/$conversationId")
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            putExtra("conversationId", conversationId)
+            putExtra("openChat", true)
+        }
+        
+        val requestCode = conversationId.hashCode()
+        
+        val pendingIntentFlags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+        } else {
+            PendingIntent.FLAG_UPDATE_CURRENT
+        }
+        
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            requestCode,
+            intent,
+            pendingIntentFlags
+        )
+        
+        // Build notification
+        val title = "$reactorName reacted $emoji"
+        val displayText = if (messageText.isNotEmpty() && messageText.length <= 50) {
+            "To: $messageText"
+        } else if (messageText.isNotEmpty()) {
+            "To: ${messageText.take(47)}..."
+        } else {
+            "To your message"
+        }
+        
+        val notification = NotificationCompat.Builder(this, GChatApplication.CHANNEL_ID_MESSAGES)
+            .setSmallIcon(R.drawable.ic_launcher_foreground)
+            .setContentTitle(title)
+            .setContentText(displayText)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(displayText))
+            .setContentIntent(pendingIntent)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_SOCIAL)
+            .setGroup("REACTIONS")
+            .build()
+        
+        // Show notification with unique ID
+        NotificationManagerCompat.from(this)
+            .notify(("reaction_$conversationId").hashCode(), notification)
+            
+        android.util.Log.d("MessagingService", "Reaction notification displayed")
     }
 }
 

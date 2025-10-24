@@ -20,7 +20,8 @@ data class Conversation(
     val autoTranslateEnabled: Boolean = false,
     val smartRepliesEnabled: Boolean? = null, // null = use global setting, true/false = override
     val creatorId: String? = null, // ID of user who created the conversation (for initial message flow)
-    val deletedAt: Map<String, Long> = emptyMap() // User ID -> deletion timestamp for per-user deletion with fresh history
+    val deletedAt: Map<String, Long> = emptyMap(), // User ID -> deletion timestamp for per-user deletion with fresh history
+    val reactionNotifications: Map<String, ReactionNotification> = emptyMap() // User ID -> reaction notification for per-user preview
 ) {
     /**
      * Get display name for the conversation

@@ -19,7 +19,9 @@ data class Message(
     val status: MessageStatus = MessageStatus.SENDING,
     val readBy: Map<String, Long> = emptyMap(), // userId -> readTimestamp
     val translation: Translation? = null,
-    val culturalContext: String? = null
+    val culturalContext: String? = null,
+    val reactions: Map<String, List<String>> = emptyMap(), // emoji -> list of userIds
+    val originalMessageSenderId: String? = null // For SYSTEM messages: who owned the message that triggered this system message (e.g., for reactions)
 ) {
     /**
      * Check if message has been read by a specific user
@@ -43,6 +45,25 @@ data class Message(
      * Check if message has been read by at least one recipient
      */
     fun isReadByAny(): Boolean = readBy.isNotEmpty()
+    
+    /**
+     * Get reaction counts for this message
+     */
+    fun getReactionCounts(): Map<String, Int> {
+        return reactions.mapValues { it.value.size }
+    }
+    
+    /**
+     * Get the reaction emoji that a specific user added, or null if none
+     */
+    fun getUserReaction(userId: String): String? {
+        return reactions.entries.firstOrNull { it.value.contains(userId) }?.key
+    }
+    
+    /**
+     * Check if this message has any reactions
+     */
+    fun hasReactions(): Boolean = reactions.isNotEmpty()
 }
 
 enum class MessageType {

@@ -16,6 +16,7 @@ export { getCulturalContext, adjustFormality } from './ai/culturalContext';
 export { extractIntelligentData, extractBatchData } from './ai/dataExtraction';
 export { transcribeVoiceMessage, getTranscription } from './ai/transcription';
 export { onMessageCreated } from './triggers/onMessageCreated';
+export { onMessageReactionAdded } from './triggers/onMessageReactionAdded';
 
 // Health check function
 import { onRequest } from 'firebase-functions/v2/https';

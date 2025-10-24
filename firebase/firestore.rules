@@ -123,9 +123,20 @@ service cloud.firestore {
                          isValidMessage() &&
                          request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
         
-        // Participants can update messages (for read receipts, status changes)
+        // Participants can update messages (for read receipts, status changes, reactions)
+        // Reactions: Can only add/remove own userId from reactions map
+        // ReadBy: Can only add own userId to readBy map
+        // Status/Transcription: Sender can update
         allow update: if isAuthenticated() &&
-                         request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants;
+                         request.auth.uid in get(/databases/$(database)/documents/conversations/$(conversationId)).data.participants &&
+                         (
+                           // Allow reactions updates (only modifying reactions field)
+                           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['reactions'])) ||
+                           // Allow read receipts (only modifying readBy field)
+                           (request.resource.data.diff(resource.data).affectedKeys().hasOnly(['readBy', 'status'])) ||
+                           // Allow status/transcription updates by sender
+                           (request.auth.uid == resource.data.senderId)
+                         );
         
         // Sender or participants can delete messages
         allow delete: if isAuthenticated() &&

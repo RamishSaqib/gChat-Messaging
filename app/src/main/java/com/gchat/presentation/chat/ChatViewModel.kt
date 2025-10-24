@@ -62,6 +62,8 @@ class ChatViewModel @Inject constructor(
     private val generateSmartRepliesUseCase: GenerateSmartRepliesUseCase,
     private val getCulturalContextUseCase: com.gchat.domain.usecase.GetCulturalContextUseCase,
     private val adjustFormalityUseCase: AdjustFormalityUseCase,
+    private val addReactionUseCase: com.gchat.domain.usecase.AddReactionUseCase,
+    private val removeReactionUseCase: com.gchat.domain.usecase.RemoveReactionUseCase,
     private val authRepository: AuthRepository,
     private val conversationRepository: ConversationRepository,
     private val userRepository: UserRepository,
@@ -1169,6 +1171,44 @@ class ChatViewModel @Inject constructor(
                 onSuccess = {},
                 onFailure = { error ->
                     android.util.Log.e("ChatViewModel", "Failed to toggle smart replies per-chat", error)
+                }
+            )
+        }
+    }
+    
+    // ===== Reactions =====
+    
+    /**
+     * Add a reaction to a message
+     */
+    fun addReaction(message: Message, emoji: String) {
+        viewModelScope.launch {
+            val userId = currentUserId.value ?: return@launch
+            
+            addReactionUseCase(message, userId, emoji).fold(
+                onSuccess = {
+                    // Reaction updates automatically via Firestore listener
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Failed to add reaction", error)
+                }
+            )
+        }
+    }
+    
+    /**
+     * Remove the user's reaction from a message
+     */
+    fun removeReaction(message: Message) {
+        viewModelScope.launch {
+            val userId = currentUserId.value ?: return@launch
+            
+            removeReactionUseCase(message, userId).fold(
+                onSuccess = {
+                    // Reaction updates automatically via Firestore listener
+                },
+                onFailure = { error ->
+                    android.util.Log.e("ChatViewModel", "Failed to remove reaction", error)
                 }
             )
         }

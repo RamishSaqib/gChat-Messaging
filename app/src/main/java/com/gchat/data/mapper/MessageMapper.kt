@@ -41,7 +41,13 @@ object MessageMapper {
                 emptyMap()
             },
             translation = null, // Translations are now cached separately in TranslationEntity
-            culturalContext = entity.culturalContext
+            culturalContext = entity.culturalContext,
+            reactions = try {
+                // Parse JSON map of emoji -> list of userIds
+                entity.reactions?.let { json.decodeFromString<Map<String, List<String>>>(it) } ?: emptyMap()
+            } catch (e: Exception) {
+                emptyMap()
+            }
         )
     }
     
@@ -62,7 +68,8 @@ object MessageMapper {
             translatedText = domain.translation?.translatedText,
             translationSourceLang = domain.translation?.sourceLanguage,
             translationTargetLang = domain.translation?.targetLanguage,
-            culturalContext = domain.culturalContext
+            culturalContext = domain.culturalContext,
+            reactions = if (domain.reactions.isNotEmpty()) json.encodeToString(domain.reactions) else null
         )
     }
     
@@ -84,6 +91,16 @@ object MessageMapper {
                 val readByList = document.get("readBy") as? List<*>
                 readByList?.mapNotNull { it as? String }
                     ?.associateWith { System.currentTimeMillis() } ?: emptyMap()
+            }
+            // Try to parse reactions as a map (emoji -> list of userIds)
+            val reactionsMap = try {
+                (document.get("reactions") as? Map<*, *>)?.mapNotNull { (key, value) ->
+                    val emoji = key as? String
+                    val userIds = (value as? List<*>)?.mapNotNull { it as? String }
+                    if (emoji != null && userIds != null) emoji to userIds else null
+                }?.toMap() ?: emptyMap()
+            } catch (e: Exception) {
+                emptyMap()
             }
             
             Message(
@@ -109,7 +126,8 @@ object MessageMapper {
                 transcription = document.getString("transcription"),
                 timestamp = document.getLong("timestamp") ?: System.currentTimeMillis(),
                 status = MessageStatus.valueOf(document.getString("status") ?: "SENT"),
-                readBy = readByMap
+                readBy = readByMap,
+                reactions = reactionsMap
             )
         } catch (e: Exception) {
             null
@@ -128,7 +146,8 @@ object MessageMapper {
             "transcription" to message.transcription,
             "timestamp" to message.timestamp,
             "status" to message.status.name,
-            "readBy" to message.readBy
+            "readBy" to message.readBy,
+            "reactions" to message.reactions
         )
     }
 }
