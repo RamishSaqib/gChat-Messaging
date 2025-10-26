@@ -59,17 +59,27 @@ class ProfileViewModel @Inject constructor(
             android.util.Log.d("ProfileViewModel", "🔄 Loading profile for user: $userId")
             if (userId != null) {
                 try {
-                    userRepository.getUserFlow(userId).collect { user ->
-                        android.util.Log.d("ProfileViewModel", "📥 User data collected: displayName=${user?.displayName}, email=${user?.email}, smartReplies=${user?.smartRepliesEnabled}, autoTranslate=${user?.autoTranslateEnabled}")
-                        _currentUser.value = user
-                        user?.let {
-                            _displayName.value = it.displayName
-                            _autoTranslateEnabled.value = it.autoTranslateEnabled
-                            _smartRepliesEnabled.value = it.smartRepliesEnabled
-                            _profilePictureUrl.value = it.profilePictureUrl
-                            android.util.Log.d("ProfileViewModel", "✅ Updated UI state - displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, smartReplies: ${it.smartRepliesEnabled}")
+                    userRepository.getUserFlow(userId)
+                        .catch { e ->
+                            // Don't treat cancellation as error
+                            if (e !is kotlinx.coroutines.CancellationException) {
+                                android.util.Log.e("ProfileViewModel", "❌ Error in user flow", e)
+                                _error.value = "Failed to load profile: ${e.message}"
+                            }
                         }
-                    }
+                        .collect { user ->
+                            android.util.Log.d("ProfileViewModel", "📥 User data collected: displayName=${user?.displayName}")
+                            _currentUser.value = user
+                            user?.let {
+                                _displayName.value = it.displayName
+                                _autoTranslateEnabled.value = it.autoTranslateEnabled
+                                _smartRepliesEnabled.value = it.smartRepliesEnabled
+                                _profilePictureUrl.value = it.profilePictureUrl
+                            }
+                        }
+                } catch (e: kotlinx.coroutines.CancellationException) {
+                    // Expected when navigating away - ignore
+                    android.util.Log.d("ProfileViewModel", "Flow cancelled (navigation)")
                 } catch (e: Exception) {
                     android.util.Log.e("ProfileViewModel", "❌ Error loading user profile", e)
                     _error.value = "Failed to load profile: ${e.message}"
