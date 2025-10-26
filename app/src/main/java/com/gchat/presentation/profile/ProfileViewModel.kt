@@ -59,14 +59,7 @@ class ProfileViewModel @Inject constructor(
             android.util.Log.d("ProfileViewModel", "🔄 Loading profile for user: $userId")
             if (userId != null) {
                 try {
-                    // Use a more resilient approach - catch cancellation gracefully
-                    userRepository.getUserFlow(userId).catch { e ->
-                        android.util.Log.e("ProfileViewModel", "❌ Error in user flow", e)
-                        // If it's a cancellation, that's okay - don't show error
-                        if (e !is kotlinx.coroutines.CancellationException) {
-                            _error.value = "Failed to load profile: ${e.message}"
-                        }
-                    }.collect { user ->
+                    userRepository.getUserFlow(userId).collect { user ->
                         android.util.Log.d("ProfileViewModel", "📥 User data collected: displayName=${user?.displayName}, email=${user?.email}, smartReplies=${user?.smartRepliesEnabled}, autoTranslate=${user?.autoTranslateEnabled}")
                         _currentUser.value = user
                         user?.let {
@@ -77,9 +70,6 @@ class ProfileViewModel @Inject constructor(
                             android.util.Log.d("ProfileViewModel", "✅ Updated UI state - displayName: ${it.displayName}, autoTranslate: ${it.autoTranslateEnabled}, smartReplies: ${it.smartRepliesEnabled}")
                         }
                     }
-                } catch (e: kotlinx.coroutines.CancellationException) {
-                    // Expected cancellation - don't log as error
-                    android.util.Log.d("ProfileViewModel", "Flow cancelled (normal on navigation)")
                 } catch (e: Exception) {
                     android.util.Log.e("ProfileViewModel", "❌ Error loading user profile", e)
                     _error.value = "Failed to load profile: ${e.message}"
