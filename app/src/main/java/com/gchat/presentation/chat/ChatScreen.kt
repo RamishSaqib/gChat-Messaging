@@ -157,10 +157,7 @@ fun ChatScreen(
     // Smart scroll on initial load - scroll to unread messages or bottom
     LaunchedEffect(messages.size, currentUserId, conversationId) {
         if (messages.isNotEmpty() && currentUserId != null && !hasInitialScrolled) {
-            android.util.Log.d("ChatScreen", "Initializing scroll - messages.size=${messages.size}, userId=$currentUserId")
-            
-            // Small delay to ensure LazyColumn is laid out
-            kotlinx.coroutines.delay(100)
+            android.util.Log.d("ChatScreen", "Initializing scroll - messages.size=${messages.size}")
             
             // Find the first unread message (message from another user that current user hasn't read)
             val firstUnreadIndex = messages.indexOfFirst { message ->
@@ -172,19 +169,20 @@ fun ChatScreen(
             if (firstUnreadIndex >= 0) {
                 // Scroll to the first unread message with context
                 val targetIndex = maxOf(0, firstUnreadIndex - 1)
-                android.util.Log.d("ChatScreen", "Scrolling to first unread message at index $targetIndex (unread at $firstUnreadIndex)")
+                android.util.Log.d("ChatScreen", "Scrolling to first unread at index $targetIndex")
+                // Use scrollToItem (instant) instead of animateScrollToItem for faster initial positioning
                 listState.scrollToItem(targetIndex, scrollOffset = 0)
             } else {
-                // All messages are read, scroll to bottom (latest message)
-                android.util.Log.d("ChatScreen", "All messages read - scrolling to bottom at index ${messages.size - 1}")
+                // All messages are read, scroll to bottom (latest message) - instant scroll
+                android.util.Log.d("ChatScreen", "All read - scrolling to bottom at ${messages.size - 1}")
+                // Instant scroll to bottom for better perceived performance
                 listState.scrollToItem(messages.size - 1, scrollOffset = 0)
             }
             
             hasInitialScrolled = true
             
-            // Mark as read after scroll
-            kotlinx.coroutines.delay(200)
-            android.util.Log.d("ChatScreen", "Scroll completed - marking messages as read")
+            // Mark as read after scroll completes
+            kotlinx.coroutines.delay(100)
             viewModel.markAllMessagesAsRead()
         }
     }
@@ -195,10 +193,9 @@ fun ChatScreen(
     // Auto-scroll to bottom when NEW messages arrive during an active chat
     LaunchedEffect(messages.size, conversationId) {
         if (messages.isNotEmpty() && hasInitialScrolled && previousMessageCount.value > 0 && messages.size > previousMessageCount.value) {
-            // New message arrived while user is in chat - auto-scroll to bottom
-            kotlinx.coroutines.delay(50)
+            // New message arrived while user is in chat - smooth animate to bottom
             listState.animateScrollToItem(messages.size - 1)
-            android.util.Log.d("ChatScreen", "New message arrived - auto-scrolled to bottom")
+            android.util.Log.d("ChatScreen", "New message - auto-scrolled")
         }
         if (messages.isNotEmpty()) {
             previousMessageCount.value = messages.size
