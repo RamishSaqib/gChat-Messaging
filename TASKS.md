@@ -1,15 +1,53 @@
 # gChat - Development Tasks
 
-> **Last Merged:** PR #21 - Visual Distinction for Unread Messages | **Status:** 🎉 Core Features Stable!
+> **Current PR:** PR #22 - Smart Scroll Position | **Status:** 🚀 Working on UX Improvements
 
 ---
 
 ## 📊 Quick Status
 
 **Completed PRs:** 21 (Merged to main)  
-**Current PRs:** PR #19 (Giphy) - In Planning  
-**Current Sprint:** Bug Fixes & Polish Phase Complete ✅  
-**Next Up:** Engagement Features (Giphy) & UX Improvements
+**Current PRs:** PR #22 (Smart Scroll) - In Progress  
+**Current Sprint:** UX Polish & Engagement Features  
+**Next Up:** Giphy Integration & Additional UX Enhancements
+
+---
+
+## 🔄 PR #22: Smart Scroll Position in Chat (IN PROGRESS)
+
+**Goal:** When opening a chat, automatically scroll to the first unread message. If all messages are read, scroll to the most recent messages at the bottom.
+
+**Branch:** `feature/pr22-smart-scroll-position`
+
+**Status:** 🔄 In Progress
+
+**Priority:** High (UX Improvement - Standard Messaging App Behavior)
+
+**Estimated Time:** ~30 minutes
+
+### Features to Implement
+- [x] Detect unread messages when opening chat
+- [x] Scroll to first unread message if unread messages exist
+- [x] Scroll to bottom (latest messages) if all messages are read
+- [x] Auto-scroll to bottom when new messages arrive during chat
+- [x] Only perform initial smart scroll once when opening chat
+
+### Technical Implementation
+- [x] Modified ChatScreen.kt to add smart scroll logic
+- [x] Use Message.isReadBy() to detect unread messages
+- [x] Find first unread message from another user
+- [x] Scroll with small offset to show context
+- [x] Handle edge cases (empty messages, no user, all read)
+
+### Files Modified
+- `app/src/main/java/com/gchat/presentation/chat/ChatScreen.kt`
+
+### Testing
+- [x] Opens chat with unread → Scrolls to first unread message
+- [x] Opens chat with all read → Scrolls to bottom
+- [x] New messages during chat → Auto-scrolls to bottom
+- [x] Works in both DMs and group chats
+- [x] Handles empty message list
 
 ---
 

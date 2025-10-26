@@ -321,10 +321,29 @@ fun ConversationItem(
         else -> conversation.iconUrl
     }
     
+    // Visual distinction for unread messages
+    val hasUnreadMessages = conversation.unreadCount > 0
+    val isDarkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+    val backgroundColor = if (hasUnreadMessages) {
+        // Use surfaceVariant which has guaranteed contrast in both themes
+        if (isDarkTheme) {
+            MaterialTheme.colorScheme.surfaceVariant
+        } else {
+            MaterialTheme.colorScheme.primary.copy(alpha = 0.08f)
+        }
+    } else {
+        MaterialTheme.colorScheme.background
+    }
+    val textFontWeight = if (hasUnreadMessages) {
+        androidx.compose.ui.text.font.FontWeight.Bold
+    } else {
+        androidx.compose.ui.text.font.FontWeight.Normal
+    }
+    
     Surface(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
-        color = MaterialTheme.colorScheme.background
+        color = backgroundColor
     ) {
         Row(
             modifier = Modifier
@@ -353,7 +372,11 @@ fun ConversationItem(
                         text = displayName,
                         style = MaterialTheme.typography.titleMedium.copy(
                             fontSize = 17.sp,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.SemiBold
+                            fontWeight = if (hasUnreadMessages) {
+                                androidx.compose.ui.text.font.FontWeight.Bold
+                            } else {
+                                androidx.compose.ui.text.font.FontWeight.SemiBold
+                            }
                         ),
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
@@ -377,9 +400,12 @@ fun ConversationItem(
                         if (conversation.unreadCount > 0) {
                             Surface(
                                 shape = CircleShape,
-                                color = MaterialTheme.colorScheme.primary,
-                                shadowElevation = 2.dp, // Add shadow for visibility in dark mode
-                                tonalElevation = 2.dp, // Additional elevation
+                                // Use tertiary color which is typically brighter in dark mode
+                                color = if (isDarkTheme) {
+                                    MaterialTheme.colorScheme.tertiary
+                                } else {
+                                    MaterialTheme.colorScheme.primary
+                                },
                                 modifier = Modifier.size(20.dp)
                             ) {
                                 Box(contentAlignment = Alignment.Center) {
@@ -389,7 +415,11 @@ fun ConversationItem(
                                             fontSize = 11.sp,
                                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold
                                         ),
-                                        color = MaterialTheme.colorScheme.onPrimary
+                                        color = if (isDarkTheme) {
+                                            MaterialTheme.colorScheme.onTertiary
+                                        } else {
+                                            MaterialTheme.colorScheme.onPrimary
+                                        }
                                     )
                                 }
                             }
@@ -406,7 +436,8 @@ fun ConversationItem(
                         currentUserId = currentUserId
                     ),
                     style = MaterialTheme.typography.bodySmall.copy(
-                        fontSize = 15.sp
+                        fontSize = 15.sp,
+                        fontWeight = textFontWeight
                     ),
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                     maxLines = 2,

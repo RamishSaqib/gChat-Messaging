@@ -151,9 +151,35 @@ fun ChatScreen(
         }
     )
     
-    // Auto-scroll to bottom when new messages arrive
+    // Smart scroll positioning: Scroll to first unread message, or bottom if all messages are read
+    val hasScrolledOnce = remember { mutableStateOf(false) }
+    
+    LaunchedEffect(messages.size, currentUserId) {
+        if (messages.isNotEmpty() && currentUserId != null && !hasScrolledOnce.value) {
+            // Find the first unread message (message from another user that current user hasn't read)
+            val firstUnreadIndex = messages.indexOfFirst { message ->
+                message.senderId != currentUserId && !message.isReadBy(currentUserId)
+            }
+            
+            if (firstUnreadIndex >= 0) {
+                // Scroll to the first unread message
+                // Add a small offset to show some context around the unread message
+                val targetIndex = maxOf(0, firstUnreadIndex - 1)
+                listState.animateScrollToItem(targetIndex)
+            } else {
+                // All messages are read, scroll to bottom (latest message)
+                listState.animateScrollToItem(messages.size - 1)
+            }
+            
+            hasScrolledOnce.value = true
+        }
+    }
+    
+    // Auto-scroll to bottom when NEW messages arrive (after initial scroll)
     LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
+        if (messages.isNotEmpty() && hasScrolledOnce.value) {
+            // Only auto-scroll if we've already done the initial smart scroll
+            // This handles new messages arriving while in the chat
             listState.animateScrollToItem(messages.size - 1)
         }
     }

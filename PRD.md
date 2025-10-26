@@ -1,10 +1,41 @@
 # gChat - Product Requirements Document
 
-> **Status**: 🚀 AI Features Phase | ✅ PRs #1-21 Complete | 🎯 Next: Giphy & UX Polish
+> **Status**: 🚀 AI Features Phase | ✅ PRs #1-21 Complete | 🎯 Next: PR #22 Smart Scroll & UX Polish
 
 ---
 
 ## 📋 Pull Request History
+
+### PR #22: Smart Scroll Position in Chat
+**Status:** 🔄 In Progress  
+**Date:** October 24, 2025  
+**Time Spent:** ~30 minutes
+
+**Features Implemented:**
+- ✅ Smart scroll positioning when opening chat
+- ✅ Scrolls to first unread message if unread messages exist
+- ✅ Scrolls to bottom (latest messages) if all messages are read
+- ✅ Auto-scroll to bottom when new messages arrive during active chat
+- ✅ Standard messaging app behavior (like iMessage, WhatsApp, etc.)
+
+**Technical Implementation:**
+- Modified `ChatScreen.kt` to detect unread messages on chat open
+- Uses `Message.isReadBy()` to check if messages have been read
+- Finds first unread message (from another user, not read by current user)
+- Scrolls to unread message with small offset for context
+- Falls back to scrolling to bottom when all messages are read
+- Only runs initial smart scroll once when opening chat
+
+**UI/UX:**
+- Opens chat → If unread messages exist, shows them first
+- Opens chat → If all read, shows latest messages at bottom
+- New messages during chat → Always scrolls to bottom
+- Provides context by showing 1 message before first unread
+
+**Files Modified:**
+- `app/src/main/java/com/gchat/presentation/chat/ChatScreen.kt`
+
+---
 
 ### PR #17: Formality Level Adjustment
 **Status:** ✅ Merged to `main`  
