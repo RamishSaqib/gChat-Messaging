@@ -107,29 +107,36 @@ export const onMessageReactionAdded = onDocumentUpdated(
         console.log(`📛 Display name (with nickname): ${displayName}`);
         console.log(`📤 Sending FCM notification...`);
         
-        // Send notification
-        await messaging.send({
-          token: sender.fcmToken,
-          data: {
-            type: 'REACTION',
-            conversationId,
-            messageId,
-            reactorId: userId,
-            reactorName: displayName,
-            emoji,
-            messageText: (afterData.text as string) || '',
-          },
-          android: {
-            priority: 'high',
-          },
-          apns: {
-            headers: {
-              'apns-priority': '10',
+        try {
+          // Send notification
+          await messaging.send({
+            token: sender.fcmToken,
+            data: {
+              type: 'REACTION',
+              conversationId,
+              messageId,
+              reactorId: userId,
+              reactorName: displayName,
+              emoji,
+              messageText: (afterData.text as string) || '',
             },
-          },
-        });
+            android: {
+              priority: 'high',
+            },
+            apns: {
+              headers: {
+                'apns-priority': '10',
+              },
+            },
+          });
+          
+          console.log(`✅ Notification sent successfully`);
+        } catch (sendError: any) {
+          // If FCM send fails (invalid token), still create the reaction notification
+          console.log(`⚠️ FCM send failed: ${sendError.message}`);
+          console.log(`📝 Continuing to create reaction notification despite FCM error`);
+        }
         
-        console.log(`✅ Notification sent successfully`);
         console.log(`📝 Updating conversation with reaction preview for message owner...`);
         
         // Update conversation with a per-user reaction notification
