@@ -65,95 +65,112 @@ export const onMessageReactionAdded = onDocumentUpdated(
       
       // Send notification for each new reaction (but only to message sender)
       for (const { emoji, userId } of newReactions) {
-        console.log(`👤 Processing reaction ${emoji} from user ${userId} to message sender ${messageSenderId}`);
-        
-        // Skip if user reacted to their own message
-        if (userId === messageSenderId) {
-          console.log(`⏭️ Skipping self-reaction from ${userId}`);
-          continue;
-        }
-        
-        console.log(`📥 Fetching reactor details for ${userId}`);
-        // Get reactor details
-        const reactorDoc = await db.collection('users').doc(userId).get();
-        const reactor = reactorDoc.data();
-        const reactorName = reactor?.displayName || 'Someone';
-        
-        console.log(`👤 Reactor name: ${reactorName}`);
-        
-        console.log(`📥 Fetching message sender details for ${messageSenderId}`);
-        // Get message sender's FCM token
-        const senderDoc = await db.collection('users').doc(messageSenderId).get();
-        const sender = senderDoc.data();
-        
-        if (!sender?.fcmToken) {
-          console.log(`❌ No FCM token for message sender ${messageSenderId}`);
-          continue;
-        }
-        
-        console.log(`✅ Found FCM token for sender: ${sender.fcmToken.substring(0, 20)}...`);
-        
-        console.log(`📥 Fetching conversation details for ${conversationId}`);
-        // Get conversation details for nickname support
-        const conversationDoc = await db
-          .collection('conversations')
-          .doc(conversationId)
-          .get();
-        
-        const conversation = conversationDoc.data();
-        const nicknames = (conversation?.nicknames as Record<string, string>) || {};
-        const displayName = nicknames[userId] || reactorName;
-        
-        console.log(`📛 Display name (with nickname): ${displayName}`);
-        console.log(`📤 Sending FCM notification...`);
-        
         try {
-          // Send notification
-          await messaging.send({
-            token: sender.fcmToken,
-            data: {
-              type: 'REACTION',
-              conversationId,
-              messageId,
+          console.log(`👤 Processing reaction ${emoji} from user ${userId} to message sender ${messageSenderId}`);
+          
+          // Skip if user reacted to their own message
+          if (userId === messageSenderId) {
+            console.log(`⏭️ Skipping self-reaction from ${userId}`);
+            continue;
+          }
+          
+          console.log(`📥 Fetching reactor details for ${userId}`);
+          // Get reactor details
+          const reactorDoc = await db.collection('users').doc(userId).get();
+          const reactor = reactorDoc.data();
+          const reactorName = reactor?.displayName || 'Someone';
+          
+          console.log(`👤 Reactor name: ${reactorName}`);
+          
+          console.log(`📥 Fetching message sender details for ${messageSenderId}`);
+          // Get message sender's FCM token
+          let senderDoc;
+          let sender;
+          try {
+            senderDoc = await db.collection('users').doc(messageSenderId).get();
+            sender = senderDoc.data();
+          } catch (error: any) {
+            console.log(`❌ Error fetching sender: ${error.message}`);
+            sender = null;
+          }
+          
+          if (!sender?.fcmToken) {
+            console.log(`⚠️ No FCM token for message sender ${messageSenderId}, but continuing to create reaction notification`);
+          } else {
+            console.log(`✅ Found FCM token for sender: ${sender.fcmToken.substring(0, 20)}...`);
+          }
+          
+          console.log(`📥 Fetching conversation details for ${conversationId}`);
+          // Get conversation details for nickname support
+          const conversationDoc = await db
+            .collection('conversations')
+            .doc(conversationId)
+            .get();
+          
+          const conversation = conversationDoc.data();
+          const nicknames = (conversation?.nicknames as Record<string, string>) || {};
+          const displayName = nicknames[userId] || reactorName;
+          
+          console.log(`📛 Display name (with nickname): ${displayName}`);
+          console.log(`📤 Attempting to send FCM notification...`);
+          
+          // Only send FCM if token exists
+          if (sender?.fcmToken) {
+            try {
+              // Send notification
+              await messaging.send({
+                token: sender.fcmToken,
+                data: {
+                  type: 'REACTION',
+                  conversationId,
+                  messageId,
+                  reactorId: userId,
+                  reactorName: displayName,
+                  emoji,
+                  messageText: (afterData.text as string) || '',
+                },
+                android: {
+                  priority: 'high',
+                },
+                apns: {
+                  headers: {
+                    'apns-priority': '10',
+                  },
+                },
+              });
+              
+              console.log(`✅ FCM notification sent successfully`);
+            } catch (sendError: any) {
+              // If FCM send fails (invalid token), log but continue
+              console.log(`⚠️ FCM send failed: ${sendError.message}`);
+              console.log(`📝 Continuing despite FCM error - will create reaction notification in Firestore`);
+            }
+          } else {
+            console.log(`⚠️ No FCM token available - skipping push but will create Firestore notification`);
+          }
+          
+          console.log(`📝 Updating conversation with reaction preview for message owner...`);
+          
+          // Update conversation with a per-user reaction notification
+          // This allows ONLY the message owner to see the reaction in their preview
+          // while keeping the main lastMessage unchanged for everyone else
+          const conversationRef = db.collection('conversations').doc(conversationId);
+          await conversationRef.update({
+            [`reactionNotifications.${messageSenderId}`]: {
+              text: `${emoji} ${displayName} reacted to your message`,
+              timestamp: Date.now(),
+              messageId: messageId,
               reactorId: userId,
-              reactorName: displayName,
-              emoji,
-              messageText: (afterData.text as string) || '',
             },
-            android: {
-              priority: 'high',
-            },
-            apns: {
-              headers: {
-                'apns-priority': '10',
-              },
-            },
+            updatedAt: FieldValue.serverTimestamp(),
           });
           
-          console.log(`✅ Notification sent successfully`);
-        } catch (sendError: any) {
-          // If FCM send fails (invalid token), still create the reaction notification
-          console.log(`⚠️ FCM send failed: ${sendError.message}`);
-          console.log(`📝 Continuing to create reaction notification despite FCM error`);
+          console.log(`✅ Reaction notification set for user ${messageSenderId}`);
+        } catch (innerError: any) {
+          console.error(`❌ Error processing reaction: ${innerError.message}`);
+          console.error(`Error stack: ${innerError.stack}`);
+          // Continue to next reaction even if this one fails
         }
-        
-        console.log(`📝 Updating conversation with reaction preview for message owner...`);
-        
-        // Update conversation with a per-user reaction notification
-        // This allows ONLY the message owner to see the reaction in their preview
-        // while keeping the main lastMessage unchanged for everyone else
-        const conversationRef = db.collection('conversations').doc(conversationId);
-        await conversationRef.update({
-          [`reactionNotifications.${messageSenderId}`]: {
-            text: `${emoji} ${displayName} reacted to your message`,
-            timestamp: Date.now(),
-            messageId: messageId,
-            reactorId: userId,
-          },
-          updatedAt: FieldValue.serverTimestamp(),
-        });
-        
-        console.log(`✅ Reaction notification set for user ${messageSenderId}`);
       }
       
     } catch (error) {
