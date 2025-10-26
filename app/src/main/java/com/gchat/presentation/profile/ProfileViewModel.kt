@@ -60,8 +60,14 @@ class ProfileViewModel @Inject constructor(
             if (userId != null) {
                 try {
                     userRepository.getUserFlow(userId)
+                        .onCompletion { cause ->
+                            if (cause != null && cause !is kotlinx.coroutines.CancellationException) {
+                                android.util.Log.e("ProfileViewModel", "Flow completed with error", cause)
+                            } else if (cause != null) {
+                                android.util.Log.d("ProfileViewModel", "Flow cancelled (navigation)")
+                            }
+                        }
                         .catch { e ->
-                            // Don't treat cancellation as error
                             if (e !is kotlinx.coroutines.CancellationException) {
                                 android.util.Log.e("ProfileViewModel", "❌ Error in user flow", e)
                                 _error.value = "Failed to load profile: ${e.message}"
@@ -78,8 +84,7 @@ class ProfileViewModel @Inject constructor(
                             }
                         }
                 } catch (e: kotlinx.coroutines.CancellationException) {
-                    // Expected when navigating away - ignore
-                    android.util.Log.d("ProfileViewModel", "Flow cancelled (navigation)")
+                    android.util.Log.d("ProfileViewModel", "Collector cancelled")
                 } catch (e: Exception) {
                     android.util.Log.e("ProfileViewModel", "❌ Error loading user profile", e)
                     _error.value = "Failed to load profile: ${e.message}"
