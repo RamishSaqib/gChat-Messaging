@@ -7,9 +7,9 @@
 ## 📋 Pull Request History
 
 ### PR #22: Smart Scroll Position in Chat
-**Status:** 🔄 In Progress  
+**Status:** ✅ Merged to `main`  
 **Date:** October 24, 2025  
-**Time Spent:** ~30 minutes
+**Time Spent:** ~1 hour
 
 **Features Implemented:**
 - ✅ Smart scroll positioning when opening chat

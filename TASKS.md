@@ -1,25 +1,25 @@
 # gChat - Development Tasks
 
-> **Current PR:** PR #22 - Smart Scroll Position | **Status:** 🚀 Working on UX Improvements
+> **Last Merged:** PR #22 - Smart Scroll Position | **Status:** 🎉 UX Polish Complete!
 
 ---
 
 ## 📊 Quick Status
 
-**Completed PRs:** 21 (Merged to main)  
-**Current PRs:** PR #22 (Smart Scroll) - In Progress  
-**Current Sprint:** UX Polish & Engagement Features  
-**Next Up:** Giphy Integration & Additional UX Enhancements
+**Completed PRs:** 22 (Merged to main)  
+**Current PRs:** None  
+**Current Sprint:** Engagement Features  
+**Next Up:** Giphy Integration & Additional Features
 
 ---
 
-## 🔄 PR #22: Smart Scroll Position in Chat (IN PROGRESS)
+## ✅ PR #22: Smart Scroll Position in Chat (MERGED ✅)
 
 **Goal:** When opening a chat, automatically scroll to the first unread message. If all messages are read, scroll to the most recent messages at the bottom.
 
-**Branch:** `feature/pr22-smart-scroll-position`
+**Branch:** `feature/pr22-smart-scroll-position` → **Merged to `main`**
 
-**Status:** 🔄 In Progress
+**Status:** ✅ Merged
 
 **Priority:** High (UX Improvement - Standard Messaging App Behavior)
 
