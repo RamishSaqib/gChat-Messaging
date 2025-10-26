@@ -156,21 +156,24 @@ fun ChatScreen(
     
     LaunchedEffect(messages.size, currentUserId, conversationId) {
         if (messages.isNotEmpty() && currentUserId != null && !hasScrolledOnce.value) {
+            android.util.Log.d("ChatScreen", "Initializing scroll - messages.size=${messages.size}, userId=$currentUserId")
+            
             // Find the first unread message (message from another user that current user hasn't read)
             val firstUnreadIndex = messages.indexOfFirst { message ->
                 message.senderId != currentUserId && !message.isReadBy(currentUserId!!)
             }
             
+            android.util.Log.d("ChatScreen", "First unread index: $firstUnreadIndex")
+            
             if (firstUnreadIndex >= 0) {
-                // Scroll to the first unread message
-                // Add a small offset to show some context around the unread message
+                // Scroll to the first unread message with context
                 val targetIndex = maxOf(0, firstUnreadIndex - 1)
+                android.util.Log.d("ChatScreen", "Scrolling to first unread message at index $targetIndex (unread at $firstUnreadIndex)")
                 listState.animateScrollToItem(targetIndex)
-                android.util.Log.d("ChatScreen", "Scrolled to first unread message at index $targetIndex")
             } else {
                 // All messages are read, scroll to bottom (latest message)
+                android.util.Log.d("ChatScreen", "All messages read - scrolling to bottom at index ${messages.size - 1}")
                 listState.animateScrollToItem(messages.size - 1)
-                android.util.Log.d("ChatScreen", "Scrolled to bottom - all messages read")
             }
             
             hasScrolledOnce.value = true
@@ -189,9 +192,12 @@ fun ChatScreen(
         previousMessageCount.value = messages.size
     }
     
-    // Mark messages as read when screen is viewed or new messages arrive
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty()) {
+    // Mark messages as read AFTER scrolling (delay to let scroll complete)
+    LaunchedEffect(hasScrolledOnce.value, conversationId) {
+        if (hasScrolledOnce.value && messages.isNotEmpty()) {
+            android.util.Log.d("ChatScreen", "Scroll completed - marking messages as read")
+            // Small delay to ensure scroll has completed
+            kotlinx.coroutines.delay(300)
             viewModel.markAllMessagesAsRead()
         }
     }
