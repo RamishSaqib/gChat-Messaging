@@ -95,8 +95,11 @@ class MessagingService : FirebaseMessagingService() {
                 val emoji = data["emoji"] ?: "❤️"
                 val messageText = data["messageText"] ?: ""
                 
+                android.util.Log.d("MessagingService", "Received REACTION notification: conversationId=$conversationId, reactorId=$reactorId, reactorName=$reactorName, emoji=$emoji")
+                
                 // Check if user is currently viewing this conversation
                 val currentConversationId = (application as? GChatApplication)?.currentConversationId
+                android.util.Log.d("MessagingService", "Current conversation: $currentConversationId, notification for: $conversationId")
                 
                 if (conversationId != currentConversationId) {
                     // User is NOT in this chat - show notification
@@ -206,6 +209,8 @@ class MessagingService : FirebaseMessagingService() {
         emoji: String,
         messageText: String
     ) {
+        android.util.Log.d("MessagingService", "showReactionNotification called: conversationId=$conversationId, reactor=$reactorName")
+        
         // Don't show notification for own reactions
         val currentUserId = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser?.uid
         if (currentUserId == reactorId) {
