@@ -152,13 +152,13 @@ fun ChatScreen(
     )
     
     // Smart scroll positioning: Scroll to first unread message, or bottom if all messages are read
-    val hasScrolledOnce = remember { mutableStateOf(false) }
+    val hasScrolledOnce = remember(conversationId) { mutableStateOf(false) }
     
-    LaunchedEffect(messages.size, currentUserId) {
+    LaunchedEffect(messages.size, currentUserId, conversationId) {
         if (messages.isNotEmpty() && currentUserId != null && !hasScrolledOnce.value) {
             // Find the first unread message (message from another user that current user hasn't read)
             val firstUnreadIndex = messages.indexOfFirst { message ->
-                message.senderId != currentUserId && !message.isReadBy(currentUserId)
+                message.senderId != currentUserId && !message.isReadBy(currentUserId!!)
             }
             
             if (firstUnreadIndex >= 0) {
@@ -166,22 +166,27 @@ fun ChatScreen(
                 // Add a small offset to show some context around the unread message
                 val targetIndex = maxOf(0, firstUnreadIndex - 1)
                 listState.animateScrollToItem(targetIndex)
+                android.util.Log.d("ChatScreen", "Scrolled to first unread message at index $targetIndex")
             } else {
                 // All messages are read, scroll to bottom (latest message)
                 listState.animateScrollToItem(messages.size - 1)
+                android.util.Log.d("ChatScreen", "Scrolled to bottom - all messages read")
             }
             
             hasScrolledOnce.value = true
         }
     }
     
-    // Auto-scroll to bottom when NEW messages arrive (after initial scroll)
-    LaunchedEffect(messages.size) {
-        if (messages.isNotEmpty() && hasScrolledOnce.value) {
-            // Only auto-scroll if we've already done the initial smart scroll
-            // This handles new messages arriving while in the chat
+    // Track previous message count for detecting NEW messages (not initial load)
+    val previousMessageCount = remember(conversationId) { mutableStateOf(0) }
+    
+    LaunchedEffect(messages.size, conversationId) {
+        if (messages.isNotEmpty() && hasScrolledOnce.value && previousMessageCount.value > 0 && messages.size > previousMessageCount.value) {
+            // New message arrived while in chat - auto-scroll to bottom
             listState.animateScrollToItem(messages.size - 1)
+            android.util.Log.d("ChatScreen", "New message arrived - auto-scrolled to bottom")
         }
+        previousMessageCount.value = messages.size
     }
     
     // Mark messages as read when screen is viewed or new messages arrive
