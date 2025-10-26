@@ -307,21 +307,44 @@ class ChatViewModel @Inject constructor(
         
         android.util.Log.d("ChatViewModel", "markAllMessagesAsRead: Found ${unreadMessages.size} unread messages (userId=$userId)")
         
-        if (unreadMessages.isEmpty()) return
-        
         viewModelScope.launch {
             // Mark all messages as read in parallel, then wait for all to complete
-            unreadMessages.map { message ->
-                async {
-                    android.util.Log.d("ChatViewModel", "Marking message ${message.id.take(8)} as read")
-                    markMessageAsReadUseCase(
-                        messageId = message.id,
-                        conversationId = conversationId,
-                        userId = userId
-                    )
+            if (unreadMessages.isNotEmpty()) {
+                unreadMessages.map { message ->
+                    async {
+                        android.util.Log.d("ChatViewModel", "Marking message ${message.id.take(8)} as read")
+                        markMessageAsReadUseCase(
+                            messageId = message.id,
+                            conversationId = conversationId,
+                            userId = userId
+                        )
+                    }
+                }.awaitAll()
+                android.util.Log.d("ChatViewModel", "Finished marking ${unreadMessages.size} messages as read")
+            }
+            
+            // Also clear reaction notifications for this user
+            clearReactionNotification(userId)
+        }
+    }
+    
+    private fun clearReactionNotification(userId: String) {
+        viewModelScope.launch {
+            try {
+                android.util.Log.d("ChatViewModel", "Clearing reaction notification for user: $userId")
+                // Use Firestore to remove the reaction notification from the conversation
+                val currentConv = conversationRepository.getConversation(conversationId).getOrNull()
+                val currentNotifications = currentConv?.reactionNotifications ?: emptyMap()
+                
+                if (userId in currentNotifications) {
+                    android.util.Log.d("ChatViewModel", "Removing reaction notification for user: $userId")
+                    // Update Firestore to remove this user's notification
+                    conversationRepository.updateReactionNotifications(conversationId, userId, null)
+                    android.util.Log.d("ChatViewModel", "Reaction notification cleared")
                 }
-            }.awaitAll()
-            android.util.Log.d("ChatViewModel", "Finished marking ${unreadMessages.size} messages as read")
+            } catch (e: Exception) {
+                android.util.Log.e("ChatViewModel", "Error clearing reaction notification", e)
+            }
         }
     }
     

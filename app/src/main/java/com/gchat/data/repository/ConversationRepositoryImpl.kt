@@ -563,7 +563,44 @@ class ConversationRepositoryImpl @Inject constructor(
             Result.failure(e)
         }
     }
-
+    
+    override suspend fun updateReactionNotifications(
+        conversationId: String,
+        userId: String,
+        notification: com.gchat.domain.model.ReactionNotification?
+    ): Result<Unit> = try {
+        val timestamp = System.currentTimeMillis()
+        android.util.Log.d("ConversationRepo", "Updating reaction notification for conversation $conversationId, user $userId")
+        
+        if (notification == null) {
+            // Remove the notification from Firestore
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf("reactionNotifications.$userId" to com.google.firebase.firestore.FieldValue.delete())
+            )
+        } else {
+            // Update or add the notification
+            val firestoreMap = mapOf(
+                "messageId" to notification.messageId,
+                "text" to notification.text,
+                "reactorId" to notification.reactorId,
+                "timestamp" to notification.timestamp
+            )
+            firestoreConversationDataSource.updateConversation(
+                conversationId,
+                mapOf(
+                    "reactionNotifications.$userId" to firestoreMap,
+                    "updatedAt" to timestamp
+                )
+            )
+        }
+        
+        android.util.Log.d("ConversationRepo", "Reaction notification updated")
+        Result.success(Unit)
+    } catch (e: Exception) {
+        android.util.Log.e("ConversationRepo", "Error updating reaction notification", e)
+        Result.failure(e)
+    }
     
     private suspend fun syncConversationsFromFirestore(userId: String) {
         try {

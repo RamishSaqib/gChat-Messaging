@@ -32,5 +32,8 @@ interface ConversationRepository {
     
     // Smart replies management
     suspend fun updateSmartReplies(conversationId: String, enabled: Boolean?): Result<Unit>
+    
+    // Reaction notifications management
+    suspend fun updateReactionNotifications(conversationId: String, userId: String, notification: com.gchat.domain.model.ReactionNotification?): Result<Unit>
 }
 
